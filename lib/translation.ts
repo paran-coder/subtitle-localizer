@@ -96,9 +96,10 @@ function isRetryableStatus(status: number) {
   return status === 408 || status === 409 || status === 429 || status >= 500;
 }
 
-export async function translateChunk(input: TranslateChunkInput): Promise<TranslationItem[]> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY가 설정되지 않았습니다.");
+export async function translateChunk(input: TranslateChunkInput, apiKey: string): Promise<TranslationItem[]> {
+  const normalizedApiKey = apiKey.trim();
+  if (!normalizedApiKey) throw new Error("OpenAI API Key를 입력해 주세요.");
+  if (normalizedApiKey.length > 512) throw new Error("OpenAI API Key 형식이 올바르지 않습니다.");
 
   const model = process.env.OPENAI_TRANSLATION_MODEL || "gpt-5.6-luna";
   const sourceIds = input.cues.map((cue) => cue.id);
@@ -166,7 +167,7 @@ export async function translateChunk(input: TranslateChunkInput): Promise<Transl
       const response = await fetch("https://api.openai.com/v1/responses", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: `Bearer ${normalizedApiKey}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify(body),
@@ -175,10 +176,14 @@ export async function translateChunk(input: TranslateChunkInput): Promise<Transl
 
       const payload = (await response.json()) as ResponsesPayload;
       if (!response.ok) {
-        throw new OpenAIRequestError(
-          payload.error?.message || `OpenAI API 오류 (${response.status})`,
-          isRetryableStatus(response.status)
-        );
+        const friendlyMessage = response.status === 401
+          ? "OpenAI API Key가 올바르지 않거나 비활성화되어 있습니다."
+          : response.status === 429
+            ? "OpenAI 계정의 사용 한도 또는 요청 속도 제한에 도달했습니다."
+            : response.status === 403
+              ? "이 OpenAI API Key에는 요청한 모델을 사용할 권한이 없습니다."
+              : payload.error?.message || `OpenAI API 오류 (${response.status})`;
+        throw new OpenAIRequestError(friendlyMessage, isRetryableStatus(response.status));
       }
 
       const outputText = extractOutputText(payload);

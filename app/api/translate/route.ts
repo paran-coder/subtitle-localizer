@@ -1,7 +1,8 @@
-import { timingSafeEqual } from "node:crypto";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { LANGUAGES } from "@/lib/languages";
+import { OPENAI_CREDENTIAL_COOKIE, unsealOpenAiCredential } from "@/lib/openai-credential";
 import { DEFAULT_CHUNK_OPTIONS, MAX_TRANSLATABLE_CUE_CHARS } from "@/lib/srt";
+import { appSessionSecret, secureCookieOptions } from "@/lib/secure-session";
 import { translateChunk } from "@/lib/translation";
 import type { TranslationStyle } from "@/lib/types";
 
@@ -15,37 +16,11 @@ const MAX_CHUNK_CHARS = DEFAULT_CHUNK_OPTIONS.maxChars;
 const MAX_CONTEXT_CHARS = 4_000;
 
 function json(data: unknown, status = 200) {
-  return NextResponse.json(data, {
-    status,
-    headers: { "Cache-Control": "no-store" }
-  });
-}
-
-function safeEqual(left: string, right: string) {
-  const leftBuffer = Buffer.from(left);
-  const rightBuffer = Buffer.from(right);
-  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
-}
-
-function checkAccess(request: Request): string | null {
-  const expected = process.env.SUBTITLE_APP_ACCESS_KEY?.trim();
-  if (!expected) {
-    if (process.env.NODE_ENV === "production") {
-      return "서버에 SUBTITLE_APP_ACCESS_KEY가 설정되지 않았습니다.";
-    }
-    return null;
-  }
-
-  const provided = request.headers.get("x-subtitle-access-key")?.trim() ?? "";
-  if (!provided || !safeEqual(provided, expected)) {
-    return "배포 보호 키가 올바르지 않습니다.";
-  }
-  return null;
+  return NextResponse.json(data, { status, headers: { "Cache-Control": "no-store" } });
 }
 
 function isCueArray(value: unknown, maxChars: number): value is Array<{ id: number; text: string; durationMs?: number }> {
   if (!Array.isArray(value) || value.length > MAX_CUES) return false;
-
   const ids = new Set<number>();
   let totalChars = 0;
   for (const item of value) {
@@ -53,9 +28,7 @@ function isCueArray(value: unknown, maxChars: number): value is Array<{ id: numb
     const id = (item as { id?: unknown }).id;
     const text = (item as { text?: unknown }).text;
     const durationMs = (item as { durationMs?: unknown }).durationMs;
-    if (!Number.isInteger(id) || typeof text !== "string" || !text.trim() || text.length > MAX_CUE_CHARS) {
-      return false;
-    }
+    if (!Number.isInteger(id) || typeof text !== "string" || !text.trim() || text.length > MAX_CUE_CHARS) return false;
     if (durationMs !== undefined && (!Number.isFinite(durationMs) || (durationMs as number) <= 0 || (durationMs as number) > 86_400_000)) return false;
     if (ids.has(id as number)) return false;
     ids.add(id as number);
@@ -65,14 +38,22 @@ function isCueArray(value: unknown, maxChars: number): value is Array<{ id: numb
   return true;
 }
 
-export async function POST(request: Request) {
-  try {
-    const accessError = checkAccess(request);
-    if (accessError) {
-      const status = accessError.includes("설정되지") ? 503 : 401;
-      return json({ error: accessError }, status);
-    }
+export async function POST(request: NextRequest) {
+  const server = appSessionSecret();
+  if (!server.configured) return json({ error: "배포 서버에 APP_SESSION_SECRET가 설정되지 않았습니다." }, 503);
+  const credentialCookie = request.cookies.get(OPENAI_CREDENTIAL_COOKIE)?.value;
+  if (!credentialCookie) return json({ error: "본인의 OpenAI API Key를 먼저 연결해 주세요." }, 401);
 
+  let apiKey = "";
+  try {
+    apiKey = unsealOpenAiCredential(credentialCookie, server.secret).apiKey;
+  } catch {
+    const response = json({ error: "저장된 OpenAI API Key 세션을 읽지 못했습니다. 키를 다시 연결해 주세요." }, 401);
+    response.cookies.set(OPENAI_CREDENTIAL_COOKIE, "", { ...secureCookieOptions, maxAge: 0 });
+    return response;
+  }
+
+  try {
     const body = (await request.json()) as {
       languageCode?: unknown;
       style?: unknown;
@@ -84,21 +65,11 @@ export async function POST(request: Request) {
 
     const language = LANGUAGES.find((item) => item.code === body.languageCode);
     if (!language) return json({ error: "지원하지 않는 번역 언어입니다." }, 400);
-    if (typeof body.style !== "string" || !STYLES.has(body.style as TranslationStyle)) {
-      return json({ error: "번역 스타일이 올바르지 않습니다." }, 400);
-    }
-    if (!isCueArray(body.cues, MAX_CHUNK_CHARS) || body.cues.length === 0) {
-      return json({ error: "번역할 자막 데이터가 올바르지 않거나 너무 큽니다." }, 400);
-    }
-    if (body.contextBefore !== undefined && !isCueArray(body.contextBefore, MAX_CONTEXT_CHARS)) {
-      return json({ error: "이전 문맥 데이터가 올바르지 않습니다." }, 400);
-    }
-    if (body.contextAfter !== undefined && !isCueArray(body.contextAfter, MAX_CONTEXT_CHARS)) {
-      return json({ error: "다음 문맥 데이터가 올바르지 않습니다." }, 400);
-    }
-    if (body.glossary !== undefined && (typeof body.glossary !== "string" || body.glossary.length > 8_000)) {
-      return json({ error: "Glossary가 너무 깁니다." }, 400);
-    }
+    if (typeof body.style !== "string" || !STYLES.has(body.style as TranslationStyle)) return json({ error: "번역 스타일이 올바르지 않습니다." }, 400);
+    if (!isCueArray(body.cues, MAX_CHUNK_CHARS) || body.cues.length === 0) return json({ error: "번역할 자막 데이터가 올바르지 않거나 너무 큽니다." }, 400);
+    if (body.contextBefore !== undefined && !isCueArray(body.contextBefore, MAX_CONTEXT_CHARS)) return json({ error: "이전 문맥 데이터가 올바르지 않습니다." }, 400);
+    if (body.contextAfter !== undefined && !isCueArray(body.contextAfter, MAX_CONTEXT_CHARS)) return json({ error: "다음 문맥 데이터가 올바르지 않습니다." }, 400);
+    if (body.glossary !== undefined && (typeof body.glossary !== "string" || body.glossary.length > 8_000)) return json({ error: "Glossary가 너무 깁니다." }, 400);
 
     const items = await translateChunk({
       targetLanguageCode: language.code,
@@ -108,12 +79,14 @@ export async function POST(request: Request) {
       cues: body.cues,
       contextBefore: (body.contextBefore as Array<{ id: number; text: string }> | undefined) ?? [],
       contextAfter: (body.contextAfter as Array<{ id: number; text: string }> | undefined) ?? []
-    });
+    }, apiKey);
 
     return json({ items });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "번역 요청 처리 중 오류가 발생했습니다.";
-    const missingKey = message.includes("OPENAI_API_KEY");
-    return json({ error: message }, missingKey ? 503 : 500);
+    const message = error instanceof Error ? error.message : "번역 요청 처리 중 문제가 발생했습니다.";
+    const status = /한도|속도 제한/.test(message) ? 429 : /권한/.test(message) ? 403 : /API Key|키/.test(message) ? 401 : 500;
+    const response = json({ error: message }, status);
+    if (status === 401) response.cookies.set(OPENAI_CREDENTIAL_COOKIE, "", { ...secureCookieOptions, maxAge: 0 });
+    return response;
   }
 }

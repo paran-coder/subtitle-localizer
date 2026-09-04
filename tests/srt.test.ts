@@ -143,7 +143,7 @@ test("CJK 자막은 더 짧은 줄 길이 기준으로 QA한다", () => {
   assert.ok(analyzeLocalizedCueQuality(cue, "ko").warnings.includes("한 줄이 길 수 있습니다."));
 });
 
-test("v1.3.0 현지화 도전 샘플은 30개 cue와 핵심 테스트 문구를 포함한다", () => {
+test("현지화 도전 샘플은 30개 cue와 핵심 테스트 문구를 포함한다", () => {
   const challenge = readFileSync(join(testDir, "../samples/localization-challenge-en.srt"), "utf8");
   const parsed = parseSrt(challenge);
   assert.equal(parsed.length, 30);

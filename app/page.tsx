@@ -29,7 +29,7 @@ type YouTubeCaptionTrack = {
   isDraft: boolean;
   lastUpdated?: string;
 };
-type YouTubeStatus = "checking" | "unavailable" | "disconnected" | "connected";
+type YouTubeStatus = "checking" | "server-unavailable" | "unconfigured" | "disconnected" | "connected";
 
 type UploadState = { status: "idle" | "uploading" | "done" | "error"; error?: string };
 
@@ -77,7 +77,6 @@ async function translateLanguage(
   cues: SubtitleCue[],
   style: TranslationStyle,
   glossary: string,
-  accessKey: string,
   cache: Map<number, string>,
   onProgress: (completed: number, total: number) => void
 ): Promise<SubtitleCue[]> {
@@ -102,10 +101,7 @@ async function translateLanguage(
 
     const response = await fetch("/api/translate", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(accessKey.trim() ? { "x-subtitle-access-key": accessKey.trim() } : {})
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         languageCode,
         style,
@@ -136,7 +132,13 @@ export default function Home() {
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>(["ko", "ja", "es"]);
   const [style, setStyle] = useState<TranslationStyle>("natural");
   const [glossary, setGlossary] = useState("");
-  const [accessKey, setAccessKey] = useState("");
+  const [openAiKey, setOpenAiKey] = useState("");
+  const [openAiConfigured, setOpenAiConfigured] = useState(false);
+  const [openAiServerConfigured, setOpenAiServerConfigured] = useState(true);
+  const [rememberOpenAiKey, setRememberOpenAiKey] = useState(false);
+  const [showOpenAiKey, setShowOpenAiKey] = useState(false);
+  const [openAiSaving, setOpenAiSaving] = useState(false);
+  const [openAiMessage, setOpenAiMessage] = useState("");
   const [progress, setProgress] = useState<Record<string, LanguageProgress>>({});
   const [results, setResults] = useState<Record<string, SubtitleCue[]>>({});
   const [activePreview, setActivePreview] = useState<string>("source");
@@ -149,6 +151,12 @@ export default function Home() {
   const [importingCaption, setImportingCaption] = useState(false);
 
   const [youtubeStatus, setYoutubeStatus] = useState<YouTubeStatus>("checking");
+  const [googleClientId, setGoogleClientId] = useState("");
+  const [googleClientSecret, setGoogleClientSecret] = useState("");
+  const [rememberGoogle, setRememberGoogle] = useState(false);
+  const [showGoogleSecret, setShowGoogleSecret] = useState(false);
+  const [googleConfigSaving, setGoogleConfigSaving] = useState(false);
+  const [youtubeRedirectUri, setYoutubeRedirectUri] = useState("");
   const [youtubeChannel, setYoutubeChannel] = useState<YouTubeChannel | null>(null);
   const [youtubeVideos, setYoutubeVideos] = useState<YouTubeVideo[]>([]);
   const [youtubeLoading, setYoutubeLoading] = useState(false);
@@ -187,24 +195,50 @@ export default function Home() {
 
   useEffect(() => {
     let cancelled = false;
-    async function checkYouTube() {
-      try {
-        const response = await fetch("/api/youtube/status", { cache: "no-store" });
-        const payload = (await response.json()) as { configured?: boolean; connected?: boolean };
-        if (cancelled) return;
-        setYoutubeStatus(!payload.configured ? "unavailable" : payload.connected ? "connected" : "disconnected");
-      } catch {
-        if (!cancelled) setYoutubeStatus("unavailable");
+
+    async function checkConnections() {
+      const [openAiResult, youtubeResult] = await Promise.allSettled([
+        fetch("/api/openai/credential", { cache: "no-store" }),
+        fetch("/api/youtube/status", { cache: "no-store" })
+      ]);
+
+      if (cancelled) return;
+
+      if (openAiResult.status === "fulfilled") {
+        const payload = (await openAiResult.value.json()) as { serverConfigured?: boolean; configured?: boolean; remember?: boolean };
+        if (!cancelled) {
+          setOpenAiServerConfigured(Boolean(payload.serverConfigured));
+          setOpenAiConfigured(Boolean(payload.configured));
+          setRememberOpenAiKey(Boolean(payload.remember));
+        }
+      } else {
+        setOpenAiServerConfigured(false);
+      }
+
+      if (youtubeResult.status === "fulfilled") {
+        const payload = (await youtubeResult.value.json()) as { serverConfigured?: boolean; configured?: boolean; connected?: boolean; remember?: boolean; redirectUri?: string };
+        if (!cancelled) {
+          setYoutubeRedirectUri(payload.redirectUri ?? "");
+          setRememberGoogle(Boolean(payload.remember));
+          setYoutubeStatus(!payload.serverConfigured
+            ? "server-unavailable"
+            : !payload.configured
+              ? "unconfigured"
+              : payload.connected ? "connected" : "disconnected");
+        }
+      } else {
+        setYoutubeStatus("server-unavailable");
       }
     }
-    void checkYouTube();
+    void checkConnections();
 
     const query = new URLSearchParams(window.location.search).get("youtube");
     if (query === "connected") setYoutubeMessage("YouTube 채널이 연결되었습니다.");
     if (query === "denied") setYoutubeMessage("YouTube 연결이 취소되었습니다.");
     if (query === "invalid-state") setYoutubeMessage("YouTube 인증 상태를 확인하지 못했습니다. 다시 연결해 주세요.");
-    if (query === "token-error") setYoutubeMessage("Google 인증 토큰을 발급받지 못했습니다.");
-    if (query === "not-configured") setYoutubeMessage("YouTube OAuth 환경변수를 먼저 설정해 주세요.");
+    if (query === "token-error") setYoutubeMessage("Google OAuth Client 설정 또는 승인 상태를 확인해 주세요.");
+    if (query === "client-not-configured") setYoutubeMessage("본인의 Google OAuth Client ID와 Secret을 먼저 연결해 주세요.");
+    if (query === "server-not-configured") setYoutubeMessage("배포 서버에 APP_SESSION_SECRET 설정이 필요합니다.");
     if (query) window.history.replaceState({}, "", window.location.pathname);
     return () => { cancelled = true; };
   }, []);
@@ -367,6 +401,110 @@ export default function Home() {
     setGlossary(next);
   }
 
+  async function persistOpenAiKey(nextRemember = rememberOpenAiKey): Promise<boolean> {
+    const key = openAiKey.trim();
+    if (!key || openAiSaving) {
+      setOpenAiMessage("OpenAI API Key를 입력해 주세요.");
+      return false;
+    }
+    setOpenAiSaving(true);
+    setOpenAiMessage("");
+    try {
+      const response = await fetch("/api/openai/credential", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: key, remember: nextRemember }),
+        cache: "no-store"
+      });
+      const payload = (await response.json()) as { error?: string; configured?: boolean; remember?: boolean };
+      if (!response.ok) throw new Error(payload.error || "OpenAI API Key를 저장하지 못했습니다.");
+      setOpenAiConfigured(true);
+      setRememberOpenAiKey(Boolean(payload.remember));
+      setOpenAiKey("");
+      setOpenAiMessage(payload.remember
+        ? "이 브라우저의 암호화된 HttpOnly 쿠키에 OpenAI 키를 기억합니다."
+        : "현재 브라우저 세션의 암호화된 HttpOnly 쿠키에서만 OpenAI 키를 사용합니다.");
+      return true;
+    } catch (error) {
+      setOpenAiMessage(error instanceof Error ? error.message : "OpenAI API Key를 저장하지 못했습니다.");
+      return false;
+    } finally {
+      setOpenAiSaving(false);
+    }
+  }
+
+  async function updateOpenAiRemember(remember: boolean) {
+    setRememberOpenAiKey(remember);
+    if (!openAiConfigured) return;
+    try {
+      const response = await fetch("/api/openai/credential", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ remember }),
+        cache: "no-store"
+      });
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(payload.error || "기억 설정을 변경하지 못했습니다.");
+      setOpenAiMessage(remember ? "이 브라우저에 암호화해 기억합니다." : "브라우저 세션이 끝나면 키가 삭제됩니다.");
+    } catch (error) {
+      setOpenAiMessage(error instanceof Error ? error.message : "기억 설정을 변경하지 못했습니다.");
+    }
+  }
+
+  async function forgetOpenAiKey() {
+    await fetch("/api/openai/credential", { method: "DELETE" });
+    setOpenAiConfigured(false);
+    setOpenAiKey("");
+    setRememberOpenAiKey(false);
+    setOpenAiMessage("저장된 OpenAI 키를 지웠습니다.");
+  }
+
+  async function saveGoogleConfig(connectAfter = true) {
+    const clientId = googleClientId.trim();
+    const clientSecret = googleClientSecret.trim();
+    if (!clientId || !clientSecret || googleConfigSaving) {
+      setYoutubeMessage("Google OAuth Client ID와 Client Secret을 모두 입력해 주세요.");
+      return;
+    }
+    setGoogleConfigSaving(true);
+    setYoutubeMessage("");
+    try {
+      const response = await fetch("/api/youtube/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId, clientSecret, remember: rememberGoogle }),
+        cache: "no-store"
+      });
+      const payload = (await response.json()) as { error?: string; redirectUri?: string };
+      if (!response.ok) throw new Error(payload.error || "Google OAuth 설정을 저장하지 못했습니다.");
+      setYoutubeRedirectUri(payload.redirectUri ?? youtubeRedirectUri);
+      setGoogleClientSecret("");
+      setYoutubeStatus("disconnected");
+      setYoutubeMessage("사용자 Google Cloud 프로젝트 설정을 저장했습니다.");
+      if (connectAfter) window.location.assign("/api/youtube/oauth/start");
+    } catch (error) {
+      setYoutubeMessage(error instanceof Error ? error.message : "Google OAuth 설정을 저장하지 못했습니다.");
+    } finally {
+      setGoogleConfigSaving(false);
+    }
+  }
+
+  async function forgetGoogleConfig() {
+    await fetch("/api/youtube/config", { method: "DELETE" });
+    setGoogleClientId("");
+    setGoogleClientSecret("");
+    setRememberGoogle(false);
+    setYoutubeStatus("unconfigured");
+    setYoutubeChannel(null);
+    setYoutubeVideos([]);
+    setSelectedVideoId("");
+    setSourceVideoId("");
+    setCaptionTracks([]);
+    setSelectedCaptionId("");
+    setSourceMode("file");
+    setYoutubeMessage("저장된 Google OAuth 설정과 YouTube 연결을 지웠습니다.");
+  }
+
   async function runOneLanguage(code: string) {
     const totalChunks = chunks.length;
     const cache = partialTranslationsRef.current[code] ?? new Map<number, string>();
@@ -378,7 +516,7 @@ export default function Home() {
     }));
 
     try {
-      const translatedCues = await translateLanguage(code, cues, style, glossary, accessKey, cache, (completed, total) => {
+      const translatedCues = await translateLanguage(code, cues, style, glossary, cache, (completed, total) => {
         setProgress((current) => ({
           ...current,
           [code]: { ...current[code], completedChunks: completed, totalChunks: total }
@@ -391,12 +529,17 @@ export default function Home() {
       }));
       setActivePreview((current) => current === "source" ? code : current);
     } catch (error) {
+      const message = error instanceof Error ? error.message : "번역 실패";
+      if (/OpenAI API Key|API Key/.test(message)) {
+        setOpenAiConfigured(false);
+        setOpenAiMessage(message);
+      }
       setProgress((current) => ({
         ...current,
         [code]: {
           ...current[code],
           status: "error",
-          error: error instanceof Error ? error.message : "번역 실패"
+          error: message
         }
       }));
     }
@@ -411,6 +554,16 @@ export default function Home() {
 
   async function startTranslation() {
     if (!cues.length || !selectedLanguages.length || running) return;
+    if (!openAiConfigured) {
+      if (openAiKey.trim()) {
+        const saved = await persistOpenAiKey();
+        if (!saved) return;
+      } else {
+        setOpenAiMessage("번역 비용을 본인 계정으로 처리하려면 OpenAI API Key를 먼저 연결해 주세요.");
+        document.getElementById("api-connections")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+    }
     setRunning(true);
     setResults({});
     setUploadState({});
@@ -537,15 +690,12 @@ export default function Home() {
         <div className="topbar-inner">
           <a className="brand" href="#top" aria-label="Subtitle Localizer 홈">
             <span className="brand-symbol" aria-hidden="true">S</span>
-            <span><strong>Subtitle Localizer</strong><small>v1.3.0</small></span>
+            <span><strong>Subtitle Localizer</strong><small>v1.4.0</small></span>
           </a>
           <div className="topbar-actions">
             <span className="privacy-label">파일을 서버에 저장하지 않습니다</span>
-            {youtubeStatus === "connected" ? (
-              <a className="quiet-button" href="#youtube-title">YouTube 연결됨</a>
-            ) : youtubeStatus === "disconnected" ? (
-              <a className="quiet-button" href="/api/youtube/oauth/start">YouTube 연결</a>
-            ) : null}
+            <a className="quiet-button" href="#api-connections">{openAiConfigured ? "OpenAI 연결됨" : "API 연결"}</a>
+            {youtubeStatus === "connected" && <a className="quiet-button" href="#youtube-title">YouTube 연결됨</a>}
           </div>
         </div>
       </header>
@@ -560,6 +710,116 @@ export default function Home() {
           <span><strong>17</strong> 지원 언어</span>
           <span><strong>100%</strong> 타임코드 보존</span>
           <span><strong>YouTube</strong> 자막 직접 가져오기</span>
+        </div>
+      </section>
+
+      <section className="api-connections" id="api-connections" aria-labelledby="connections-title">
+        <div className="connections-heading">
+          <div>
+            <span className="eyebrow">USER-PAID API CONNECTIONS</span>
+            <h2 id="connections-title">비용이 생기는 API는 각자의 계정으로</h2>
+            <p>이 배포는 호스팅만 제공합니다. OpenAI 사용료와 YouTube API quota는 입력한 사용자 계정·프로젝트에서 사용됩니다.</p>
+          </div>
+          <span className="cost-owner-badge">외부 API 비용 · 사용자 부담</span>
+        </div>
+
+        <div className="connection-grid">
+          <article className={`connection-card ${openAiConfigured ? "is-ready" : ""}`}>
+            <div className="connection-card-head">
+              <div><span className="service-kicker">OPENAI · BYOK</span><h3>내 OpenAI API Key</h3></div>
+              <span className="connection-status">{openAiConfigured ? "키 저장됨" : "연결 필요"}</span>
+            </div>
+            <p className="connection-description">번역 요청은 이 키로 실행되며 사용료는 해당 OpenAI 계정에 청구됩니다. 저장 시 키는 암호화된 HttpOnly 쿠키로 보호되며 실제 유효성은 첫 번역 요청에서 확인됩니다.</p>
+            {!openAiServerConfigured && <div className="setup-notice"><strong>배포 설정 1개가 필요합니다</strong><span>과금 키가 아니라 자격 증명 암호화용 <code>APP_SESSION_SECRET</code>만 Vercel에 설정하면 됩니다.</span></div>}
+            <div className="secret-input-row">
+              <input
+                className="text-input"
+                type={showOpenAiKey ? "text" : "password"}
+                autoComplete="off"
+                spellCheck={false}
+                value={openAiKey}
+                disabled={!openAiServerConfigured}
+                onChange={(event) => { setOpenAiKey(event.target.value); setOpenAiMessage(""); }}
+                placeholder={openAiConfigured ? "새 키로 교체하려면 입력" : "OpenAI API Key"}
+                aria-label="OpenAI API Key"
+              />
+              <button type="button" className="input-action" onClick={() => setShowOpenAiKey((value) => !value)}>{showOpenAiKey ? "숨기기" : "보기"}</button>
+            </div>
+            <label className="remember-row">
+              <input
+                type="checkbox"
+                disabled={!openAiServerConfigured}
+                checked={rememberOpenAiKey}
+                onChange={(event) => {
+                  const checked = event.target.checked;
+                  void updateOpenAiRemember(checked);
+                }}
+              />
+              <span><strong>이 브라우저에 기억하기</strong><small>켜면 암호화된 지속 HttpOnly 쿠키로 기억합니다. 끄면 브라우저 세션에서만 유지됩니다.</small></span>
+            </label>
+            <div className="connection-actions">
+              <button className="dark-button" type="button" disabled={!openAiServerConfigured || openAiSaving || !openAiKey.trim()} onClick={() => void persistOpenAiKey()}>{openAiSaving ? "저장 중…" : openAiConfigured ? "키 교체" : "키 연결"}</button>
+              {openAiConfigured && <button className="text-button" type="button" onClick={() => void forgetOpenAiKey()}>키 지우기</button>}
+            </div>
+            {openAiMessage && <p className="connection-message">{openAiMessage}</p>}
+          </article>
+
+          <article className={`connection-card ${youtubeStatus === "connected" || youtubeStatus === "disconnected" ? "is-ready" : ""}`}>
+            <div className="connection-card-head">
+              <div><span className="service-kicker">GOOGLE CLOUD · BYOC</span><h3>내 YouTube API 프로젝트</h3></div>
+              <span className="connection-status">{youtubeStatus === "checking" ? "확인 중" : youtubeStatus === "connected" ? "YouTube 연결됨" : youtubeStatus === "disconnected" ? "OAuth 준비됨" : "설정 필요"}</span>
+            </div>
+            <p className="connection-description">본인이 만든 Google Cloud OAuth Client를 사용합니다. YouTube Data API quota도 그 프로젝트에서 차감됩니다.</p>
+
+            {youtubeStatus === "checking" ? (
+              <div className="setup-notice"><strong>연결 상태 확인 중</strong><span>저장된 사용자 Google 프로젝트와 YouTube 연결 상태를 확인하고 있습니다.</span></div>
+            ) : youtubeStatus === "server-unavailable" ? (
+              <div className="setup-notice"><strong>배포 설정 1개가 필요합니다</strong><span>운영자는 과금 키가 아닌 세션 암호화용 <code>APP_SESSION_SECRET</code>만 Vercel에 설정하면 됩니다.</span></div>
+            ) : youtubeStatus === "connected" ? (
+              <div className="connected-summary">
+                <strong>{youtubeChannel?.title || "내 YouTube 계정이 연결되었습니다"}</strong>
+                <span>Google Client Secret과 OAuth 토큰은 암호화된 HttpOnly 세션으로 보호됩니다.</span>
+                <div className="connection-actions">
+                  <button className="dark-button" type="button" onClick={() => void disconnectYouTube()}>YouTube 연결 해제</button>
+                  <button className="text-button" type="button" onClick={() => void forgetGoogleConfig()}>Google 설정 지우기</button>
+                </div>
+              </div>
+            ) : youtubeStatus === "disconnected" ? (
+              <div className="connected-summary">
+                <strong>내 Google Cloud OAuth Client가 준비되었습니다.</strong>
+                <span>아래 버튼으로 내 YouTube 계정을 승인하면 됩니다.</span>
+                <div className="connection-actions">
+                  <a className="primary-button inline-primary" href="/api/youtube/oauth/start">YouTube 연결</a>
+                  <button className="text-button" type="button" onClick={() => void forgetGoogleConfig()}>다른 Google 프로젝트 사용</button>
+                </div>
+              </div>
+            ) : (
+              <div className="google-config-form">
+                <div className="field-block compact">
+                  <div className="field-row"><label htmlFor="google-client-id">Google OAuth Client ID</label><span>사용자 프로젝트</span></div>
+                  <input id="google-client-id" className="text-input" value={googleClientId} onChange={(event) => setGoogleClientId(event.target.value)} autoComplete="off" spellCheck={false} placeholder="...apps.googleusercontent.com" />
+                </div>
+                <div className="field-block compact">
+                  <div className="field-row"><label htmlFor="google-client-secret">Google OAuth Client Secret</label><span>JS 저장 안 함</span></div>
+                  <div className="secret-input-row">
+                    <input id="google-client-secret" className="text-input" type={showGoogleSecret ? "text" : "password"} value={googleClientSecret} onChange={(event) => setGoogleClientSecret(event.target.value)} autoComplete="off" spellCheck={false} placeholder="Google Client Secret" />
+                    <button type="button" className="input-action" onClick={() => setShowGoogleSecret((value) => !value)}>{showGoogleSecret ? "숨기기" : "보기"}</button>
+                  </div>
+                </div>
+                <label className="remember-row">
+                  <input type="checkbox" checked={rememberGoogle} onChange={(event) => setRememberGoogle(event.target.checked)} />
+                  <span><strong>이 브라우저에서 Google 연결 유지</strong><small>Client ID·Secret·토큰을 암호화된 HttpOnly 쿠키로 유지합니다. JavaScript에서는 다시 읽을 수 없습니다.</small></span>
+                </label>
+                {youtubeRedirectUri && (
+                  <div className="redirect-box"><span>Google Cloud Authorized redirect URI</span><code>{youtubeRedirectUri}</code><button type="button" onClick={() => void navigator.clipboard?.writeText(youtubeRedirectUri)}>복사</button></div>
+                )}
+                <button className="primary-button full-width" type="button" disabled={googleConfigSaving || !googleClientId.trim() || !googleClientSecret.trim()} onClick={() => void saveGoogleConfig(true)}>
+                  {googleConfigSaving ? "설정 저장 중…" : "저장하고 YouTube 연결"}
+                </button>
+              </div>
+            )}
+            {youtubeMessage && <p className="connection-message">{youtubeMessage}</p>}
+          </article>
         </div>
       </section>
 
@@ -616,7 +876,8 @@ export default function Home() {
             ) : (
               <div className="youtube-source-panel">
                 {youtubeStatus === "checking" && <p className="source-empty">YouTube 연결 상태를 확인하고 있습니다.</p>}
-                {youtubeStatus === "unavailable" && <p className="source-empty">Vercel에 Google OAuth 환경변수를 설정하면 YouTube 자막 가져오기를 사용할 수 있습니다.</p>}
+                {youtubeStatus === "server-unavailable" && <p className="source-empty">배포 서버에 세션 암호화용 APP_SESSION_SECRET 설정이 필요합니다.</p>}
+                {youtubeStatus === "unconfigured" && <div className="source-empty"><strong>본인의 Google Cloud OAuth Client를 먼저 설정해 주세요.</strong><a className="primary-button source-connect" href="#api-connections">API 연결 설정</a></div>}
                 {youtubeStatus === "disconnected" && (
                   <div className="source-empty"><strong>YouTube 채널을 먼저 연결해 주세요.</strong><a className="primary-button source-connect" href="/api/youtube/oauth/start">YouTube 연결</a></div>
                 )}
@@ -715,10 +976,9 @@ export default function Home() {
                   <textarea id="glossary" rows={5} maxLength={8000} disabled={!cues.length || running} value={glossary} onChange={(event) => changeGlossary(event.target.value)} placeholder={"OpenAI = OpenAI\nChatGPT = ChatGPT\nprompt = 프롬프트"} />
                   <small className="field-help">브랜드명·인명·전문용어 규칙을 한 줄씩 입력합니다.</small>
                 </div>
-                <div className="field-block compact">
-                  <div className="field-row"><label htmlFor="access-key">배포 보호 키</label><span>운영 배포</span></div>
-                  <input id="access-key" className="text-input" type="password" autoComplete="off" maxLength={200} disabled={!cues.length || running} value={accessKey} onChange={(event) => setAccessKey(event.target.value)} placeholder="SUBTITLE_APP_ACCESS_KEY" />
-                  <small className="field-help">OpenAI 키가 아니라 이 앱의 공개 API 호출을 막는 보호용 키입니다.</small>
+                <div className="field-block compact cost-note-card">
+                  <div className="field-row"><label>API 비용</label><span>사용자 부담</span></div>
+                  <p>번역은 위에 입력한 사용자 OpenAI API Key로만 실행됩니다. 운영자 OpenAI 키는 사용하지 않습니다.</p>
                 </div>
               </div>
             </details>
@@ -728,6 +988,7 @@ export default function Home() {
                 <span>{selectedLanguages.length}개 언어</span>
                 <span>예상 {expectedRequests.toLocaleString()} 요청</span>
                 <span>실패 시 완료 청크부터 이어서 재시도</span>
+                <span>{openAiConfigured ? "내 OpenAI 키 사용" : "OpenAI 키 연결 필요"}</span>
               </div>
               <button className="primary-button" type="button" disabled={!cues.length || !selectedLanguages.length || running} onClick={() => void startTranslation()}>
                 {running ? "번역하고 있습니다…" : "번역 시작"}
@@ -807,8 +1068,11 @@ export default function Home() {
             {youtubeMessage && <p className="feedback neutral side-feedback">{youtubeMessage}</p>}
 
             {youtubeStatus === "checking" && <p className="side-empty">YouTube 연결 상태를 확인하고 있습니다.</p>}
-            {youtubeStatus === "unavailable" && (
-              <div className="side-empty"><strong>OAuth 설정이 필요합니다</strong><p>로컬 번역과 다운로드는 그대로 사용할 수 있습니다. Vercel에 Google OAuth 환경변수를 추가하면 이 기능이 활성화됩니다.</p></div>
+            {youtubeStatus === "server-unavailable" && (
+              <div className="side-empty"><strong>배포 세션 암호화 설정 필요</strong><p>과금 자격 증명은 필요하지 않습니다. Vercel에 APP_SESSION_SECRET만 설정합니다.</p></div>
+            )}
+            {youtubeStatus === "unconfigured" && (
+              <div className="side-empty"><strong>내 Google 프로젝트 연결</strong><p>YouTube quota가 본인 프로젝트에서 사용되도록 Client ID/Secret을 설정합니다.</p><a className="dark-button full" href="#api-connections">Google 설정하기</a></div>
             )}
             {youtubeStatus === "disconnected" && (
               <div className="side-empty"><strong>내 채널과 연결</strong><p>영상 목록을 불러오고 자막을 올릴 때만 YouTube 권한을 사용합니다.</p><a className="dark-button full" href="/api/youtube/oauth/start">YouTube 연결</a></div>
@@ -876,7 +1140,7 @@ export default function Home() {
         </aside>
       </div>
 
-      <footer className="footer">Subtitle Localizer v1.3.0 · SRT 구조를 유지하는 다국어 자막 작업 도구</footer>
+      <footer className="footer">Subtitle Localizer v1.4.0 · 사용자 API 비용 분리형 다국어 자막 작업 도구</footer>
     </main>
   );
 }

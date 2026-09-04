@@ -19,7 +19,7 @@ Source: `demo-en.srt`
 
 These fixtures are quality references, not hard-coded model outputs. Automated tests verify SRT structure and timing preservation, while live model wording may vary.
 
-## v1.3.0 localization-challenge-en.srt
+## localization-challenge-en.srt
 `localization-challenge-en.srt`는 실제 번역 프롬프트 튜닝을 위한 난이도 샘플이다.
 
 포함한 검증 요소:

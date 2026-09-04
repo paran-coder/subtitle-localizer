@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listCaptionTracks } from "@/lib/youtube";
-import { refreshYouTubeSession, sealSession, unsealSession, YOUTUBE_SESSION_COOKIE, youtubeConfig, youtubeCookieOptions } from "@/lib/youtube-auth";
+import { refreshYouTubeSession, sealSession, unsealClientConfig, unsealSession, YOUTUBE_CONFIG_COOKIE, YOUTUBE_SESSION_COOKIE, youtubeCookieOptions, youtubeRememberCookieOptions } from "@/lib/youtube-auth";
+import { appSessionSecret } from "@/lib/secure-session";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
-  const config = youtubeConfig();
+  const server = appSessionSecret();
+  const configCookie = request.cookies.get(YOUTUBE_CONFIG_COOKIE)?.value;
   const cookie = request.cookies.get(YOUTUBE_SESSION_COOKIE)?.value;
-  if (!config.configured) return NextResponse.json({ error: "YouTube OAuth가 설정되지 않았습니다." }, { status: 503 });
+  if (!server.configured) return NextResponse.json({ error: "배포 서버의 YouTube 세션 암호화 설정이 필요합니다." }, { status: 503 });
+  if (!configCookie) return NextResponse.json({ error: "본인의 Google OAuth Client 설정이 필요합니다." }, { status: 401 });
   if (!cookie) return NextResponse.json({ error: "YouTube 연결이 필요합니다." }, { status: 401 });
 
   let videoId = "";
@@ -23,15 +26,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const original = unsealSession(cookie, config.sessionSecret);
-    const session = await refreshYouTubeSession(original);
+    const client = unsealClientConfig(configCookie, server.secret);
+    const original = unsealSession(cookie, server.secret);
+    const session = await refreshYouTubeSession(original, client);
     const tracks = await listCaptionTracks(session.accessToken, videoId);
     const response = NextResponse.json({ tracks }, { headers: { "Cache-Control": "no-store" } });
     if (session.accessToken !== original.accessToken) {
-      response.cookies.set(YOUTUBE_SESSION_COOKIE, sealSession(session, config.sessionSecret), {
-        ...youtubeCookieOptions,
-        maxAge: 30 * 24 * 60 * 60
-      });
+      response.cookies.set(YOUTUBE_SESSION_COOKIE, sealSession(session, server.secret), youtubeRememberCookieOptions(client.remember));
     }
     return response;
   } catch (error) {

@@ -1,12 +1,15 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { appSessionSecret } from "@/lib/secure-session";
 import {
   oauthRedirectUri,
   sealSession,
+  unsealClientConfig,
+  YOUTUBE_CONFIG_COOKIE,
   YOUTUBE_SESSION_COOKIE,
   YOUTUBE_STATE_COOKIE,
-  youtubeConfig,
-  youtubeCookieOptions
+  youtubeCookieOptions,
+  youtubeRememberCookieOptions
 } from "@/lib/youtube-auth";
 
 export const runtime = "nodejs";
@@ -25,53 +28,57 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(home);
   }
 
-  const config = youtubeConfig();
+  const server = appSessionSecret();
+  const configCookie = request.cookies.get(YOUTUBE_CONFIG_COOKIE)?.value ?? "";
   const code = request.nextUrl.searchParams.get("code") ?? "";
   const state = request.nextUrl.searchParams.get("state") ?? "";
   const expectedState = request.cookies.get(YOUTUBE_STATE_COOKIE)?.value ?? "";
-  if (!config.configured || !code || !state || !expectedState || !sameState(state, expectedState)) {
+  if (!server.configured || !configCookie || !code || !state || !expectedState || !sameState(state, expectedState)) {
     home.searchParams.set("youtube", "invalid-state");
     return NextResponse.redirect(home);
   }
 
-  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: config.clientId,
-      client_secret: config.clientSecret,
-      code,
-      grant_type: "authorization_code",
-      redirect_uri: oauthRedirectUri(request.url)
-    }),
-    cache: "no-store"
-  });
+  try {
+    const client = unsealClientConfig(configCookie, server.secret);
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: client.clientId,
+        client_secret: client.clientSecret,
+        code,
+        grant_type: "authorization_code",
+        redirect_uri: oauthRedirectUri(request.url)
+      }),
+      cache: "no-store"
+    });
 
-  const token = (await tokenResponse.json()) as {
-    access_token?: string;
-    refresh_token?: string;
-    expires_in?: number;
-    scope?: string;
-    error_description?: string;
-  };
-  if (!tokenResponse.ok || !token.access_token) {
+    const token = (await tokenResponse.json()) as {
+      access_token?: string;
+      refresh_token?: string;
+      expires_in?: number;
+      scope?: string;
+      error_description?: string;
+    };
+    if (!tokenResponse.ok || !token.access_token) {
+      home.searchParams.set("youtube", "token-error");
+      return NextResponse.redirect(home);
+    }
+
+    const session = sealSession({
+      accessToken: token.access_token,
+      refreshToken: token.refresh_token,
+      expiresAt: Date.now() + (token.expires_in ?? 3600) * 1000,
+      scope: token.scope
+    }, server.secret);
+
+    home.searchParams.set("youtube", "connected");
+    const response = NextResponse.redirect(home);
+    response.cookies.set(YOUTUBE_SESSION_COOKIE, session, youtubeRememberCookieOptions(client.remember));
+    response.cookies.set(YOUTUBE_STATE_COOKIE, "", { ...youtubeCookieOptions, maxAge: 0 });
+    return response;
+  } catch {
     home.searchParams.set("youtube", "token-error");
     return NextResponse.redirect(home);
   }
-
-  const session = sealSession({
-    accessToken: token.access_token,
-    refreshToken: token.refresh_token,
-    expiresAt: Date.now() + (token.expires_in ?? 3600) * 1000,
-    scope: token.scope
-  }, config.sessionSecret);
-
-  home.searchParams.set("youtube", "connected");
-  const response = NextResponse.redirect(home);
-  response.cookies.set(YOUTUBE_SESSION_COOKIE, session, {
-    ...youtubeCookieOptions,
-    maxAge: 30 * 24 * 60 * 60
-  });
-  response.cookies.set(YOUTUBE_STATE_COOKIE, "", { ...youtubeCookieOptions, maxAge: 0 });
-  return response;
 }

@@ -1,69 +1,61 @@
-# Subtitle Localizer v1.3.0 — Checklist
+# Subtitle Localizer v1.4.0 — Checklist
 
-## 0. Documentation-first
-- [x] `context-notes.md` updated before v1.3.0 implementation
-- [x] `checklist.md` updated before v1.3.0 implementation
-- [x] `README.md` updated before v1.3.0 implementation
-- [x] `User manual.md` updated before v1.3.0 implementation
+## Phase 0 — Required docs
+- [x] context-notes.md created before implementation
+- [x] checklist.md created before implementation
+- [x] README.md created before implementation
+- [x] User manual.md created before implementation
 
-## 1. Source / deployment QA — 9.2/10
-- [x] Review v1.2.0 source
-- [x] Preserve `SUBTITLE_APP_ACCESS_KEY` API protection
-- [x] Attempt supplied production URL via web fetch
-- [x] Attempt supplied production URL via Vercel fetch
-- [x] Attempt supplied production URL via container network
-- [ ] Live DOM/pixel QA — remote access unavailable in this environment
+## Phase 1 — OpenAI BYOK
+- [x] Remove operator `OPENAI_API_KEY` dependency
+- [x] Remove `SUBTITLE_APP_ACCESS_KEY`
+- [x] Add user API-key input UI
+- [x] Default to session-only credential retention
+- [x] Add optional “이 브라우저에 기억하기” behavior
+- [x] Store remembered key only as AES-256-GCM encrypted HttpOnly cookie
+- [x] Ensure server never writes/logs the key to DB/files/repository/responses
+- [x] Improve invalid key / account-limit / permission messages
+- [x] Clarify that key validity is confirmed on the first translation request
 
-## 2. YouTube direct caption import — 9.7/10
-- [x] Video selection for source caption
-- [x] Caption track list via YouTube `captions.list`
-- [x] English track preference
-- [x] ASR/draft metadata shown in UI
-- [x] Empty state for video without caption tracks
-- [x] Caption download via `tfmt=srt`
-- [x] Downloaded SRT validated server-side
-- [x] Imported SRT sent through existing source validation
-- [x] Imported source connected to translation/review/download pipeline
-- [x] Source video prefilled as upload target after import
-- [x] List/download internal endpoints changed to POST to reduce accidental quota calls
-- [x] Caption list/download/upload quota guidance shown
-- [ ] Real owned-video caption import — requires deployed Google OAuth credentials
+## Phase 2 — Google/YouTube BYOC
+- [x] Remove operator Google OAuth client dependency
+- [x] Add user Google Client ID + Client Secret setup UI
+- [x] Keep Client Secret out of JavaScript storage
+- [x] Encrypt BYOC credentials server-side in HttpOnly cookies
+- [x] OAuth start/callback uses the user's OAuth client
+- [x] Refresh token uses the user's OAuth client
+- [x] Video/caption list/download/upload uses the user's project/session
+- [x] Add disconnect and complete Google-setting removal behavior
+- [x] Show/copy the exact Authorized redirect URI
 
-## 3. UI / UX polish — 9.7/10
-- [x] File / YouTube source tabs
-- [x] Primary flow remains first on mobile
-- [x] Karrot/SEED semantic tokens retained
-- [x] 4px rhythm retained
-- [x] no YouTube-red secondary product accent
-- [x] restrained transitions
-- [x] `prefers-reduced-motion`
-- [x] keyboard focus states
-- [x] ARIA tab/radio states
-- [x] connected/disconnected/unconfigured/empty/loading states
+## Phase 3 — UI/UX
+- [x] One clear connection/settings module
+- [x] Clearly identify external API cost ownership
+- [x] Browser remember controls are explicit
+- [x] Sensitive-field visibility toggle/accessibility
+- [x] Reduced-motion preserved
+- [x] Karrot/SEED-inspired token discipline preserved
+- [x] Avoid claiming the operator has zero Vercel platform cost
 
-## 4. Sample / translation quality — 9.8/10
-- [x] 30-cue `localization-challenge-en.srt`
-- [x] cue-spanning sentences
-- [x] idiom test
-- [x] pronoun/localization test
-- [x] short-duration reading-pressure test
-- [x] proper-name preservation test
-- [x] number preservation test
-- [x] multiline cue test
-- [x] UI “30-cue sample” loader
-- [x] public static sample copy
-- [x] automated fixture structure test
-- [ ] Live EN→KO/JA/ES OpenAI output comparison — requires runtime API key
+## Phase 4 — Security / tests
+- [x] OpenAI BYOK architecture tests
+- [x] AES credential-storage behavior tests
+- [x] YouTube BYOC session/config tests
+- [x] Existing SRT tests pass
+- [x] Existing translation validation tests pass
+- [x] Existing YouTube API tests pass
+- [x] TS/TSX syntax transpile check
+- [x] CSS delimiter check
+- [x] No operator paid-API credentials in `.env.example`
+- [x] No localStorage/sessionStorage secret persistence
+- [x] No hardcoded OpenAI `sk-*` key
+- [x] Security headers: nosniff / frame deny / no-referrer / permissions policy
+- [x] Credential/status responses use `Cache-Control: no-store`
+- [ ] Dependency-aware `tsc --noEmit` and Next production build (requires npm registry access in execution environment)
 
-## 5. Final verification — 9.7/10
-- [x] 28/28 automated tests pass
-- [x] 22 TS/TSX files transpile with 0 syntax errors
-- [x] CSS delimiter check passes
-- [x] hard-coded `sk-*` secret check
-- [x] version strings updated to v1.3.0
-- [x] documentation matches implementation
-- [ ] `npm install && npm run typecheck && npm run build` — dependency installation unavailable in this environment
-- [ ] deployed OAuth/caption import/caption upload smoke test
-
-## Overall self-evaluation
-**9.6/10**
+## Phase 5 — Packaging
+- [x] README updated
+- [x] User manual updated
+- [x] Context notes updated
+- [x] Checklist final state updated
+- [x] Final ZIP created
