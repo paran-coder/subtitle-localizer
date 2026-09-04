@@ -1,11 +1,26 @@
 import type { TranslationItem, TranslationStyle } from "./types";
 
 const STYLE_INSTRUCTIONS: Record<TranslationStyle, string> = {
-  natural: "Natural subtitle localization for YouTube. Prioritize fluent, idiomatic phrasing and readability while preserving meaning.",
-  faithful: "Stay close to the source meaning and tone. Avoid unnecessary paraphrasing while remaining grammatical in the target language.",
-  concise: "Make the subtitle concise and easy to read within a short on-screen duration. Remove verbal filler only when it does not change meaning.",
-  education: "Prioritize terminology accuracy, conceptual consistency, and clear instructional wording.",
-  business: "Use polished, professional, and appropriately formal wording for business content."
+  natural: "Write natural, idiomatic subtitles that sound native to the target audience. Preserve the source tone without sounding translated.",
+  faithful: "Stay close to the source meaning and tone. Avoid unnecessary paraphrasing while remaining grammatical and natural in the target language.",
+  concise: "Prefer shorter subtitle wording when the same meaning can be preserved. Remove verbal filler only when it does not change intent or tone.",
+  education: "Prioritize terminology accuracy, conceptual consistency, and clear instructional wording. Do not oversimplify technical meaning.",
+  business: "Use polished, professional wording with the same degree of formality as the source. Avoid inflated corporate language."
+};
+
+const LANGUAGE_NOTES: Record<string, string> = {
+  ko: "For Korean: prefer natural subtitle Korean over English word order; omit redundant subjects/pronouns when context makes them clear; keep speech level consistent with the source tone.",
+  ja: "For Japanese: prefer natural Japanese subtitle order; avoid unnecessary explicit pronouns; keep politeness/register consistent and concise.",
+  es: "For Spanish: default to broadly understandable neutral Spanish unless the glossary specifies a locale; avoid expanding simple English into unnecessarily long phrasing.",
+  "pt-BR": "For Brazilian Portuguese: use natural Brazilian usage and preserve conversational tone; avoid European Portuguese wording unless explicitly requested.",
+  "zh-CN": "For Simplified Chinese: use concise natural Mainland-style Simplified Chinese unless context clearly indicates otherwise.",
+  "zh-TW": "For Traditional Chinese: use natural Traditional Chinese and avoid mechanically converting Simplified wording when a more idiomatic expression exists."
+};
+
+export type TranslateCueInput = {
+  id: number;
+  text: string;
+  durationMs?: number;
 };
 
 export type TranslateChunkInput = {
@@ -14,7 +29,7 @@ export type TranslateChunkInput = {
   style: TranslationStyle;
   glossary?: string;
   contextBefore?: Array<{ id: number; text: string }>;
-  cues: Array<{ id: number; text: string }>;
+  cues: TranslateCueInput[];
   contextAfter?: Array<{ id: number; text: string }>;
 };
 
@@ -40,9 +55,7 @@ class OpenAIRequestError extends Error {
 }
 
 function extractOutputText(payload: ResponsesPayload): string {
-  if (typeof payload.output_text === "string" && payload.output_text.trim()) {
-    return payload.output_text;
-  }
+  if (typeof payload.output_text === "string" && payload.output_text.trim()) return payload.output_text;
   for (const item of payload.output ?? []) {
     for (const content of item.content ?? []) {
       if (typeof content.text === "string" && content.text.trim()) return content.text;
@@ -89,20 +102,22 @@ export async function translateChunk(input: TranslateChunkInput): Promise<Transl
 
   const model = process.env.OPENAI_TRANSLATION_MODEL || "gpt-5.6-luna";
   const sourceIds = input.cues.map((cue) => cue.id);
+  const languageNote = LANGUAGE_NOTES[input.targetLanguageCode] ?? "Use idiomatic target-language subtitle conventions rather than source-language word order.";
 
   const instructions = [
-    "You are a professional subtitle localizer.",
+    "You are a professional subtitle localizer for YouTube.",
     `Translate ONLY the cues in the \"cues\" array into ${input.targetLanguageName} (${input.targetLanguageCode}).`,
     "contextBefore and contextAfter are reference context only. Never output them.",
-    "Keep each cue aligned to the same ID. Never merge, split, add, remove, renumber, or reorder cue IDs.",
-    "Return exactly one translated text for every input cue ID.",
-    "Preserve names, brands, URLs, technical identifiers, numbers, and meaningful punctuation unless the target language has a well-established localized form.",
-    "Preserve subtitle formatting tags such as <i>, <b>, and <u>, plus speaker/music markers when present; translate only the human-readable language inside them.",
-    "Translate across cue boundaries with awareness of the surrounding sentence, but keep each returned cue semantically aligned to its source segment.",
-    "Do not add explanations, translator notes, labels, markdown, or quotation marks around subtitle text.",
-    "Keep line breaks only when useful. Prefer at most two subtitle lines.",
+    "Keep every cue aligned to the same ID. Never merge, split, add, remove, renumber, or reorder cue IDs.",
+    "Read across cue boundaries to understand the full sentence, but keep each returned cue semantically aligned to its source segment.",
+    "The optional durationMs is a reading-time hint. Prefer concise phrasing for short cues, but never drop essential meaning just to shorten text.",
+    "Prefer at most two subtitle lines. Do not insert forced line breaks unless they improve readability.",
+    "Preserve names, brands, URLs, technical identifiers, version numbers, quantities, and meaningful punctuation unless there is a well-established localized form.",
+    "Preserve subtitle formatting tags such as <i>, <b>, and <u>, plus speaker/music markers when present; translate only human-readable language inside them.",
+    "Do not add explanations, translator notes, labels, markdown fences, or quotation marks around subtitle text.",
     STYLE_INSTRUCTIONS[input.style],
-    input.glossary?.trim() ? `Glossary / terminology rules:\n${input.glossary.trim()}` : ""
+    languageNote,
+    input.glossary?.trim() ? `Glossary / terminology rules (highest terminology priority):\n${input.glossary.trim()}` : ""
   ].filter(Boolean).join("\n");
 
   const body = {

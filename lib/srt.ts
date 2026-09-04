@@ -177,6 +177,26 @@ export function analyzeCueQuality(cue: SubtitleCue): CueQuality {
   return { id: cue.id, cps, maxLineLength, warnings };
 }
 
+
+export function cueDurationMs(cue: SubtitleCue): number {
+  return timecodeToMs(cue.end) - timecodeToMs(cue.start);
+}
+
+export function analyzeLocalizedCueQuality(cue: SubtitleCue, languageCode?: string): CueQuality {
+  const isCjk = ["ko", "ja", "zh-CN", "zh-TW"].includes(languageCode ?? "");
+  const durationSeconds = Math.max(cueDurationMs(cue) / 1000, 0.001);
+  const visibleText = cue.text.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  const cps = visibleText.length / durationSeconds;
+  const maxLineLength = Math.max(...cue.text.split("\n").map((line) => line.replace(/<[^>]+>/g, "").length));
+  const warnings: string[] = [];
+  const cpsLimit = isCjk ? 18 : 22;
+  const lineLimit = isCjk ? 28 : 48;
+  if (cps > cpsLimit) warnings.push("화면 노출 시간에 비해 자막이 길 수 있습니다.");
+  if (maxLineLength > lineLimit) warnings.push("한 줄이 길 수 있습니다.");
+  if (cue.text.split("\n").length > 2) warnings.push("자막이 3줄 이상입니다.");
+  return { id: cue.id, cps, maxLineLength, warnings };
+}
+
 export function hasPreservedTiming(original: SubtitleCue[], translated: SubtitleCue[]): boolean {
   return (
     original.length === translated.length &&

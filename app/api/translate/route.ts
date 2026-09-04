@@ -43,7 +43,7 @@ function checkAccess(request: Request): string | null {
   return null;
 }
 
-function isCueArray(value: unknown, maxChars: number): value is Array<{ id: number; text: string }> {
+function isCueArray(value: unknown, maxChars: number): value is Array<{ id: number; text: string; durationMs?: number }> {
   if (!Array.isArray(value) || value.length > MAX_CUES) return false;
 
   const ids = new Set<number>();
@@ -52,9 +52,11 @@ function isCueArray(value: unknown, maxChars: number): value is Array<{ id: numb
     if (!item || typeof item !== "object") return false;
     const id = (item as { id?: unknown }).id;
     const text = (item as { text?: unknown }).text;
+    const durationMs = (item as { durationMs?: unknown }).durationMs;
     if (!Number.isInteger(id) || typeof text !== "string" || !text.trim() || text.length > MAX_CUE_CHARS) {
       return false;
     }
+    if (durationMs !== undefined && (!Number.isFinite(durationMs) || (durationMs as number) <= 0 || (durationMs as number) > 86_400_000)) return false;
     if (ids.has(id as number)) return false;
     ids.add(id as number);
     totalChars += text.length;

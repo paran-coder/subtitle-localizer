@@ -122,3 +122,23 @@ test("SRT의 기본 서식 태그를 텍스트 일부로 보존한다", () => {
   assert.equal(parsed[0].text, "<i>Hello</i>");
   assert.ok(serializeSrt(parsed).includes("<i>Hello</i>"));
 });
+
+import { analyzeLocalizedCueQuality } from "../lib/srt.ts";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const testDir = dirname(fileURLToPath(import.meta.url));
+
+test("KO/JA/ES 품질 기준 샘플은 원본 타임코드를 그대로 보존한다", () => {
+  const source = parseSrt(readFileSync(join(testDir, "../samples/demo-en.srt"), "utf8"));
+  for (const suffix of ["ko", "ja", "es"]) {
+    const translated = parseSrt(readFileSync(join(testDir, `../samples/demo-${suffix}.srt`), "utf8"));
+    assert.equal(hasPreservedTiming(source, translated), true);
+  }
+});
+
+test("CJK 자막은 더 짧은 줄 길이 기준으로 QA한다", () => {
+  const cue = { id: 1, start: "00:00:00,000", end: "00:00:02,000", text: "가".repeat(35) };
+  assert.ok(analyzeLocalizedCueQuality(cue, "ko").warnings.includes("한 줄이 길 수 있습니다."));
+});

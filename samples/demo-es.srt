@@ -1,0 +1,11 @@
+1
+00:00:01,200 --> 00:00:04,500
+Bienvenidos de nuevo al canal.
+
+2
+00:00:04,800 --> 00:00:08,100
+Hoy vamos a hablar de IA.
+
+3
+00:00:08,300 --> 00:00:11,200
+Empecemos por la idea más importante.

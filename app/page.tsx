@@ -1,11 +1,13 @@
 "use client";
 
-import { ChangeEvent, DragEvent, useMemo, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, useEffect, useMemo, useRef, useState } from "react";
 import JSZip from "jszip";
 import { LANGUAGES, getLanguage } from "@/lib/languages";
 import {
   analyzeCueQuality,
+  analyzeLocalizedCueQuality,
   chunkSubtitleCues,
+  cueDurationMs,
   durationMs,
   formatDuration,
   hasPreservedTiming,
@@ -16,15 +18,21 @@ import {
 } from "@/lib/srt";
 import type { LanguageProgress, SubtitleCue, TranslationItem, TranslationStyle } from "@/lib/types";
 
+type YouTubeVideo = { id: string; title: string; thumbnail?: string; publishedAt?: string };
+type YouTubeChannel = { id: string; title: string; thumbnail?: string };
+type YouTubeStatus = "checking" | "unavailable" | "disconnected" | "connected";
+
+type UploadState = { status: "idle" | "uploading" | "done" | "error"; error?: string };
+
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_CUE_COUNT = 20_000;
 const POPULAR_LANGUAGE_CODES = ["ko", "ja", "es", "fr", "de", "pt-BR", "zh-CN", "id"];
 
 const STYLE_OPTIONS: Array<{ value: TranslationStyle; title: string; description: string }> = [
-  { value: "natural", title: "자연스러운 YouTube", description: "현지 시청자가 자연스럽게 읽는 표현" },
-  { value: "faithful", title: "원문 충실", description: "원문의 의미와 톤을 최대한 보존" },
-  { value: "concise", title: "짧고 읽기 쉽게", description: "빠른 영상과 짧은 노출 시간에 적합" },
-  { value: "education", title: "교육 / 강의", description: "용어 정확성과 설명 일관성을 우선" },
+  { value: "natural", title: "자연스럽게", description: "현지 시청자가 번역투 없이 읽는 표현" },
+  { value: "faithful", title: "원문 충실", description: "의미와 톤을 최대한 가깝게 유지" },
+  { value: "concise", title: "짧게", description: "빠르게 지나가는 자막을 더 간결하게" },
+  { value: "education", title: "교육·강의", description: "용어 정확성과 설명 일관성 우선" },
   { value: "business", title: "비즈니스", description: "정중하고 전문적인 표현" }
 ];
 
@@ -48,6 +56,13 @@ function mapToItems(cache: Map<number, string>): TranslationItem[] {
   return Array.from(cache.entries()).map(([id, text]) => ({ id, text }));
 }
 
+function formatVideoDate(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "short", day: "numeric" }).format(date);
+}
+
 async function translateLanguage(
   languageCode: string,
   cues: SubtitleCue[],
@@ -62,8 +77,7 @@ async function translateLanguage(
 
   for (let index = 0; index < chunks.length; index += 1) {
     const chunk = chunks[index];
-    const isCached = chunk.every((cue) => cache.has(cue.id));
-    if (isCached) {
+    if (chunk.every((cue) => cache.has(cue.id))) {
       onProgress(index + 1, chunks.length);
       continue;
     }
@@ -87,7 +101,7 @@ async function translateLanguage(
         languageCode,
         style,
         glossary,
-        cues: chunk.map(({ id, text }) => ({ id, text })),
+        cues: chunk.map((cue) => ({ id: cue.id, text: cue.text, durationMs: cueDurationMs(cue) })),
         contextBefore,
         contextAfter
       }),
@@ -95,10 +109,7 @@ async function translateLanguage(
     });
 
     const payload = (await response.json()) as { items?: TranslationItem[]; error?: string };
-    if (!response.ok || !payload.items) {
-      throw new Error(payload.error || `번역 요청 실패 (${response.status})`);
-    }
-
+    if (!response.ok || !payload.items) throw new Error(payload.error || `번역 요청 실패 (${response.status})`);
     for (const item of payload.items) cache.set(item.id, item.text);
     onProgress(index + 1, chunks.length);
   }
@@ -113,7 +124,7 @@ export default function Home() {
   const [cues, setCues] = useState<SubtitleCue[]>([]);
   const [fileError, setFileError] = useState("");
   const [dragging, setDragging] = useState(false);
-  const [selectedLanguages, setSelectedLanguages] = useState<string[]>(["ko", "ja"]);
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>(["ko", "ja", "es"]);
   const [style, setStyle] = useState<TranslationStyle>("natural");
   const [glossary, setGlossary] = useState("");
   const [accessKey, setAccessKey] = useState("");
@@ -122,8 +133,18 @@ export default function Home() {
   const [activePreview, setActivePreview] = useState<string>("source");
   const [running, setRunning] = useState(false);
 
-  const chunks = useMemo(() => chunkSubtitleCues(cues), [cues]);
+  const [youtubeStatus, setYoutubeStatus] = useState<YouTubeStatus>("checking");
+  const [youtubeChannel, setYoutubeChannel] = useState<YouTubeChannel | null>(null);
+  const [youtubeVideos, setYoutubeVideos] = useState<YouTubeVideo[]>([]);
+  const [youtubeLoading, setYoutubeLoading] = useState(false);
+  const [youtubeMessage, setYoutubeMessage] = useState("");
+  const [selectedVideoId, setSelectedVideoId] = useState("");
+  const [trackName, setTrackName] = useState("Subtitle Localizer");
+  const [uploadLanguages, setUploadLanguages] = useState<string[]>([]);
+  const [uploadState, setUploadState] = useState<Record<string, UploadState>>({});
+  const [uploadRunning, setUploadRunning] = useState(false);
 
+  const chunks = useMemo(() => chunkSubtitleCues(cues), [cues]);
   const stats = useMemo(() => {
     if (!cues.length) return null;
     const quality = cues.map(analyzeCueQuality);
@@ -135,26 +156,77 @@ export default function Home() {
     };
   }, [cues, chunks]);
 
-  const progressSummary = useMemo(() => {
-    const items = Object.values(progress);
-    return {
-      done: items.filter((item) => item.status === "done").length,
-      error: items.filter((item) => item.status === "error").length,
-      total: items.length
-    };
-  }, [progress]);
-
-  const previewCues = activePreview === "source" ? cues : results[activePreview] ?? [];
+  const completedCodes = useMemo(() => Object.keys(results), [results]);
+  const expectedRequests = (stats?.chunks ?? 0) * selectedLanguages.length;
   const activeLanguage = activePreview === "source" ? null : getLanguage(activePreview);
+  const previewCues = activePreview === "source" ? cues : results[activePreview] ?? [];
   const activeTimingPreserved = activeLanguage && results[activePreview]
     ? hasPreservedTiming(cues, results[activePreview])
     : false;
-  const expectedRequests = (stats?.chunks ?? 0) * selectedLanguages.length;
+  const activeWarnings = useMemo(() => {
+    if (!activeLanguage || !results[activeLanguage.code]) return 0;
+    return results[activeLanguage.code]
+      .map((cue) => analyzeLocalizedCueQuality(cue, activeLanguage.code))
+      .reduce((sum, item) => sum + item.warnings.length, 0);
+  }, [activeLanguage, results]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function checkYouTube() {
+      try {
+        const response = await fetch("/api/youtube/status", { cache: "no-store" });
+        const payload = (await response.json()) as { configured?: boolean; connected?: boolean };
+        if (cancelled) return;
+        setYoutubeStatus(!payload.configured ? "unavailable" : payload.connected ? "connected" : "disconnected");
+      } catch {
+        if (!cancelled) setYoutubeStatus("unavailable");
+      }
+    }
+    void checkYouTube();
+
+    const query = new URLSearchParams(window.location.search).get("youtube");
+    if (query === "connected") setYoutubeMessage("YouTube 채널이 연결되었습니다.");
+    if (query === "denied") setYoutubeMessage("YouTube 연결이 취소되었습니다.");
+    if (query === "invalid-state") setYoutubeMessage("YouTube 인증 상태를 확인하지 못했습니다. 다시 연결해 주세요.");
+    if (query === "token-error") setYoutubeMessage("Google 인증 토큰을 발급받지 못했습니다.");
+    if (query === "not-configured") setYoutubeMessage("YouTube OAuth 환경변수를 먼저 설정해 주세요.");
+    if (query) window.history.replaceState({}, "", window.location.pathname);
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (youtubeStatus !== "connected") return;
+    let cancelled = false;
+    async function loadVideos() {
+      setYoutubeLoading(true);
+      try {
+        const response = await fetch("/api/youtube/videos", { cache: "no-store" });
+        const payload = (await response.json()) as { channel?: YouTubeChannel; videos?: YouTubeVideo[]; error?: string };
+        if (!response.ok) throw new Error(payload.error || "영상 목록을 불러오지 못했습니다.");
+        if (cancelled) return;
+        setYoutubeChannel(payload.channel ?? null);
+        setYoutubeVideos(payload.videos ?? []);
+        setSelectedVideoId((current) => current || payload.videos?.[0]?.id || "");
+      } catch (error) {
+        if (!cancelled) setYoutubeMessage(error instanceof Error ? error.message : "영상 목록을 불러오지 못했습니다.");
+      } finally {
+        if (!cancelled) setYoutubeLoading(false);
+      }
+    }
+    void loadVideos();
+    return () => { cancelled = true; };
+  }, [youtubeStatus]);
+
+  useEffect(() => {
+    if (!running) setUploadLanguages(completedCodes);
+  }, [completedCodes, running]);
 
   function clearOutputs() {
     setResults({});
     setProgress({});
     setActivePreview("source");
+    setUploadLanguages([]);
+    setUploadState({});
     partialTranslationsRef.current = {};
   }
 
@@ -162,24 +234,13 @@ export default function Home() {
     if (running) return;
     setFileError("");
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".srt")) {
-      setFileError(".srt 파일만 업로드할 수 있습니다.");
-      return;
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      setFileError("파일 크기는 5MB 이하여야 합니다.");
-      return;
-    }
+    if (!file.name.toLowerCase().endsWith(".srt")) return setFileError(".srt 파일만 업로드할 수 있습니다.");
+    if (file.size > MAX_FILE_SIZE) return setFileError("파일 크기는 5MB 이하여야 합니다.");
     try {
-      const text = await file.text();
-      const parsed = parseSrt(text);
-      if (parsed.length > MAX_CUE_COUNT) {
-        throw new Error(`자막은 최대 ${MAX_CUE_COUNT.toLocaleString()}개 cue까지 처리할 수 있습니다.`);
-      }
+      const parsed = parseSrt(await file.text());
+      if (parsed.length > MAX_CUE_COUNT) throw new Error(`자막은 최대 ${MAX_CUE_COUNT.toLocaleString()}개 cue까지 처리할 수 있습니다.`);
       const oversizedCue = parsed.find((cue) => cue.text.length > MAX_TRANSLATABLE_CUE_CHARS);
-      if (oversizedCue) {
-        throw new Error(`${oversizedCue.id}번 자막이 ${MAX_TRANSLATABLE_CUE_CHARS.toLocaleString()}자를 초과합니다. 원본 cue를 더 짧게 나눠 주세요.`);
-      }
+      if (oversizedCue) throw new Error(`${oversizedCue.id}번 자막이 너무 깁니다. 원본 cue를 더 짧게 나눠 주세요.`);
       setCues(parsed);
       setSourceFileName(file.name);
       clearOutputs();
@@ -209,10 +270,9 @@ export default function Home() {
   }
 
   function toggleLanguage(code: string) {
-    const next = selectedLanguages.includes(code)
+    applyLanguageSelection(selectedLanguages.includes(code)
       ? selectedLanguages.filter((item) => item !== code)
-      : [...selectedLanguages, code];
-    applyLanguageSelection(next);
+      : [...selectedLanguages, code]);
   }
 
   function changeStyle(next: TranslationStyle) {
@@ -230,7 +290,6 @@ export default function Home() {
     const totalChunks = chunks.length;
     const cache = partialTranslationsRef.current[code] ?? new Map<number, string>();
     partialTranslationsRef.current[code] = cache;
-
     const cachedChunks = chunks.filter((chunk) => chunk.every((cue) => cache.has(cue.id))).length;
     setProgress((current) => ({
       ...current,
@@ -238,27 +297,18 @@ export default function Home() {
     }));
 
     try {
-      const translatedCues = await translateLanguage(
-        code,
-        cues,
-        style,
-        glossary,
-        accessKey,
-        cache,
-        (completed, total) => {
-          setProgress((current) => ({
-            ...current,
-            [code]: { ...current[code], completedChunks: completed, totalChunks: total }
-          }));
-        }
-      );
+      const translatedCues = await translateLanguage(code, cues, style, glossary, accessKey, cache, (completed, total) => {
+        setProgress((current) => ({
+          ...current,
+          [code]: { ...current[code], completedChunks: completed, totalChunks: total }
+        }));
+      });
       setResults((current) => ({ ...current, [code]: translatedCues }));
       setProgress((current) => ({
         ...current,
         [code]: { ...current[code], status: "done", completedChunks: totalChunks }
       }));
-      setActivePreview((current) => (current === "source" ? code : current));
-      return true;
+      setActivePreview((current) => current === "source" ? code : current);
     } catch (error) {
       setProgress((current) => ({
         ...current,
@@ -268,7 +318,6 @@ export default function Home() {
           error: error instanceof Error ? error.message : "번역 실패"
         }
       }));
-      return false;
     }
   }
 
@@ -283,19 +332,14 @@ export default function Home() {
     if (!cues.length || !selectedLanguages.length || running) return;
     setRunning(true);
     setResults({});
+    setUploadState({});
     setActivePreview("source");
     partialTranslationsRef.current = {};
+    setProgress(Object.fromEntries(selectedLanguages.map((code) => [
+      code,
+      { languageCode: code, status: "queued", completedChunks: 0, totalChunks: chunks.length } satisfies LanguageProgress
+    ])));
 
-    const initial = Object.fromEntries(
-      selectedLanguages.map((code) => [
-        code,
-        { languageCode: code, status: "queued", completedChunks: 0, totalChunks: chunks.length } satisfies LanguageProgress
-      ])
-    );
-    setProgress(initial);
-
-    // 언어는 2개씩 병렬 처리하고 각 언어 내부의 청크는 순차 처리합니다.
-    // 실패 후 재시도 시 성공한 청크를 메모리에 보존해 같은 API 비용을 다시 쓰지 않습니다.
     const queue = [...selectedLanguages];
     const workers = Array.from({ length: Math.min(2, queue.length) }, async () => {
       while (queue.length) {
@@ -304,7 +348,6 @@ export default function Home() {
         await runOneLanguage(code);
       }
     });
-
     await Promise.all(workers);
     setRunning(false);
   }
@@ -313,133 +356,168 @@ export default function Home() {
     const translatedCues = results[code];
     const language = getLanguage(code);
     if (!translatedCues || !language) return;
-    const base = stripExtension(sourceFileName);
-    downloadBlob(`\uFEFF${serializeSrt(translatedCues)}`, `${base}.${language.fileSuffix}.srt`);
+    downloadBlob(`\uFEFF${serializeSrt(translatedCues)}`, `${stripExtension(sourceFileName)}.${language.fileSuffix}.srt`);
   }
 
   async function downloadZip() {
-    const completed = Object.entries(results);
-    if (!completed.length) return;
+    if (!completedCodes.length) return;
     const zip = new JSZip();
     const base = stripExtension(sourceFileName);
-    for (const [code, translatedCues] of completed) {
+    for (const code of completedCodes) {
       const language = getLanguage(code);
-      if (!language) continue;
-      zip.file(`${base}.${language.fileSuffix}.srt`, `\uFEFF${serializeSrt(translatedCues)}`);
+      if (language) zip.file(`${base}.${language.fileSuffix}.srt`, `\uFEFF${serializeSrt(results[code])}`);
     }
-    const blob = await zip.generateAsync({ type: "blob" });
-    downloadBlob(blob, `${base}-subtitles.zip`, "application/zip");
+    downloadBlob(await zip.generateAsync({ type: "blob" }), `${base}-subtitles.zip`, "application/zip");
+  }
+
+  async function disconnectYouTube() {
+    await fetch("/api/youtube/oauth/logout", { method: "POST" });
+    setYoutubeStatus("disconnected");
+    setYoutubeChannel(null);
+    setYoutubeVideos([]);
+    setSelectedVideoId("");
+    setYoutubeMessage("YouTube 연결을 해제했습니다.");
+  }
+
+  function toggleUploadLanguage(code: string) {
+    setUploadLanguages((current) => current.includes(code)
+      ? current.filter((item) => item !== code)
+      : [...current, code]);
+  }
+
+  async function uploadToYouTube() {
+    if (uploadRunning || !selectedVideoId || !uploadLanguages.length) return;
+    setUploadRunning(true);
+    setYoutubeMessage("");
+    for (const code of uploadLanguages) {
+      const translated = results[code];
+      if (!translated) continue;
+      setUploadState((current) => ({ ...current, [code]: { status: "uploading" } }));
+      try {
+        const response = await fetch("/api/youtube/captions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            videoId: selectedVideoId,
+            languageCode: code,
+            trackName: trackName.trim() || "Subtitle Localizer",
+            srt: serializeSrt(translated)
+          }),
+          signal: AbortSignal.timeout(65_000)
+        });
+        const payload = (await response.json()) as { error?: string };
+        if (!response.ok) throw new Error(payload.error || "YouTube 자막 업로드에 실패했습니다.");
+        setUploadState((current) => ({ ...current, [code]: { status: "done" } }));
+        setUploadLanguages((current) => current.filter((item) => item !== code));
+      } catch (error) {
+        setUploadState((current) => ({
+          ...current,
+          [code]: { status: "error", error: error instanceof Error ? error.message : "업로드 실패" }
+        }));
+      }
+    }
+    setUploadRunning(false);
   }
 
   return (
     <main className="app-shell">
       <header className="topbar">
-        <div className="brand">
-          <span className="brand-mark" aria-hidden="true">SL</span>
-          <div>
-            <strong>Subtitle Localizer</strong>
-            <span>v1.1.0 · YouTube-ready SRT</span>
+        <div className="topbar-inner">
+          <a className="brand" href="#top" aria-label="Subtitle Localizer 홈">
+            <span className="brand-symbol" aria-hidden="true">S</span>
+            <span><strong>Subtitle Localizer</strong><small>v1.2.0</small></span>
+          </a>
+          <div className="topbar-actions">
+            <span className="privacy-label">파일을 서버에 저장하지 않습니다</span>
+            {youtubeStatus === "connected" ? (
+              <a className="quiet-button" href="#youtube-title">YouTube 연결됨</a>
+            ) : youtubeStatus === "disconnected" ? (
+              <a className="quiet-button" href="/api/youtube/oauth/start">YouTube 연결</a>
+            ) : null}
           </div>
         </div>
-        <div className="privacy-badge"><span aria-hidden="true">●</span> 원본 파일 저장 안 함</div>
       </header>
 
-      <section className="hero">
-        <p className="eyebrow">MULTILINGUAL SUBTITLE WORKSPACE</p>
-        <h1>타임코드는 고정하고,<br />자막만 자연스럽게 현지화합니다.</h1>
-        <p className="hero-copy">
-          영어 SRT 하나로 여러 언어 자막을 만들고, 구조 검증이 끝난 파일을 YouTube에 바로 업로드할 수 있습니다.
-        </p>
-        <div className="workflow-strip" aria-label="작업 순서">
-          <span><b>01</b> SRT 업로드</span><i>→</i>
-          <span><b>02</b> 언어 선택</span><i>→</i>
-          <span><b>03</b> AI 현지화</span><i>→</i>
-          <span><b>04</b> SRT 다운로드</span>
+      <section className="hero" id="top">
+        <div className="hero-copy-block">
+          <span className="eyebrow">SRT LOCALIZATION WORKSPACE</span>
+          <h1>타임코드는 그대로.<br />자막은 현지 언어처럼.</h1>
+          <p>영문 SRT 하나를 여러 언어로 현지화하고, 결과를 검토한 뒤 SRT로 받거나 YouTube에 바로 올립니다.</p>
+        </div>
+        <div className="hero-facts" aria-label="핵심 기능">
+          <span><strong>17</strong> 지원 언어</span>
+          <span><strong>100%</strong> 타임코드 보존</span>
+          <span><strong>SRT</strong> 개별·ZIP 다운로드</span>
         </div>
       </section>
 
-      <section className="workspace">
-        <div className="main-column">
-          <article className="panel">
-            <div className="panel-heading">
-              <div className="step-number">1</div>
-              <div><h2>원본 자막</h2><p>영문 SRT 파일을 불러옵니다.</p></div>
+      <div className="workspace">
+        <div className="flow-column">
+          <section className="section-block" aria-labelledby="source-title">
+            <div className="section-heading">
+              <span className="step-badge">1</span>
+              <div><h2 id="source-title">원본 자막</h2><p>번역의 기준이 될 SRT를 불러옵니다.</p></div>
             </div>
-
             <div
-              className={`dropzone ${dragging ? "is-dragging" : ""} ${cues.length ? "has-file" : ""} ${running ? "is-locked" : ""}`}
+              className={`dropzone ${dragging ? "is-dragging" : ""} ${cues.length ? "has-file" : ""}`}
               onDragEnter={(event) => { event.preventDefault(); setDragging(true); }}
               onDragOver={(event) => event.preventDefault()}
               onDragLeave={() => setDragging(false)}
               onDrop={handleDrop}
               onClick={() => { if (!running) inputRef.current?.click(); }}
-              role="button"
-              aria-disabled={running}
-              tabIndex={running ? -1 : 0}
               onKeyDown={(event) => {
                 if (!running && (event.key === "Enter" || event.key === " ")) inputRef.current?.click();
               }}
+              role="button"
+              tabIndex={running ? -1 : 0}
+              aria-disabled={running}
             >
-              <input
-                ref={inputRef}
-                type="file"
-                accept=".srt,application/x-subrip,text/plain"
-                hidden
-                disabled={running}
-                onChange={handleFileChange}
-              />
-              <div className="drop-icon" aria-hidden="true">↑</div>
+              <input ref={inputRef} type="file" accept=".srt,application/x-subrip,text/plain" hidden disabled={running} onChange={handleFileChange} />
+              <div className="upload-symbol" aria-hidden="true">↑</div>
               {cues.length ? (
-                <>
+                <div className="file-copy">
                   <strong>{sourceFileName}</strong>
-                  <span>{stats?.count.toLocaleString()} cues · {stats?.duration} · {stats?.chunks} chunks</span>
-                  <small>클릭하거나 새 파일을 드롭하면 교체됩니다.</small>
-                </>
+                  <span>{stats?.count.toLocaleString()} cues · {stats?.duration} · {stats?.chunks} API chunks</span>
+                  <small>새 파일을 드롭하거나 클릭하면 교체됩니다.</small>
+                </div>
               ) : (
-                <>
-                  <strong>SRT 파일을 여기에 드롭하세요</strong>
+                <div className="file-copy">
+                  <strong>SRT 파일을 드롭하세요</strong>
                   <span>또는 클릭해서 파일 선택</span>
                   <small>최대 5MB · UTF-8 권장</small>
-                </>
+                </div>
               )}
             </div>
-            {fileError && <div className="inline-error" role="alert">{fileError}</div>}
-            {stats && stats.warnings > 0 && (
-              <div className="inline-note">
-                원본에서 읽기 속도/줄 길이 참고 항목 {stats.warnings}개를 감지했습니다. 원본 타임코드는 자동 수정하지 않습니다.
-              </div>
-            )}
-          </article>
+            {fileError && <p className="feedback error" role="alert">{fileError}</p>}
+            {stats && stats.warnings > 0 && <p className="feedback neutral">원본에서 읽기 길이 참고 항목 {stats.warnings}개를 감지했습니다. 원본 타임코드는 수정하지 않습니다.</p>}
+          </section>
 
-          <article className={`panel ${!cues.length ? "is-disabled" : ""}`}>
-            <div className="panel-heading">
-              <div className="step-number">2</div>
-              <div><h2>현지화 설정</h2><p>대상 언어와 번역 톤을 정합니다.</p></div>
+          <section className={`section-block ${!cues.length ? "is-muted" : ""}`} aria-labelledby="localize-title">
+            <div className="section-heading">
+              <span className="step-badge">2</span>
+              <div><h2 id="localize-title">현지화 설정</h2><p>언어와 말투만 정하면 나머지는 구조를 유지해 처리합니다.</p></div>
             </div>
 
-            <div className="field-group">
-              <div className="field-label-row">
-                <label>번역 언어</label>
-                <span>{selectedLanguages.length}개 선택</span>
-              </div>
-              <div className="quick-actions" aria-label="언어 빠른 선택">
+            <div className="field-block">
+              <div className="field-row"><label>번역 언어</label><span>{selectedLanguages.length}개 선택</span></div>
+              <div className="inline-actions">
                 <button type="button" disabled={!cues.length || running} onClick={() => applyLanguageSelection(POPULAR_LANGUAGE_CODES)}>추천 8개</button>
-                <button type="button" disabled={!cues.length || running} onClick={() => applyLanguageSelection(LANGUAGES.map((language) => language.code))}>전체 선택</button>
-                <button type="button" disabled={!cues.length || running} onClick={() => applyLanguageSelection([])}>선택 해제</button>
+                <button type="button" disabled={!cues.length || running} onClick={() => applyLanguageSelection(LANGUAGES.map((item) => item.code))}>전체</button>
+                <button type="button" disabled={!cues.length || running} onClick={() => applyLanguageSelection([])}>초기화</button>
               </div>
               <div className="language-grid">
                 {LANGUAGES.map((language) => {
-                  const checked = selectedLanguages.includes(language.code);
+                  const selected = selectedLanguages.includes(language.code);
                   return (
                     <button
+                      className={`language-option ${selected ? "selected" : ""}`}
                       key={language.code}
                       type="button"
-                      className={`language-chip ${checked ? "selected" : ""}`}
-                      aria-pressed={checked}
+                      aria-pressed={selected}
                       disabled={!cues.length || running}
                       onClick={() => toggleLanguage(language.code)}
                     >
-                      <span className="checkmark">{checked ? "✓" : ""}</span>
+                      <span className="selection-dot" aria-hidden="true">{selected ? "✓" : ""}</span>
                       <span><strong>{language.nativeLabel}</strong><small>{language.label}</small></span>
                     </button>
                   );
@@ -447,198 +525,194 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="field-group">
-              <label>번역 스타일</label>
-              <div className="style-grid">
+            <div className="field-block">
+              <div className="field-row"><label>번역 스타일</label><span>기본: 자연스럽게</span></div>
+              <div className="style-tabs" role="radiogroup" aria-label="번역 스타일">
                 {STYLE_OPTIONS.map((option) => (
-                  <label key={option.value} className={`style-card ${style === option.value ? "selected" : ""}`}>
-                    <input
-                      type="radio"
-                      name="style"
-                      value={option.value}
-                      checked={style === option.value}
-                      disabled={!cues.length || running}
-                      onChange={() => changeStyle(option.value)}
-                    />
-                    <strong>{option.title}</strong>
-                    <span>{option.description}</span>
-                  </label>
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={style === option.value ? "active" : ""}
+                    role="radio"
+                    aria-checked={style === option.value}
+                    disabled={!cues.length || running}
+                    onClick={() => changeStyle(option.value)}
+                  >
+                    <strong>{option.title}</strong><small>{option.description}</small>
+                  </button>
                 ))}
               </div>
             </div>
 
-            <div className="settings-grid">
-              <div className="field-group">
-                <div className="field-label-row"><label htmlFor="glossary">Glossary</label><span>선택</span></div>
-                <textarea
-                  id="glossary"
-                  rows={5}
-                  maxLength={8000}
-                  disabled={!cues.length || running}
-                  value={glossary}
-                  onChange={(event) => changeGlossary(event.target.value)}
-                  placeholder={"OpenAI = OpenAI\nChatGPT = ChatGPT\nprompt = 프롬프트"}
-                />
-                <small className="field-help">브랜드명, 인명, 전문용어 규칙을 한 줄씩 입력합니다.</small>
+            <details className="advanced-settings">
+              <summary>고급 설정</summary>
+              <div className="advanced-grid">
+                <div className="field-block compact">
+                  <div className="field-row"><label htmlFor="glossary">용어집</label><span>선택</span></div>
+                  <textarea id="glossary" rows={5} maxLength={8000} disabled={!cues.length || running} value={glossary} onChange={(event) => changeGlossary(event.target.value)} placeholder={"OpenAI = OpenAI\nChatGPT = ChatGPT\nprompt = 프롬프트"} />
+                  <small className="field-help">브랜드명·인명·전문용어 규칙을 한 줄씩 입력합니다.</small>
+                </div>
+                <div className="field-block compact">
+                  <div className="field-row"><label htmlFor="access-key">배포 보호 키</label><span>운영 배포</span></div>
+                  <input id="access-key" className="text-input" type="password" autoComplete="off" maxLength={200} disabled={!cues.length || running} value={accessKey} onChange={(event) => setAccessKey(event.target.value)} placeholder="SUBTITLE_APP_ACCESS_KEY" />
+                  <small className="field-help">OpenAI 키가 아니라 이 앱의 공개 API 호출을 막는 보호용 키입니다.</small>
+                </div>
               </div>
+            </details>
 
-              <div className="field-group">
-                <div className="field-label-row"><label htmlFor="access-key">배포 보호 키</label><span>Vercel 운영 시 필요</span></div>
-                <input
-                  id="access-key"
-                  className="text-input"
-                  type="password"
-                  autoComplete="off"
-                  maxLength={200}
-                  disabled={!cues.length || running}
-                  value={accessKey}
-                  onChange={(event) => setAccessKey(event.target.value)}
-                  placeholder="SUBTITLE_APP_ACCESS_KEY"
-                />
-                <small className="field-help">브라우저 메모리에만 유지하며 저장하지 않습니다. 로컬 개발에서는 서버 설정에 따라 생략할 수 있습니다.</small>
+            <div className="action-bar">
+              <div className="action-meta">
+                <span>{selectedLanguages.length}개 언어</span>
+                <span>예상 {expectedRequests.toLocaleString()} 요청</span>
+                <span>실패 시 완료 청크부터 이어서 재시도</span>
               </div>
+              <button className="primary-button" type="button" disabled={!cues.length || !selectedLanguages.length || running} onClick={() => void startTranslation()}>
+                {running ? "번역하고 있습니다…" : "번역 시작"}
+              </button>
             </div>
-
-            <div className="run-summary">
-              <div><span>대상 언어</span><strong>{selectedLanguages.length}개</strong></div>
-              <div><span>예상 API 요청</span><strong>{expectedRequests.toLocaleString()}회</strong></div>
-              <div><span>재시도 비용 절감</span><strong>완료 청크 유지</strong></div>
-            </div>
-
-            <button
-              className="primary-button"
-              type="button"
-              disabled={!cues.length || !selectedLanguages.length || running}
-              onClick={() => void startTranslation()}
-            >
-              {running ? "번역 진행 중…" : `${selectedLanguages.length || 0}개 언어 번역 시작`}
-            </button>
-          </article>
+          </section>
 
           {(running || Object.keys(progress).length > 0) && (
-            <article className="panel">
-              <div className="panel-heading split-heading">
-                <div className="heading-group">
-                  <div className="step-number">3</div>
-                  <div><h2>번역 진행</h2><p>실패한 언어는 완료된 청크 다음부터 이어서 재시도합니다.</p></div>
-                </div>
-                <div className="progress-summary">완료 {progressSummary.done}/{progressSummary.total}{progressSummary.error ? ` · 실패 ${progressSummary.error}` : ""}</div>
+            <section className="section-block" aria-labelledby="progress-title">
+              <div className="section-heading">
+                <span className="step-badge">3</span>
+                <div><h2 id="progress-title">번역 진행</h2><p>언어별로 완료 상태를 확인할 수 있습니다.</p></div>
               </div>
-              <div className="progress-list" aria-live="polite">
+              <div className="progress-list">
                 {selectedLanguages.map((code) => {
                   const language = getLanguage(code);
                   const item = progress[code];
-                  if (!language || !item) return null;
-                  const percent = item.totalChunks ? Math.round((item.completedChunks / item.totalChunks) * 100) : 0;
+                  const percent = item?.totalChunks ? Math.round((item.completedChunks / item.totalChunks) * 100) : 0;
                   return (
-                    <div className="progress-item" key={code}>
-                      <div className="progress-meta">
-                        <div><strong>{language.nativeLabel}</strong><span>{language.label}</span></div>
-                        <div className="status-actions">
-                          {item.status === "done" && <button type="button" className="mini-download" onClick={() => downloadSrt(code)}>SRT</button>}
-                          <span className={`status status-${item.status}`}>
-                            {item.status === "queued" && "대기"}
-                            {item.status === "translating" && `${percent}%`}
-                            {item.status === "done" && "완료"}
-                            {item.status === "error" && "실패"}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="progress-track"><span style={{ width: `${item.status === "done" ? 100 : percent}%` }} /></div>
-                      {item.error && (
-                        <div className="progress-error-row">
-                          <small className="progress-error">{item.error}</small>
-                          <button type="button" className="retry-button" disabled={running} onClick={() => void retryLanguage(code)}>이어 재시도</button>
-                        </div>
+                    <div className="progress-row" key={code}>
+                      <div className="progress-copy"><strong>{language?.nativeLabel}</strong><span>{item?.status === "done" ? "완료" : item?.status === "error" ? "확인 필요" : item?.status === "translating" ? `${percent}%` : "대기"}</span></div>
+                      <div className="progress-track" aria-label={`${language?.nativeLabel} ${percent}%`}><i style={{ width: `${percent}%` }} /></div>
+                      {item?.status === "error" && (
+                        <div className="progress-error"><span>{item.error}</span><button type="button" disabled={running} onClick={() => void retryLanguage(code)}>이어서 재시도</button></div>
                       )}
                     </div>
                   );
                 })}
               </div>
-              {Object.keys(results).length > 1 && (
-                <button className="secondary-full-button" type="button" disabled={running} onClick={() => void downloadZip()}>
-                  완료된 {Object.keys(results).length}개 언어 ZIP 다운로드
-                </button>
+            </section>
+          )}
+
+          {completedCodes.length > 0 && (
+            <section className="section-block" aria-labelledby="review-title">
+              <div className="section-heading review-heading">
+                <span className="step-badge">4</span>
+                <div><h2 id="review-title">검토 & 다운로드</h2><p>원문과 번역을 나란히 확인한 뒤 파일을 받습니다.</p></div>
+                <button className="dark-button" type="button" onClick={() => void downloadZip()}>완료 언어 ZIP</button>
+              </div>
+
+              <div className="preview-tabs" role="tablist">
+                {completedCodes.map((code) => {
+                  const language = getLanguage(code);
+                  return <button role="tab" aria-selected={activePreview === code} className={activePreview === code ? "active" : ""} key={code} type="button" onClick={() => setActivePreview(code)}>{language?.nativeLabel}</button>;
+                })}
+              </div>
+
+              {activeLanguage && (
+                <div className="quality-strip">
+                  <span className={activeTimingPreserved ? "ok" : "bad"}>{activeTimingPreserved ? "타임코드·ID 보존 확인" : "구조 확인 필요"}</span>
+                  <span>읽기 길이 참고 {activeWarnings}개</span>
+                  <button type="button" onClick={() => downloadSrt(activeLanguage.code)}>{activeLanguage.nativeLabel} SRT 다운로드</button>
+                </div>
               )}
-            </article>
+
+              <div className="comparison-table">
+                <div className="comparison-head"><span>원문</span><span>{activeLanguage ? activeLanguage.nativeLabel : "원문"}</span></div>
+                {previewCues.slice(0, 80).map((cue, index) => (
+                  <div className="cue-row" key={`${activePreview}-${cue.id}`}>
+                    <div className="cue-cell"><small>#{cues[index]?.id} · {cues[index]?.start}</small><p>{cues[index]?.text}</p></div>
+                    <div className="cue-cell target"><small>#{cue.id} · {cue.start}</small><p>{cue.text}</p></div>
+                  </div>
+                ))}
+                {cues.length > 80 && <p className="preview-limit">화면에서는 앞 80개 cue만 보여줍니다. 다운로드 파일에는 전체 자막이 포함됩니다.</p>}
+              </div>
+            </section>
           )}
         </div>
 
-        <aside className="preview-column">
-          <div className="preview-panel">
-            <div className="preview-header">
-              <div><p className="eyebrow">QUALITY PREVIEW</p><h2>원문 ↔ 번역 비교</h2></div>
-              {Object.keys(results).length > 0 && (
-                <button className="secondary-button" type="button" onClick={() => void downloadZip()}>ZIP</button>
-              )}
+        <aside className="side-column">
+          <section className="side-card sticky-card" aria-labelledby="youtube-title">
+            <div className="side-heading">
+              <span className="youtube-mark" aria-hidden="true">▶</span>
+              <div><h2 id="youtube-title">YouTube에 올리기</h2><p>완료된 SRT를 영상에 자막 트랙으로 추가합니다.</p></div>
             </div>
 
-            {cues.length ? (
-              <>
-                <div className="preview-tabs" role="tablist" aria-label="자막 미리보기 언어">
-                  <button role="tab" aria-selected={activePreview === "source"} className={activePreview === "source" ? "active" : ""} onClick={() => setActivePreview("source")}>EN 원본</button>
-                  {Object.keys(results).map((code) => (
-                    <button role="tab" aria-selected={activePreview === code} key={code} className={activePreview === code ? "active" : ""} onClick={() => setActivePreview(code)}>
-                      {code}
-                    </button>
-                  ))}
+            {youtubeMessage && <p className="feedback neutral side-feedback">{youtubeMessage}</p>}
+
+            {youtubeStatus === "checking" && <p className="side-empty">YouTube 연결 상태를 확인하고 있습니다.</p>}
+            {youtubeStatus === "unavailable" && (
+              <div className="side-empty"><strong>OAuth 설정이 필요합니다</strong><p>로컬 번역과 다운로드는 그대로 사용할 수 있습니다. Vercel에 Google OAuth 환경변수를 추가하면 이 기능이 활성화됩니다.</p></div>
+            )}
+            {youtubeStatus === "disconnected" && (
+              <div className="side-empty"><strong>내 채널과 연결</strong><p>영상 목록을 불러오고 자막을 올릴 때만 YouTube 권한을 사용합니다.</p><a className="dark-button full" href="/api/youtube/oauth/start">YouTube 연결</a></div>
+            )}
+
+            {youtubeStatus === "connected" && (
+              <div className="youtube-connected">
+                <div className="channel-row">
+                  {youtubeChannel?.thumbnail ? <img src={youtubeChannel.thumbnail} alt="" /> : <span className="channel-placeholder" aria-hidden="true">Y</span>}
+                  <div><strong>{youtubeChannel?.title ?? "연결된 채널"}</strong><span>최근 업로드 최대 50개</span></div>
+                  <button type="button" onClick={() => void disconnectYouTube()}>해제</button>
                 </div>
 
-                <div className="preview-status">
-                  {activeLanguage ? (
-                    <>
-                      <span className={activeTimingPreserved ? "ok-dot" : "error-dot"} aria-hidden="true" />
-                      <strong>{activeTimingPreserved ? "구조 검증 통과" : "구조 확인 필요"}</strong>
-                      <span>· {activeLanguage.nativeLabel}</span>
-                    </>
-                  ) : (
-                    <><span className="neutral-dot" aria-hidden="true" /><strong>원본 SRT</strong><span>· {cues.length.toLocaleString()} cues</span></>
+                <div className="field-block compact">
+                  <div className="field-row"><label htmlFor="youtube-video">영상 선택</label><span>{youtubeVideos.length}개</span></div>
+                  <select id="youtube-video" className="text-input" disabled={youtubeLoading || !youtubeVideos.length} value={selectedVideoId} onChange={(event) => setSelectedVideoId(event.target.value)}>
+                    {youtubeLoading && <option value="">영상 목록 불러오는 중…</option>}
+                    {!youtubeLoading && !youtubeVideos.length && <option value="">업로드한 영상을 찾지 못했습니다</option>}
+                    {youtubeVideos.map((video) => <option key={video.id} value={video.id}>{video.title} {video.publishedAt ? `· ${formatVideoDate(video.publishedAt)}` : ""}</option>)}
+                  </select>
+                </div>
+
+                <div className="field-block compact">
+                  <div className="field-row"><label htmlFor="track-name">자막 트랙 이름</label><span>최대 150자</span></div>
+                  <input id="track-name" className="text-input" maxLength={150} value={trackName} onChange={(event) => setTrackName(event.target.value)} />
+                </div>
+
+                <div className="field-block compact">
+                  <div className="field-row"><label>업로드 언어</label><span>{uploadLanguages.length}개</span></div>
+                  {!completedCodes.length ? <p className="small-empty">먼저 번역을 완료해 주세요.</p> : (
+                    <div className="upload-language-list">
+                      {completedCodes.map((code) => {
+                        const language = getLanguage(code);
+                        const checked = uploadLanguages.includes(code);
+                        const state = uploadState[code];
+                        return (
+                          <label key={code} className="upload-language-row">
+                            <input type="checkbox" checked={checked} disabled={uploadRunning} onChange={() => toggleUploadLanguage(code)} />
+                            <span><strong>{language?.nativeLabel}</strong><small>{state?.status === "done" ? "업로드 완료" : state?.status === "uploading" ? "업로드 중" : state?.status === "error" ? state.error : `${language?.fileSuffix}.srt`}</small></span>
+                          </label>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
 
-                <div className="cue-list">
-                  {previewCues.slice(0, 80).map((cue, index) => {
-                    const sourceCue = cues[index];
-                    return (
-                      <div className={`cue-row ${activeLanguage ? "is-comparison" : ""}`} key={cue.id}>
-                        <div className="cue-index">{cue.id}</div>
-                        <div className="cue-body">
-                          <time>{cue.start} → {cue.end}</time>
-                          {activeLanguage ? (
-                            <div className="comparison-copy">
-                              <div><small>EN</small><p>{sourceCue?.text}</p></div>
-                              <div><small>{activeLanguage.code.toUpperCase()}</small><p>{cue.text}</p></div>
-                            </div>
-                          ) : (
-                            <p>{cue.text}</p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {previewCues.length > 80 && <div className="preview-limit">성능을 위해 처음 80개 cue만 미리보기로 표시합니다.</div>}
-                </div>
-
-                {activePreview !== "source" && results[activePreview] && (
-                  <button className="download-button" type="button" onClick={() => downloadSrt(activePreview)}>
-                    {getLanguage(activePreview)?.nativeLabel} SRT 다운로드
-                  </button>
-                )}
-              </>
-            ) : (
-              <div className="empty-preview">
-                <span>01</span>
-                <p>SRT를 업로드하면<br />원문과 번역을 나란히 검수할 수 있습니다.</p>
+                <div className="quota-note">YouTube 자막 업로드는 언어 1개당 API quota 400 units를 사용합니다.</div>
+                <button className="dark-button full" type="button" disabled={uploadRunning || !selectedVideoId || !uploadLanguages.length} onClick={() => void uploadToYouTube()}>
+                  {uploadRunning ? "YouTube에 올리는 중…" : `${uploadLanguages.length || 0}개 자막 YouTube에 올리기`}
+                </button>
               </div>
             )}
-          </div>
-        </aside>
-      </section>
+          </section>
 
-      <footer>
-        <span>Subtitle Localizer v1.1.0</span>
-        <span>원본 파일은 브라우저에서 읽고, 번역에 필요한 텍스트만 서버 API로 전송합니다.</span>
-      </footer>
+          <section className="side-card summary-card">
+            <h3>현재 작업</h3>
+            <dl>
+              <div><dt>원본</dt><dd>{sourceFileName || "아직 없음"}</dd></div>
+              <div><dt>대상 언어</dt><dd>{selectedLanguages.length}개</dd></div>
+              <div><dt>완료</dt><dd>{completedCodes.length}개</dd></div>
+              <div><dt>타임코드</dt><dd>변경하지 않음</dd></div>
+            </dl>
+          </section>
+        </aside>
+      </div>
+
+      <footer className="footer">Subtitle Localizer v1.2.0 · SRT 구조를 유지하는 다국어 자막 작업 도구</footer>
     </main>
   );
 }
