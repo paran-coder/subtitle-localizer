@@ -20,6 +20,15 @@ import type { LanguageProgress, SubtitleCue, TranslationItem, TranslationStyle }
 
 type YouTubeVideo = { id: string; title: string; thumbnail?: string; publishedAt?: string };
 type YouTubeChannel = { id: string; title: string; thumbnail?: string };
+type YouTubeCaptionTrack = {
+  id: string;
+  language: string;
+  name: string;
+  trackKind: string;
+  status: string;
+  isDraft: boolean;
+  lastUpdated?: string;
+};
 type YouTubeStatus = "checking" | "unavailable" | "disconnected" | "connected";
 
 type UploadState = { status: "idle" | "uploading" | "done" | "error"; error?: string };
@@ -132,6 +141,12 @@ export default function Home() {
   const [results, setResults] = useState<Record<string, SubtitleCue[]>>({});
   const [activePreview, setActivePreview] = useState<string>("source");
   const [running, setRunning] = useState(false);
+  const [sourceMode, setSourceMode] = useState<"file" | "youtube">("file");
+  const [sourceVideoId, setSourceVideoId] = useState("");
+  const [captionTracks, setCaptionTracks] = useState<YouTubeCaptionTrack[]>([]);
+  const [captionLoading, setCaptionLoading] = useState(false);
+  const [selectedCaptionId, setSelectedCaptionId] = useState("");
+  const [importingCaption, setImportingCaption] = useState(false);
 
   const [youtubeStatus, setYoutubeStatus] = useState<YouTubeStatus>("checking");
   const [youtubeChannel, setYoutubeChannel] = useState<YouTubeChannel | null>(null);
@@ -206,7 +221,8 @@ export default function Home() {
         if (cancelled) return;
         setYoutubeChannel(payload.channel ?? null);
         setYoutubeVideos(payload.videos ?? []);
-        setSelectedVideoId((current) => current || payload.videos?.[0]?.id || "");
+        setSelectedVideoId((current) => current && payload.videos?.some((video) => video.id === current) ? current : "");
+        setSourceVideoId((current) => current && payload.videos?.some((video) => video.id === current) ? current : "");
       } catch (error) {
         if (!cancelled) setYoutubeMessage(error instanceof Error ? error.message : "영상 목록을 불러오지 못했습니다.");
       } finally {
@@ -216,6 +232,53 @@ export default function Home() {
     void loadVideos();
     return () => { cancelled = true; };
   }, [youtubeStatus]);
+
+  useEffect(() => {
+    if (youtubeStatus !== "connected" || !sourceVideoId) {
+      setCaptionTracks([]);
+      setSelectedCaptionId("");
+      return;
+    }
+    let cancelled = false;
+    async function loadCaptionTracks() {
+      setCaptionLoading(true);
+      setYoutubeMessage("");
+      try {
+        const response = await fetch("/api/youtube/captions/list", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ videoId: sourceVideoId }),
+          cache: "no-store"
+        });
+        const payload = (await response.json()) as { tracks?: YouTubeCaptionTrack[]; error?: string };
+        if (!response.ok) throw new Error(payload.error || "자막 트랙을 불러오지 못했습니다.");
+        if (cancelled) return;
+        const tracks = [...(payload.tracks ?? [])].sort((a, b) => {
+          const aEnglish = /^en(?:-|$)/i.test(a.language) ? 0 : 1;
+          const bEnglish = /^en(?:-|$)/i.test(b.language) ? 0 : 1;
+          if (aEnglish !== bEnglish) return aEnglish - bEnglish;
+          if (a.status === "serving" && b.status !== "serving") return -1;
+          if (a.status !== "serving" && b.status === "serving") return 1;
+          return a.language.localeCompare(b.language);
+        });
+        setCaptionTracks(tracks);
+        const preferred = tracks.find((track) => /^en(?:-|$)/i.test(track.language) && track.status === "serving")
+          ?? tracks.find((track) => track.status === "serving")
+          ?? tracks[0];
+        setSelectedCaptionId(preferred?.id ?? "");
+      } catch (error) {
+        if (!cancelled) {
+          setCaptionTracks([]);
+          setSelectedCaptionId("");
+          setYoutubeMessage(error instanceof Error ? error.message : "자막 트랙을 불러오지 못했습니다.");
+        }
+      } finally {
+        if (!cancelled) setCaptionLoading(false);
+      }
+    }
+    void loadCaptionTracks();
+    return () => { cancelled = true; };
+  }, [youtubeStatus, sourceVideoId]);
 
   useEffect(() => {
     if (!running) setUploadLanguages(completedCodes);
@@ -230,6 +293,17 @@ export default function Home() {
     partialTranslationsRef.current = {};
   }
 
+  function applySourceSrt(content: string, filename: string) {
+    const parsed = parseSrt(content);
+    if (parsed.length > MAX_CUE_COUNT) throw new Error(`자막은 최대 ${MAX_CUE_COUNT.toLocaleString()}개 cue까지 처리할 수 있습니다.`);
+    const oversizedCue = parsed.find((cue) => cue.text.length > MAX_TRANSLATABLE_CUE_CHARS);
+    if (oversizedCue) throw new Error(`${oversizedCue.id}번 자막이 너무 깁니다. 원본 cue를 더 짧게 나눠 주세요.`);
+    setCues(parsed);
+    setSourceFileName(filename);
+    clearOutputs();
+    return parsed;
+  }
+
   async function loadFile(file?: File) {
     if (running) return;
     setFileError("");
@@ -237,18 +311,25 @@ export default function Home() {
     if (!file.name.toLowerCase().endsWith(".srt")) return setFileError(".srt 파일만 업로드할 수 있습니다.");
     if (file.size > MAX_FILE_SIZE) return setFileError("파일 크기는 5MB 이하여야 합니다.");
     try {
-      const parsed = parseSrt(await file.text());
-      if (parsed.length > MAX_CUE_COUNT) throw new Error(`자막은 최대 ${MAX_CUE_COUNT.toLocaleString()}개 cue까지 처리할 수 있습니다.`);
-      const oversizedCue = parsed.find((cue) => cue.text.length > MAX_TRANSLATABLE_CUE_CHARS);
-      if (oversizedCue) throw new Error(`${oversizedCue.id}번 자막이 너무 깁니다. 원본 cue를 더 짧게 나눠 주세요.`);
-      setCues(parsed);
-      setSourceFileName(file.name);
-      clearOutputs();
+      applySourceSrt(await file.text(), file.name);
     } catch (error) {
       setCues([]);
       setSourceFileName("");
       clearOutputs();
       setFileError(error instanceof Error ? error.message : "SRT 파일을 읽지 못했습니다.");
+    }
+  }
+
+  async function loadSampleSrt() {
+    if (running) return;
+    setFileError("");
+    try {
+      const response = await fetch("/samples/localization-challenge-en.srt", { cache: "no-store" });
+      if (!response.ok) throw new Error("샘플 SRT를 불러오지 못했습니다.");
+      applySourceSrt(await response.text(), "localization-challenge-en.srt");
+      setSourceMode("file");
+    } catch (error) {
+      setFileError(error instanceof Error ? error.message : "샘플 SRT를 불러오지 못했습니다.");
     }
   }
 
@@ -370,12 +451,43 @@ export default function Home() {
     downloadBlob(await zip.generateAsync({ type: "blob" }), `${base}-subtitles.zip`, "application/zip");
   }
 
+  async function importYouTubeCaption() {
+    if (running || importingCaption || !selectedCaptionId || !sourceVideoId) return;
+    setImportingCaption(true);
+    setFileError("");
+    setYoutubeMessage("");
+    try {
+      const response = await fetch("/api/youtube/captions/download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: selectedCaptionId }),
+        cache: "no-store"
+      });
+      const payload = (await response.json()) as { srt?: string; error?: string };
+      if (!response.ok || typeof payload.srt !== "string") throw new Error(payload.error || "YouTube 자막을 가져오지 못했습니다.");
+      const video = youtubeVideos.find((item) => item.id === sourceVideoId);
+      const track = captionTracks.find((item) => item.id === selectedCaptionId);
+      const safeTitle = (video?.title || "youtube-video").replace(/[\/:*?"<>|]+/g, "-").slice(0, 80);
+      const parsed = applySourceSrt(payload.srt, `${safeTitle}.${track?.language || "source"}.youtube.srt`);
+      setSelectedVideoId(sourceVideoId);
+      setYoutubeMessage(`${track?.language || "원본"} 자막 ${parsed.length.toLocaleString()}개 cue를 가져왔습니다.`);
+    } catch (error) {
+      setFileError(error instanceof Error ? error.message : "YouTube 자막을 가져오지 못했습니다.");
+    } finally {
+      setImportingCaption(false);
+    }
+  }
+
   async function disconnectYouTube() {
     await fetch("/api/youtube/oauth/logout", { method: "POST" });
     setYoutubeStatus("disconnected");
     setYoutubeChannel(null);
     setYoutubeVideos([]);
     setSelectedVideoId("");
+    setSourceVideoId("");
+    setCaptionTracks([]);
+    setSelectedCaptionId("");
+    setSourceMode("file");
     setYoutubeMessage("YouTube 연결을 해제했습니다.");
   }
 
@@ -425,7 +537,7 @@ export default function Home() {
         <div className="topbar-inner">
           <a className="brand" href="#top" aria-label="Subtitle Localizer 홈">
             <span className="brand-symbol" aria-hidden="true">S</span>
-            <span><strong>Subtitle Localizer</strong><small>v1.2.0</small></span>
+            <span><strong>Subtitle Localizer</strong><small>v1.3.0</small></span>
           </a>
           <div className="topbar-actions">
             <span className="privacy-label">파일을 서버에 저장하지 않습니다</span>
@@ -442,12 +554,12 @@ export default function Home() {
         <div className="hero-copy-block">
           <span className="eyebrow">SRT LOCALIZATION WORKSPACE</span>
           <h1>타임코드는 그대로.<br />자막은 현지 언어처럼.</h1>
-          <p>영문 SRT 하나를 여러 언어로 현지화하고, 결과를 검토한 뒤 SRT로 받거나 YouTube에 바로 올립니다.</p>
+          <p>SRT를 올리거나 YouTube의 기존 자막을 바로 가져와 여러 언어로 현지화하고, 검토 후 다시 YouTube에 올립니다.</p>
         </div>
         <div className="hero-facts" aria-label="핵심 기능">
           <span><strong>17</strong> 지원 언어</span>
           <span><strong>100%</strong> 타임코드 보존</span>
-          <span><strong>SRT</strong> 개별·ZIP 다운로드</span>
+          <span><strong>YouTube</strong> 자막 직접 가져오기</span>
         </div>
       </section>
 
@@ -456,38 +568,89 @@ export default function Home() {
           <section className="section-block" aria-labelledby="source-title">
             <div className="section-heading">
               <span className="step-badge">1</span>
-              <div><h2 id="source-title">원본 자막</h2><p>번역의 기준이 될 SRT를 불러옵니다.</p></div>
+              <div><h2 id="source-title">원본 자막</h2><p>파일을 올리거나 내 YouTube 영상의 기존 자막을 가져옵니다.</p></div>
             </div>
-            <div
-              className={`dropzone ${dragging ? "is-dragging" : ""} ${cues.length ? "has-file" : ""}`}
-              onDragEnter={(event) => { event.preventDefault(); setDragging(true); }}
-              onDragOver={(event) => event.preventDefault()}
-              onDragLeave={() => setDragging(false)}
-              onDrop={handleDrop}
-              onClick={() => { if (!running) inputRef.current?.click(); }}
-              onKeyDown={(event) => {
-                if (!running && (event.key === "Enter" || event.key === " ")) inputRef.current?.click();
-              }}
-              role="button"
-              tabIndex={running ? -1 : 0}
-              aria-disabled={running}
-            >
-              <input ref={inputRef} type="file" accept=".srt,application/x-subrip,text/plain" hidden disabled={running} onChange={handleFileChange} />
-              <div className="upload-symbol" aria-hidden="true">↑</div>
-              {cues.length ? (
-                <div className="file-copy">
-                  <strong>{sourceFileName}</strong>
-                  <span>{stats?.count.toLocaleString()} cues · {stats?.duration} · {stats?.chunks} API chunks</span>
-                  <small>새 파일을 드롭하거나 클릭하면 교체됩니다.</small>
-                </div>
-              ) : (
-                <div className="file-copy">
-                  <strong>SRT 파일을 드롭하세요</strong>
-                  <span>또는 클릭해서 파일 선택</span>
-                  <small>최대 5MB · UTF-8 권장</small>
-                </div>
-              )}
+
+            <div className="source-tabs" role="tablist" aria-label="원본 자막 가져오기 방식">
+              <button role="tab" aria-selected={sourceMode === "file"} className={sourceMode === "file" ? "active" : ""} type="button" onClick={() => setSourceMode("file")}>SRT 파일</button>
+              <button role="tab" aria-selected={sourceMode === "youtube"} className={sourceMode === "youtube" ? "active" : ""} type="button" onClick={() => setSourceMode("youtube")}>YouTube 자막</button>
             </div>
+
+            {sourceMode === "file" ? (
+              <>
+              <div
+                className={`dropzone ${dragging ? "is-dragging" : ""} ${cues.length ? "has-file" : ""}`}
+                onDragEnter={(event) => { event.preventDefault(); setDragging(true); }}
+                onDragOver={(event) => event.preventDefault()}
+                onDragLeave={() => setDragging(false)}
+                onDrop={handleDrop}
+                onClick={() => { if (!running) inputRef.current?.click(); }}
+                onKeyDown={(event) => {
+                  if (!running && (event.key === "Enter" || event.key === " ")) inputRef.current?.click();
+                }}
+                role="button"
+                tabIndex={running ? -1 : 0}
+                aria-disabled={running}
+              >
+                <input ref={inputRef} type="file" accept=".srt,application/x-subrip,text/plain" hidden disabled={running} onChange={handleFileChange} />
+                <div className="upload-symbol" aria-hidden="true">↑</div>
+                {cues.length ? (
+                  <div className="file-copy">
+                    <strong>{sourceFileName}</strong>
+                    <span>{stats?.count.toLocaleString()} cues · {stats?.duration} · {stats?.chunks} API chunks</span>
+                    <small>새 파일을 드롭하거나 클릭하면 교체됩니다.</small>
+                  </div>
+                ) : (
+                  <div className="file-copy">
+                    <strong>SRT 파일을 드롭하세요</strong>
+                    <span>또는 클릭해서 파일 선택</span>
+                    <small>최대 5MB · UTF-8 권장</small>
+                  </div>
+                )}
+              </div>
+              <div className="sample-row">
+                <span>SRT가 아직 없으신가요?</span>
+                <button type="button" disabled={running} onClick={() => void loadSampleSrt()}>30-cue 샘플로 테스트</button>
+              </div>
+              </>
+            ) : (
+              <div className="youtube-source-panel">
+                {youtubeStatus === "checking" && <p className="source-empty">YouTube 연결 상태를 확인하고 있습니다.</p>}
+                {youtubeStatus === "unavailable" && <p className="source-empty">Vercel에 Google OAuth 환경변수를 설정하면 YouTube 자막 가져오기를 사용할 수 있습니다.</p>}
+                {youtubeStatus === "disconnected" && (
+                  <div className="source-empty"><strong>YouTube 채널을 먼저 연결해 주세요.</strong><a className="primary-button source-connect" href="/api/youtube/oauth/start">YouTube 연결</a></div>
+                )}
+                {youtubeStatus === "connected" && (
+                  <div className="youtube-source-grid">
+                    <div className="field-block compact">
+                      <div className="field-row"><label htmlFor="source-youtube-video">원본 영상</label><span>{youtubeVideos.length}개</span></div>
+                      <select id="source-youtube-video" className="text-input" disabled={youtubeLoading || importingCaption || !youtubeVideos.length} value={sourceVideoId} onChange={(event) => setSourceVideoId(event.target.value)}>
+                        <option value="">영상을 선택하세요</option>
+                        {youtubeVideos.map((video) => <option key={video.id} value={video.id}>{video.title} {video.publishedAt ? `· ${formatVideoDate(video.publishedAt)}` : ""}</option>)}
+                      </select>
+                    </div>
+                    <div className="field-block compact">
+                      <div className="field-row"><label htmlFor="source-caption-track">기존 자막</label><span>{captionLoading ? "확인 중" : `${captionTracks.length}개`}</span></div>
+                      <select id="source-caption-track" className="text-input" disabled={!sourceVideoId || captionLoading || importingCaption || !captionTracks.length} value={selectedCaptionId} onChange={(event) => setSelectedCaptionId(event.target.value)}>
+                        {!sourceVideoId && <option value="">먼저 영상을 선택하세요</option>}
+                        {sourceVideoId && captionLoading && <option value="">자막 목록 불러오는 중…</option>}
+                        {sourceVideoId && !captionLoading && !captionTracks.length && <option value="">가져올 수 있는 자막이 없습니다</option>}
+                        {captionTracks.map((track) => <option key={track.id} value={track.id}>{track.language} · {track.name}{track.trackKind === "ASR" ? " · 자동 생성" : ""}{track.isDraft ? " · 초안" : ""}</option>)}
+                      </select>
+                    </div>
+                    <div className="youtube-import-action">
+                      <div>
+                        <strong>타임코드까지 그대로 가져옵니다</strong>
+                        <span>선택한 트랙을 SRT로 받아 기존 번역 파이프라인에 연결합니다.</span>
+                      </div>
+                      <button className="primary-button" type="button" disabled={!selectedCaptionId || importingCaption || running} onClick={() => void importYouTubeCaption()}>
+                        {importingCaption ? "자막 가져오는 중…" : "SRT 가져오기"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {fileError && <p className="feedback error" role="alert">{fileError}</p>}
             {stats && stats.warnings > 0 && <p className="feedback neutral">원본에서 읽기 길이 참고 항목 {stats.warnings}개를 감지했습니다. 원본 타임코드는 수정하지 않습니다.</p>}
           </section>
@@ -662,6 +825,7 @@ export default function Home() {
                 <div className="field-block compact">
                   <div className="field-row"><label htmlFor="youtube-video">영상 선택</label><span>{youtubeVideos.length}개</span></div>
                   <select id="youtube-video" className="text-input" disabled={youtubeLoading || !youtubeVideos.length} value={selectedVideoId} onChange={(event) => setSelectedVideoId(event.target.value)}>
+                    <option value="">업로드할 영상을 선택하세요</option>
                     {youtubeLoading && <option value="">영상 목록 불러오는 중…</option>}
                     {!youtubeLoading && !youtubeVideos.length && <option value="">업로드한 영상을 찾지 못했습니다</option>}
                     {youtubeVideos.map((video) => <option key={video.id} value={video.id}>{video.title} {video.publishedAt ? `· ${formatVideoDate(video.publishedAt)}` : ""}</option>)}
@@ -692,7 +856,7 @@ export default function Home() {
                   )}
                 </div>
 
-                <div className="quota-note">YouTube 자막 업로드는 언어 1개당 API quota 400 units를 사용합니다.</div>
+                <div className="quota-note">자막 목록 조회 50 units · 원본 자막 다운로드 200 units · 자막 업로드는 언어 1개당 400 units를 사용합니다.</div>
                 <button className="dark-button full" type="button" disabled={uploadRunning || !selectedVideoId || !uploadLanguages.length} onClick={() => void uploadToYouTube()}>
                   {uploadRunning ? "YouTube에 올리는 중…" : `${uploadLanguages.length || 0}개 자막 YouTube에 올리기`}
                 </button>
@@ -712,7 +876,7 @@ export default function Home() {
         </aside>
       </div>
 
-      <footer className="footer">Subtitle Localizer v1.2.0 · SRT 구조를 유지하는 다국어 자막 작업 도구</footer>
+      <footer className="footer">Subtitle Localizer v1.3.0 · SRT 구조를 유지하는 다국어 자막 작업 도구</footer>
     </main>
   );
 }

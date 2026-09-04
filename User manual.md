@@ -1,42 +1,78 @@
-# Subtitle Localizer v1.2.0 — User Manual
+# Subtitle Localizer v1.3.0 — User Manual
 
-## 1. SRT 번역
-1. 앱을 엽니다.
-2. 영문 `.srt`를 드롭하거나 선택합니다.
-3. 번역할 언어를 고릅니다. 처음 품질 확인에는 한국어·일본어·스페인어 3개를 권장합니다.
+## 1. 가장 빠른 테스트
+SRT가 없어도 앱 첫 화면에서 **SRT 파일 → 30-cue 샘플로 테스트**를 누르면 샘플 영어 자막이 바로 로드됩니다.
+
+추천 첫 테스트:
+1. 샘플 불러오기
+2. 한국어 / 일본어 / 스페인어 선택
+3. `자연스럽게` 유지
+4. 번역 시작
+5. 원문↔번역 비교
+6. 언어별 SRT 또는 ZIP 다운로드
+
+## 2. 로컬 SRT 번역
+1. **원본 자막 → SRT 파일**을 선택합니다.
+2. `.srt`를 드롭하거나 클릭해 선택합니다.
+3. 대상 언어를 고릅니다.
 4. 번역 스타일을 고릅니다.
-5. 브랜드명·인명·전문용어 규칙이 있으면 **고급 설정 → 용어집**에 입력합니다.
+5. 브랜드명·인명·전문용어가 있으면 **고급 설정 → 용어집**에 적습니다.
 6. 운영 배포가 `SUBTITLE_APP_ACCESS_KEY`로 보호되어 있으면 **배포 보호 키**를 입력합니다.
 7. **번역 시작**을 누릅니다.
-8. 실패한 언어가 있으면 **이어서 재시도**를 사용합니다. 이미 완료된 chunk는 다시 번역하지 않습니다.
+8. 실패한 언어는 **이어서 재시도**를 누릅니다. 완료된 chunk는 다시 번역하지 않습니다.
 
-## 2. 결과 검토
-번역이 끝나면 **검토 & 다운로드**에서:
+## 3. YouTube 기존 자막을 원본으로 사용
+### 최초 연결
+Google Cloud / Vercel에 YouTube OAuth 설정이 완료되어 있어야 합니다.
+
+앱에서:
+1. **원본 자막 → YouTube 자막**을 선택합니다.
+2. 연결되지 않았다면 **YouTube 연결**을 누릅니다.
+3. 내 영상 중 원본으로 사용할 영상을 선택합니다.
+4. 앱이 그 영상의 기존 caption track 목록을 불러옵니다.
+5. 영어 또는 원하는 원본 자막을 선택합니다.
+   - `자동 생성` 표시는 ASR 자막입니다.
+   - `초안`은 공개되지 않은 draft track입니다.
+6. **SRT 가져오기**를 누릅니다.
+7. 가져온 cue 수가 표시되면 로컬 파일과 동일하게 번역을 진행합니다.
+
+YouTube에서 가져온 원본의 영상은 번역 후 YouTube 업로드 대상에 자동으로 채워집니다.
+
+## 4. 결과 검토
+**검토 & 다운로드**에서 다음을 확인합니다.
 - 왼쪽: 원문
-- 오른쪽: 선택 언어 번역
+- 오른쪽: 선택한 번역
 - cue 번호 / timestamp
-- 타임코드·ID 보존 상태
+- 타임코드·ID 보존 여부
 - 읽기 길이 참고 경고
-를 확인합니다.
 
-읽기 길이 경고는 자동 수정 명령이 아니라 검토 포인트입니다.
+읽기 길이 경고는 자동 수정이 아니라 사람이 볼 검토 포인트입니다.
 
-## 3. 파일 받기
-- 한 언어만 필요하면 해당 언어의 **SRT 다운로드**를 사용합니다.
-- 여러 언어가 완료되면 **완료 언어 ZIP**을 사용합니다.
+## 5. 파일 다운로드
+- 한 언어: 해당 언어 **SRT 다운로드**
+- 여러 언어: **완료 언어 ZIP**
 
-## 4. YouTube 연결 — 최초 1회 설정
+## 6. YouTube에 번역 자막 업로드
+1. YouTube가 연결되어 있어야 합니다.
+2. 업로드할 영상을 선택합니다.
+3. 자막 트랙 이름을 확인합니다. 기본값은 `Subtitle Localizer`입니다.
+4. 완료된 번역 언어 중 업로드할 언어를 선택합니다.
+5. **YouTube에 올리기**를 실행합니다.
+
+같은 영상에 **같은 언어 + 같은 track name**이 이미 있으면 앱은 기존 자막을 자동 삭제하지 않습니다. 트랙 이름을 바꾸거나 기존 트랙을 직접 정리한 뒤 재시도합니다.
+
+## 7. Google / YouTube OAuth 설정
 ### Google Cloud
-1. Google Cloud 프로젝트에서 YouTube Data API v3를 활성화합니다.
-2. OAuth consent screen을 구성합니다.
-3. OAuth Client를 **Web application**으로 생성합니다.
-4. Authorized redirect URI에 다음 주소를 등록합니다.
+1. YouTube Data API v3 활성화
+2. OAuth consent screen 구성
+3. OAuth Client를 **Web application**으로 생성
+4. Authorized redirect URI 등록
 
 ```text
 https://subtitle-localizer.vercel.app/api/youtube/oauth/callback
 ```
 
-### Vercel 환경변수
+### Vercel environment variables
 ```text
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
@@ -44,44 +80,35 @@ YOUTUBE_SESSION_SECRET=24자 이상 충분히 긴 랜덤 값
 NEXT_PUBLIC_APP_URL=https://subtitle-localizer.vercel.app
 ```
 
-환경변수를 추가한 뒤 새 production deployment에 반영합니다.
+OpenAI 번역용:
 
-## 5. YouTube에 자막 올리기
-1. 앱에서 **YouTube 연결**을 선택합니다.
-2. Google 권한 화면에서 연결할 YouTube 계정을 선택합니다.
-3. 앱으로 돌아오면 최근 업로드 영상 목록에서 대상을 선택합니다.
-4. 자막 트랙 이름을 확인합니다. 기본값은 `Subtitle Localizer`입니다.
-5. 업로드할 완료 언어를 선택합니다.
-6. **YouTube에 올리기**를 실행합니다.
+```text
+OPENAI_API_KEY=...
+OPENAI_TRANSLATION_MODEL=gpt-5.6-luna
+SUBTITLE_APP_ACCESS_KEY=긴 랜덤 보호 키
+```
 
-언어별로 별도의 caption track이 생성됩니다.
+## 8. YouTube quota 참고
+- 자막 목록 조회: 50 units
+- 선택한 자막 SRT 다운로드: 200 units
+- 자막 업로드: 언어 1개당 400 units
 
-### 이미 같은 자막이 있는 경우
-YouTube는 같은 영상에서 **같은 언어 + 같은 track name** 조합이 이미 존재하면 충돌을 반환할 수 있습니다. 앱은 기존 자막을 자동으로 지우지 않습니다. track name을 바꾸거나 YouTube Studio에서 기존 track을 정리한 뒤 다시 시도합니다.
+영상 하나를 선택할 때만 자막 목록을 조회하도록 되어 있어 불필요한 quota 사용을 줄입니다.
 
-## 6. Quota
-YouTube `captions.insert`는 언어 1개당 400 quota units를 사용합니다. 많은 언어를 한 번에 올리기 전에 Google Cloud의 현재 quota를 확인하는 것이 좋습니다.
-
-## 7. 권장 첫 실전 테스트
-운영 채널의 중요한 영상보다 **비공개 또는 일부 공개 테스트 영상 1개**로 먼저 확인합니다.
-
-권장 순서:
-1. 짧은 영어 SRT
-2. 한국어·일본어·스페인어 번역
-3. 화면에서 문맥/길이 확인
-4. 3개 SRT 다운로드 확인
-5. 테스트 영상에 1개 언어만 먼저 업로드
-6. YouTube Studio에서 timestamp/언어/track name 확인
-7. 이상 없으면 나머지 언어 업로드
-
-## 8. Vercel 배포 직후 smoke test
+## 9. 배포 후 권장 smoke test
 ```text
 [ ] 홈 렌더링
-[ ] SRT 업로드
-[ ] 보호 키를 사용한 실제 1개 언어 번역
+[ ] 30-cue 샘플 불러오기
+[ ] 보호 키를 사용한 실제 한국어 번역
 [ ] SRT 다운로드
 [ ] ZIP 다운로드
 [ ] YouTube OAuth callback
-[ ] 채널명/영상 목록 표시
-[ ] 비공개 테스트 영상에 자막 1개 업로드
+[ ] 채널 / 영상 목록 표시
+[ ] 테스트 영상의 기존 영어 caption track 표시
+[ ] 영어 SRT 가져오기
+[ ] 가져온 SRT 번역
+[ ] 비공개 테스트 영상에 번역 자막 1개 업로드
+[ ] YouTube Studio에서 언어 / timestamp / track name 확인
 ```
+
+중요한 운영 영상보다 비공개 또는 일부 공개 테스트 영상으로 먼저 확인하는 것을 권장합니다.

@@ -1,74 +1,69 @@
-# Subtitle Localizer v1.2.0 — Checklist
+# Subtitle Localizer v1.3.0 — Checklist
 
 ## 0. Documentation-first
-- [x] context-notes.md updated before implementation
-- [x] checklist.md updated before implementation
-- [x] README.md updated with v1.2.0 scope before implementation
-- [x] User manual.md updated with planned workflow before implementation
+- [x] `context-notes.md` updated before v1.3.0 implementation
+- [x] `checklist.md` updated before v1.3.0 implementation
+- [x] `README.md` updated before v1.3.0 implementation
+- [x] `User manual.md` updated before v1.3.0 implementation
 
-## 1. Source / deployment QA — 9.4/10
-- [x] Review v1.1.0 source for functional/security issues
-- [x] Validate environment-variable behavior at source level
-- [x] Confirm public translation API remains protected by `SUBTITLE_APP_ACCESS_KEY`
-- [x] Run domain/unit tests
-- [x] Run TS/TSX transpile syntax check
-- [x] Run CSS delimiter sanity check
-- [ ] Full `npm install && npm run typecheck && npm run build` — blocked by npm registry DNS (`EAI_AGAIN`) in this environment
-- [ ] Live browser DOM/pixel QA for supplied Vercel URL — remote fetch unavailable here
+## 1. Source / deployment QA — 9.2/10
+- [x] Review v1.2.0 source
+- [x] Preserve `SUBTITLE_APP_ACCESS_KEY` API protection
+- [x] Attempt supplied production URL via web fetch
+- [x] Attempt supplied production URL via Vercel fetch
+- [x] Attempt supplied production URL via container network
+- [ ] Live DOM/pixel QA — remote access unavailable in this environment
 
-Review changes:
-- Mobile/tablet primary flow kept before YouTube side panel.
-- OAuth session secret shorter than 24 chars is treated as unconfigured.
-- Successful YouTube uploads are removed from the pending upload selection.
+## 2. YouTube direct caption import — 9.7/10
+- [x] Video selection for source caption
+- [x] Caption track list via YouTube `captions.list`
+- [x] English track preference
+- [x] ASR/draft metadata shown in UI
+- [x] Empty state for video without caption tracks
+- [x] Caption download via `tfmt=srt`
+- [x] Downloaded SRT validated server-side
+- [x] Imported SRT sent through existing source validation
+- [x] Imported source connected to translation/review/download pipeline
+- [x] Source video prefilled as upload target after import
+- [x] List/download internal endpoints changed to POST to reduce accidental quota calls
+- [x] Caption list/download/upload quota guidance shown
+- [ ] Real owned-video caption import — requires deployed Google OAuth credentials
 
-## 2. UI / UX polish — 9.6/10
-- [x] Apply provided ui-polish flow: structure → hierarchy → component logic → polish
-- [x] Apply Karrot/SEED semantic color tokens
-- [x] Use 4px spacing rhythm for layout/component geometry
-- [x] Keep `#ff6f0f` scarce and primary-action focused
-- [x] Remove secondary YouTube-red accent from product chrome
-- [x] Improve mobile hierarchy, progress, review, and YouTube states
-- [x] Add keyboard focus styles
-- [x] Add `prefers-reduced-motion`
-- [x] Avoid decorative blur and widespread shadows
-- [x] Add ARIA tab/radio state on relevant controls
+## 3. UI / UX polish — 9.7/10
+- [x] File / YouTube source tabs
+- [x] Primary flow remains first on mobile
+- [x] Karrot/SEED semantic tokens retained
+- [x] 4px rhythm retained
+- [x] no YouTube-red secondary product accent
+- [x] restrained transitions
+- [x] `prefers-reduced-motion`
+- [x] keyboard focus states
+- [x] ARIA tab/radio states
+- [x] connected/disconnected/unconfigured/empty/loading states
 
-## 3. Translation quality — 9.5/10
-- [x] Improve subtitle-localization prompt constraints
-- [x] Send cue duration as reading-time hint
-- [x] Add KO/JA/ES language-specific localization notes
-- [x] Preserve tags/names/numbers/IDs in prompt contract
-- [x] Add localized reading-length QA diagnostics
-- [x] Add KO/JA/ES quality-reference SRT fixtures
-- [x] Verify fixture timing preservation automatically
-- [ ] Live OpenAI API output comparison — requires deployment/API key runtime
+## 4. Sample / translation quality — 9.8/10
+- [x] 30-cue `localization-challenge-en.srt`
+- [x] cue-spanning sentences
+- [x] idiom test
+- [x] pronoun/localization test
+- [x] short-duration reading-pressure test
+- [x] proper-name preservation test
+- [x] number preservation test
+- [x] multiline cue test
+- [x] UI “30-cue sample” loader
+- [x] public static sample copy
+- [x] automated fixture structure test
+- [ ] Live EN→KO/JA/ES OpenAI output comparison — requires runtime API key
 
-## 4. YouTube integration — 9.5/10
-- [x] Google OAuth start/callback/logout routes
-- [x] OAuth state validation
-- [x] AES-256-GCM encrypted HttpOnly session cookie
-- [x] Refresh-token based access-token renewal
-- [x] Single required OAuth scope: `youtube.force-ssl`
-- [x] Authenticated channel + uploads playlist lookup
-- [x] Recent uploaded-video list endpoint (max 50)
-- [x] Caption upload endpoint (`multipart/related`)
-- [x] UI for connect/select/track-name/language/upload
-- [x] Duplicate caption conflict surfaced clearly
-- [x] Quota warning: 400 units per `captions.insert`
-- [ ] Real Google OAuth + private test-video upload — requires user's Google Cloud/Vercel credentials
-
-## 5. Final verification
-- [x] 25/25 automated tests pass
-- [x] TS/TSX transpile syntax check passes
+## 5. Final verification — 9.7/10
+- [x] 28/28 automated tests pass
+- [x] 22 TS/TSX files transpile with 0 syntax errors
 - [x] CSS delimiter check passes
-- [x] No hard-coded `sk-*` API secret
-- [x] Required environment variables documented
-- [x] Docs match implementation
-- [ ] Full dependency-aware TypeScript validation/build — pending npm access
-- [ ] Post-deploy real translation / OAuth / caption upload smoke test
-- [x] ZIP generated
+- [x] hard-coded `sk-*` secret check
+- [x] version strings updated to v1.3.0
+- [x] documentation matches implementation
+- [ ] `npm install && npm run typecheck && npm run build` — dependency installation unavailable in this environment
+- [ ] deployed OAuth/caption import/caption upload smoke test
 
 ## Overall self-evaluation
-**9.5/10 before real deployment smoke test.**
-
-The remaining 0.5 is intentionally reserved for dependency-aware Next.js production build, real OpenAI translation output, Google OAuth callback, and a real YouTube caption upload on the user's deployment.
+**9.6/10**

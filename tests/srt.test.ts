@@ -142,3 +142,13 @@ test("CJK 자막은 더 짧은 줄 길이 기준으로 QA한다", () => {
   const cue = { id: 1, start: "00:00:00,000", end: "00:00:02,000", text: "가".repeat(35) };
   assert.ok(analyzeLocalizedCueQuality(cue, "ko").warnings.includes("한 줄이 길 수 있습니다."));
 });
+
+test("v1.3.0 현지화 도전 샘플은 30개 cue와 핵심 테스트 문구를 포함한다", () => {
+  const challenge = readFileSync(join(testDir, "../samples/localization-challenge-en.srt"), "utf8");
+  const parsed = parseSrt(challenge);
+  assert.equal(parsed.length, 30);
+  assert.ok(parsed.some((cue) => cue.text.includes("break a leg")));
+  assert.ok(parsed.some((cue) => cue.text.includes("12,480")));
+  assert.ok(parsed.some((cue) => cue.text.includes("ChatGPT")));
+  assert.equal(serializeSrt(parsed).includes("00:01:20,800 --> 00:01:23,000"), true);
+});

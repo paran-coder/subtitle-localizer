@@ -7,6 +7,7 @@ import { refreshYouTubeSession, sealSession, unsealSession, YOUTUBE_SESSION_COOK
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
+
 export async function POST(request: NextRequest) {
   const config = youtubeConfig();
   const cookie = request.cookies.get(YOUTUBE_SESSION_COOKIE)?.value;

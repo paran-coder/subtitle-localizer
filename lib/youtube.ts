@@ -13,6 +13,16 @@ export type YouTubeChannel = {
   thumbnail?: string;
 };
 
+export type YouTubeCaptionTrack = {
+  id: string;
+  language: string;
+  name: string;
+  trackKind: "ASR" | "forced" | "standard" | string;
+  status: string;
+  isDraft: boolean;
+  lastUpdated?: string;
+};
+
 type GoogleError = { error?: { message?: string; errors?: Array<{ reason?: string }> } };
 
 async function youtubeJson<T>(url: string, accessToken: string): Promise<T> {
@@ -83,6 +93,57 @@ export async function listMyYouTubeVideos(accessToken: string): Promise<{
     },
     videos
   };
+}
+
+export async function listCaptionTracks(accessToken: string, videoId: string): Promise<YouTubeCaptionTrack[]> {
+  const url = new URL("https://www.googleapis.com/youtube/v3/captions");
+  url.searchParams.set("part", "snippet");
+  url.searchParams.set("videoId", videoId);
+
+  const payload = await youtubeJson<{
+    items?: Array<{
+      id?: string;
+      snippet?: {
+        language?: string;
+        name?: string;
+        trackKind?: string;
+        status?: string;
+        isDraft?: boolean;
+        lastUpdated?: string;
+      };
+    }>;
+  }>(url.toString(), accessToken);
+
+  return (payload.items ?? []).flatMap((item) => {
+    if (!item.id || !item.snippet?.language) return [];
+    return [{
+      id: item.id,
+      language: item.snippet.language,
+      name: item.snippet.name || "기본 자막",
+      trackKind: item.snippet.trackKind || "standard",
+      status: item.snippet.status || "serving",
+      isDraft: Boolean(item.snippet.isDraft),
+      lastUpdated: item.snippet.lastUpdated
+    }];
+  });
+}
+
+export async function downloadCaptionTrackAsSrt(accessToken: string, captionId: string): Promise<string> {
+  const url = new URL(`https://www.googleapis.com/youtube/v3/captions/${encodeURIComponent(captionId)}`);
+  url.searchParams.set("tfmt", "srt");
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: "no-store"
+  });
+  if (!response.ok) {
+    let message = `YouTube 자막 다운로드 실패 (${response.status})`;
+    try {
+      const payload = await response.json() as GoogleError;
+      message = payload.error?.message || message;
+    } catch {}
+    throw new Error(message);
+  }
+  return response.text();
 }
 
 export async function uploadCaptionTrack(input: {

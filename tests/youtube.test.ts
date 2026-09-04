@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { listMyYouTubeVideos, uploadCaptionTrack } from "../lib/youtube.ts";
+import { downloadCaptionTrackAsSrt, listCaptionTracks, listMyYouTubeVideos, uploadCaptionTrack } from "../lib/youtube.ts";
 
 test("연결 채널의 uploads playlist에서 영상 목록을 읽는다", async () => {
   const originalFetch = globalThis.fetch;
@@ -79,6 +79,52 @@ test("captionExists 충돌을 사용자가 이해할 수 있는 메시지로 바
       trackName: "Subtitle Localizer",
       srt: "1\n00:00:00,000 --> 00:00:01,000\nこんにちは\n"
     }), /이미 있습니다/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+
+test("captions.list 결과를 가져오기용 트랙 모델로 정리한다", async () => {
+  const originalFetch = globalThis.fetch;
+  let calledUrl = "";
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    calledUrl = String(input);
+    return new Response(JSON.stringify({
+      items: [
+        { id: "cap-en", snippet: { language: "en", name: "English", trackKind: "standard", status: "serving", isDraft: false } },
+        { id: "cap-asr", snippet: { language: "en-US", name: "", trackKind: "ASR", status: "serving", isDraft: false } }
+      ]
+    }), { status: 200 });
+  }) as typeof fetch;
+
+  try {
+    const tracks = await listCaptionTracks("token", "video123");
+    assert.equal(tracks.length, 2);
+    assert.equal(tracks[0].id, "cap-en");
+    assert.equal(tracks[1].trackKind, "ASR");
+    assert.match(calledUrl, /\/captions\?/);
+    assert.match(calledUrl, /videoId=video123/);
+    assert.match(calledUrl, /part=snippet/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("captions.download를 SRT 형식으로 요청한다", async () => {
+  const originalFetch = globalThis.fetch;
+  let calledUrl = "";
+  const expected = "1\n00:00:00,000 --> 00:00:01,000\nHello\n";
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    calledUrl = String(input);
+    return new Response(expected, { status: 200, headers: { "Content-Type": "application/octet-stream" } });
+  }) as typeof fetch;
+
+  try {
+    const srt = await downloadCaptionTrackAsSrt("token", "caption-123");
+    assert.equal(srt, expected);
+    assert.match(calledUrl, /captions\/caption-123/);
+    assert.match(calledUrl, /tfmt=srt/);
   } finally {
     globalThis.fetch = originalFetch;
   }
