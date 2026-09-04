@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   chunkCues,
+  chunkSubtitleCues,
+  hasPreservedTiming,
   normalizeSrtInput,
   parseSrt,
   replaceCueTexts,
@@ -60,4 +62,63 @@ test("번역 텍스트만 주입하고 타임코드는 보존한다", () => {
 test("번역 id가 누락되면 실패한다", () => {
   const original = parseSrt(sample);
   assert.throws(() => replaceCueTexts(original, [{ id: 1, text: "번역" }]));
+});
+
+
+test("동적 청크는 cue 수 제한을 지킨다", () => {
+  const cues = Array.from({ length: 100 }, (_, index) => ({
+    id: index + 1,
+    start: `00:00:${String(index % 60).padStart(2, "0")},000`,
+    end: `00:00:${String(index % 60).padStart(2, "0")},500`,
+    text: "short subtitle"
+  }));
+  const chunks = chunkSubtitleCues(cues, { maxCues: 48, maxChars: 12_000 });
+  assert.deepEqual(chunks.map((chunk) => chunk.length), [48, 48, 4]);
+});
+
+test("동적 청크는 텍스트 예산을 넘기기 전에 분할한다", () => {
+  const cues = [
+    { id: 1, start: "00:00:01,000", end: "00:00:02,000", text: "a".repeat(70) },
+    { id: 2, start: "00:00:02,000", end: "00:00:03,000", text: "b".repeat(70) },
+    { id: 3, start: "00:00:03,000", end: "00:00:04,000", text: "c".repeat(70) }
+  ];
+  const chunks = chunkSubtitleCues(cues, { maxCues: 48, maxChars: 150 });
+  assert.deepEqual(chunks.map((chunk) => chunk.map((cue) => cue.id)), [[1], [2], [3]]);
+});
+
+test("번역 결과의 id/start/end 보존 여부를 검증한다", () => {
+  const original = parseSrt(sample);
+  const translated = replaceCueTexts(original, [
+    { id: 1, text: "환영합니다" },
+    { id: 2, text: "AI를 이야기합니다" }
+  ]);
+  assert.equal(hasPreservedTiming(original, translated), true);
+  assert.equal(hasPreservedTiming(original, [{ ...translated[0], start: "00:00:00,000" }, translated[1]]), false);
+});
+
+test("5,000 cue 장문 SRT를 파싱하고 제한된 청크로 분할한다", () => {
+  const formatTime = (ms: number) => {
+    const hours = Math.floor(ms / 3_600_000);
+    const minutes = Math.floor((ms % 3_600_000) / 60_000);
+    const seconds = Math.floor((ms % 60_000) / 1_000);
+    const millis = ms % 1_000;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")},${String(millis).padStart(3, "0")}`;
+  };
+  const longSrt = Array.from({ length: 5_000 }, (_, index) => {
+    const start = index * 1_000;
+    return `${index + 1}\n${formatTime(start)} --> ${formatTime(start + 800)}\nSubtitle line ${index + 1}`;
+  }).join("\n\n");
+
+  const parsed = parseSrt(longSrt);
+  const chunks = chunkSubtitleCues(parsed);
+  assert.equal(parsed.length, 5_000);
+  assert.ok(chunks.every((chunk) => chunk.length <= 48));
+  assert.equal(chunks.flat().length, 5_000);
+});
+
+test("SRT의 기본 서식 태그를 텍스트 일부로 보존한다", () => {
+  const tagged = `1\n00:00:01,000 --> 00:00:02,000\n<i>Hello</i>`;
+  const parsed = parseSrt(tagged);
+  assert.equal(parsed[0].text, "<i>Hello</i>");
+  assert.ok(serializeSrt(parsed).includes("<i>Hello</i>"));
 });

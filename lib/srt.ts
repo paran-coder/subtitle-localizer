@@ -3,6 +3,12 @@ import type { SubtitleCue } from "./types";
 const TIMECODE_PATTERN = /^(\d{2,}):([0-5]\d):([0-5]\d),(\d{3})$/;
 const RANGE_PATTERN = /^(\d{2,}:[0-5]\d:[0-5]\d,\d{3})\s+-->\s+(\d{2,}:[0-5]\d:[0-5]\d,\d{3})(?:\s+.*)?$/;
 
+export const MAX_TRANSLATABLE_CUE_CHARS = 2_000;
+export const DEFAULT_CHUNK_OPTIONS = {
+  maxCues: 48,
+  maxChars: 12_000
+} as const;
+
 export class SrtParseError extends Error {
   constructor(message: string) {
     super(message);
@@ -100,6 +106,40 @@ export function chunkCues<T>(items: T[], chunkSize = 32): T[][] {
   return chunks;
 }
 
+export function chunkSubtitleCues(
+  cues: SubtitleCue[],
+  options: { maxCues?: number; maxChars?: number } = {}
+): SubtitleCue[][] {
+  const maxCues = options.maxCues ?? DEFAULT_CHUNK_OPTIONS.maxCues;
+  const maxChars = options.maxChars ?? DEFAULT_CHUNK_OPTIONS.maxChars;
+
+  if (!Number.isInteger(maxCues) || maxCues <= 0) throw new Error("maxCues는 1 이상의 정수여야 합니다.");
+  if (!Number.isInteger(maxChars) || maxChars <= 0) throw new Error("maxChars는 1 이상의 정수여야 합니다.");
+
+  const chunks: SubtitleCue[][] = [];
+  let current: SubtitleCue[] = [];
+  let currentChars = 0;
+
+  for (const cue of cues) {
+    // JSON/id 구분자 등의 작은 오버헤드를 보수적으로 포함합니다.
+    const estimatedChars = cue.text.length + 24;
+    const wouldOverflow =
+      current.length > 0 && (current.length >= maxCues || currentChars + estimatedChars > maxChars);
+
+    if (wouldOverflow) {
+      chunks.push(current);
+      current = [];
+      currentChars = 0;
+    }
+
+    current.push(cue);
+    currentChars += estimatedChars;
+  }
+
+  if (current.length > 0) chunks.push(current);
+  return chunks;
+}
+
 export function replaceCueTexts(
   original: SubtitleCue[],
   translations: Array<{ id: number; text: string }>
@@ -135,4 +175,14 @@ export function analyzeCueQuality(cue: SubtitleCue): CueQuality {
   if (maxLineLength > 48) warnings.push("한 줄이 길 수 있습니다.");
   if (cue.text.split("\n").length > 2) warnings.push("자막이 3줄 이상입니다.");
   return { id: cue.id, cps, maxLineLength, warnings };
+}
+
+export function hasPreservedTiming(original: SubtitleCue[], translated: SubtitleCue[]): boolean {
+  return (
+    original.length === translated.length &&
+    original.every((cue, index) => {
+      const target = translated[index];
+      return target?.id === cue.id && target.start === cue.start && target.end === cue.end;
+    })
+  );
 }
