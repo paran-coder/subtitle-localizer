@@ -37,10 +37,7 @@ async function youtubeJson<T>(url: string, accessToken: string): Promise<T> {
   return payload;
 }
 
-export async function listMyYouTubeVideos(accessToken: string): Promise<{
-  channel: YouTubeChannel;
-  videos: YouTubeVideo[];
-}> {
+async function getMyYouTubeChannelItem(accessToken: string) {
   const channelUrl = new URL("https://www.googleapis.com/youtube/v3/channels");
   channelUrl.searchParams.set("part", "snippet,contentDetails");
   channelUrl.searchParams.set("mine", "true");
@@ -54,8 +51,26 @@ export async function listMyYouTubeVideos(accessToken: string): Promise<{
   }>(channelUrl.toString(), accessToken);
 
   const channelItem = channelPayload.items?.[0];
-  const uploads = channelItem?.contentDetails?.relatedPlaylists?.uploads;
-  if (!channelItem || !uploads) throw new Error("연결된 YouTube 채널의 업로드 목록을 찾지 못했습니다.");
+  if (!channelItem) throw new Error("연결된 Google 계정에서 YouTube 채널을 찾지 못했습니다.");
+  return channelItem;
+}
+
+export async function getMyYouTubeChannel(accessToken: string): Promise<YouTubeChannel> {
+  const channelItem = await getMyYouTubeChannelItem(accessToken);
+  return {
+    id: channelItem.id,
+    title: channelItem.snippet?.title || "YouTube 채널",
+    thumbnail: channelItem.snippet?.thumbnails?.default?.url
+  };
+}
+
+export async function listMyYouTubeVideos(accessToken: string): Promise<{
+  channel: YouTubeChannel;
+  videos: YouTubeVideo[];
+}> {
+  const channelItem = await getMyYouTubeChannelItem(accessToken);
+  const uploads = channelItem.contentDetails?.relatedPlaylists?.uploads;
+  if (!uploads) throw new Error("연결된 YouTube 채널의 업로드 목록을 찾지 못했습니다.");
 
   const playlistUrl = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
   playlistUrl.searchParams.set("part", "snippet,contentDetails");

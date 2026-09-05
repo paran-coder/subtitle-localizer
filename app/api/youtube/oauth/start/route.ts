@@ -35,7 +35,8 @@ export async function GET(request: NextRequest) {
     auth.searchParams.set("response_type", "code");
     auth.searchParams.set("scope", YOUTUBE_SCOPE);
     auth.searchParams.set("access_type", "offline");
-    auth.searchParams.set("prompt", "consent");
+    // 추가 연결 때도 사용자가 원하는 Google 계정을 명시적으로 고를 수 있게 한다.
+    auth.searchParams.set("prompt", "select_account consent");
     auth.searchParams.set("include_granted_scopes", "true");
     auth.searchParams.set("state", state);
 

@@ -147,3 +147,41 @@ test("v1.6.4 행동 카드와 시각 가이드는 desktop과 mobile에서 재배
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.wizard-action-list \{ grid-template-columns: 1fr/);
   assert.match(css, /\.connection-flow-visual[\s\S]*grid-template-columns: 1fr/);
 });
+
+test("v1.7 API는 Cloud 설정 하나와 다중 YouTube 채널 세션을 분리한다", () => {
+  const auth = read("lib/youtube-auth.ts");
+  const callback = read("app/api/youtube/oauth/callback/route.ts");
+  const channels = read("app/api/youtube/channels/route.ts");
+  assert.match(auth, /YOUTUBE_CONNECTIONS_COOKIE/);
+  assert.match(auth, /YOUTUBE_CONNECTION_COOKIE_PREFIX/);
+  assert.match(auth, /upsertConnectionRegistry/);
+  assert.match(callback, /getMyYouTubeChannel/);
+  assert.match(callback, /youtubeConnectionCookieName/);
+  assert.match(callback, /upsertConnectionRegistry/);
+  assert.match(channels, /selectConnectionRegistry/);
+  assert.match(channels, /removeConnectionRegistry/);
+});
+
+test("v1.7은 v1.6 단일 YouTube 세션을 자동 마이그레이션하고 Cloud config는 유지한다", () => {
+  const status = read("app/api/youtube/status/route.ts");
+  assert.match(status, /YOUTUBE_SESSION_COOKIE/);
+  assert.match(status, /migrated: true/);
+  assert.match(status, /migrationFailed: true/);
+  assert.match(status, /Cloud Client 설정은 보존/);
+});
+
+test("v1.7 영상·자막 API는 활성 채널 세션을 공통 방식으로 읽는다", () => {
+  for (const path of [
+    "app/api/youtube/videos/route.ts",
+    "app/api/youtube/captions/route.ts",
+    "app/api/youtube/captions/list/route.ts",
+    "app/api/youtube/captions/download/route.ts"
+  ]) {
+    assert.match(read(path), /readStoredYouTubeSession/);
+  }
+});
+
+test("v1.7 추가 OAuth는 Google 계정 선택을 명시적으로 요청한다", () => {
+  const start = read("app/api/youtube/oauth/start/route.ts");
+  assert.match(start, /select_account consent/);
+});
