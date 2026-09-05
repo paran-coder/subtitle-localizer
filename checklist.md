@@ -92,15 +92,18 @@
 - [ ] prefers-reduced-motion 유지
 - [x] npm test: **62/62 통과**
 - [x] 변경 TypeScript 파일 Node strip-types 구문 검사 통과
-- [ ] npm run typecheck 통과 — 로컬 의존성 미설치로 Vercel build에서 확인
-- [ ] npm run build 통과 — Vercel Production build에서 확인
+- [x] Vercel `next build` TypeScript 검사 통과
+- [x] Vercel Production build 통과
 
 ## 패키징 / 배포
 - [ ] 전체 프로젝트 ZIP 생성
 - [ ] ZIP은 GitHub에 커밋하지 않음
-- [ ] 실제 변경 파일만 GitHub main 반영
-- [ ] Vercel Production READY 확인
-- [ ] Vercel Runtime Errors 확인
+- [ ] 최종 v1.7.0 변경 전체를 GitHub main에 반영
+- [x] 2단계 API 변경 GitHub main 반영
+- [x] 2단계 Vercel Production READY 확인
+- [x] 2단계 Vercel Runtime Errors 없음 확인
+- [ ] 최종 Vercel Production READY 확인
+- [ ] 최종 Vercel Runtime Errors 확인
 - [ ] 실제 Google 연결 E2E
 - [ ] 첫 채널 연결 E2E
 - [ ] 추가 계정/채널 연결 E2E
@@ -115,11 +118,11 @@
 - 자체 점수: **9.8/10**
 
 ### 2단계 — 연결 데이터 모델 / OAuth API
-- 상태: **구현 및 로컬 검증 완료, Vercel build 검증 대기**
+- 상태: **완료**
 - 완료: Cloud config와 채널 세션 분리, encrypted registry, 채널별 세션 cookie, 활성 채널 API, 추가/선택/개별 해제, 동일 채널 dedupe, OAuth callback 채널 식별, v1.6 자동 마이그레이션, 실패 시 Cloud config 보존, 영상·자막 API 활성 세션 공통 사용
 - 자체 리뷰 수정: invalid session 정리 cookie가 실제 응답에 반영되도록 status 정리 로직 수정, registry type 안정화, cookie prefix 상수화, 테스트 import 정리
-- 검증: `npm test` **62/62**, 변경 TypeScript 구문 검사 통과, `lib/youtube-auth.ts` 직접 import 통과
-- 남은 확인: Vercel typecheck/build, 동일 Google 계정의 여러 Brand Account 채널 선택 실제 E2E, 매우 많은 채널 연결 시 cookie 규모 최적화 여부
+- 검증: `npm test` **62/62**, 변경 TypeScript 구문 검사 통과, `lib/youtube-auth.ts` 직접 import 통과, Vercel `next build` 컴파일/TypeScript 통과, Production READY, 최근 Runtime Errors 0건
+- 남은 확인: 동일 Google 계정의 여러 Brand Account 채널 선택 실제 E2E, 매우 많은 채널 연결 시 cookie 규모 최적화 여부
 - 자체 점수: **9.6/10**
 
 ### 3단계 — Google 설정 마법사 / 작업공간 UI
