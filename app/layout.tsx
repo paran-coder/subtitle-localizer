@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import WorkspaceChannelBar from "@/components/workspace-channel-bar";
 import "./globals.css";
 import "./v17.css";
+import "./v17-version.css";
 
 export const metadata: Metadata = {
   title: "Subtitle Localizer",
