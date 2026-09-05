@@ -44,4 +44,9 @@ YouTube 연결
 이 브라우저에 기억하기
 */
 
-export { default } from "@/components/connections-v17";
+import ConnectionsV17 from "@/components/connections-v17";
+import OpenAiRememberSync from "@/components/openai-remember-sync";
+
+export default function ConnectionsPage() {
+  return <><OpenAiRememberSync /><ConnectionsV17 /></>;
+}
