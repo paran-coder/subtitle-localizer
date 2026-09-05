@@ -26,16 +26,52 @@ test("번역 API는 사용자 OpenAI 자격 증명 쿠키를 서버에서 복호
   assert.equal(route.includes("x-openai-api-key"), false);
 });
 
-test("UI에는 기억하기가 있지만 localStorage/sessionStorage에 API 키를 저장하지 않는다", () => {
-  const page = read("app/page.tsx");
-  assert.match(page, /이 브라우저에 기억하기/);
-  assert.match(page, /내 YouTube API 프로젝트/);
-  assert.match(page, /Google OAuth Client Secret/);
-  assert.equal(page.includes("localStorage"), false);
-  assert.equal(page.includes("sessionStorage"), false);
-  assert.equal(page.includes("SUBTITLE_APP_ACCESS_KEY"), false);
+test("v1.6은 workspace와 연결 관리를 분리한다", () => {
+  const workspace = read("app/page.tsx");
+  const connections = read("app/connections/page.tsx");
+  assert.match(workspace, /원본 자막/);
+  assert.match(workspace, /href="\/connections"/);
+  assert.equal(workspace.includes("USER-PAID API CONNECTIONS"), false);
+  assert.match(connections, /내 OpenAI API Key/);
+  assert.match(connections, /YouTube 연결/);
+  assert.match(connections, /이 브라우저에 기억하기/);
+  assert.equal(connections.includes("localStorage"), false);
+  assert.equal(connections.includes("sessionStorage"), false);
 });
 
+test("필요 시점의 연결 게이트가 /connections로 이동한다", () => {
+  const workspace = read("app/page.tsx");
+  assert.match(workspace, /\/connections\?setup=openai&return=\//);
+  assert.match(workspace, /\/connections\?setup=youtube&return=\//);
+});
+
+test("Google Cloud 설정은 4단계 단일-step wizard와 OAuth 분리를 제공한다", () => {
+  const connections = read("app/connections/page.tsx");
+  assert.match(connections, /single-step-wizard/);
+  assert.match(connections, /wizardStep === 1/);
+  assert.match(connections, /wizardStep === 2/);
+  assert.match(connections, /wizardStep === 3/);
+  assert.match(connections, /wizardStep === 4/);
+  assert.match(connections, /Google Auth Platform/);
+  assert.match(connections, /YouTube Data API v3/);
+  assert.match(connections, /Google Cloud 설정 저장/);
+  assert.match(connections, /Google로 YouTube 연결/);
+});
+
+test("OAuth 성공/오류 복귀 지점은 연결 관리 페이지다", () => {
+  const start = read("app/api/youtube/oauth/start/route.ts");
+  const callback = read("app/api/youtube/oauth/callback/route.ts");
+  assert.match(start, /new URL\("\/connections"/);
+  assert.match(callback, /new URL\("\/connections"/);
+});
+
+test("타임코드 수치 검증과 전체 시작-종료 표시는 workspace에 유지된다", () => {
+  const workspace = read("app/page.tsx");
+  assert.match(workspace, /타임코드<\/strong>.*timingMatches/);
+  assert.match(workspace, /Cue ID<\/strong>.*cueIdMatches/);
+  assert.match(workspace, /누락<\/strong>/);
+  assert.match(workspace, /source\.start.*source\.end/s);
+});
 
 test("보안 헤더와 비밀 상태 응답의 no-store 정책을 유지한다", () => {
   const config = read("next.config.ts");
@@ -48,16 +84,4 @@ test("보안 헤더와 비밀 상태 응답의 no-store 정책을 유지한다",
   assert.match(openAiRoute, /no-store/);
   assert.match(youtubeStatus, /Cache-Control/);
   assert.match(youtubeStatus, /no-store/);
-});
-
-
-test("v1.5 UI는 타임코드 수치 검증과 Google OAuth 분리 흐름을 노출한다", () => {
-  const page = read("app/page.tsx");
-  assert.match(page, /타임코드<\/strong>.*timingMatches/);
-  assert.match(page, /Cue ID<\/strong>.*cueIdMatches/);
-  assert.match(page, /누락<\/strong>/);
-  assert.match(page, /Google Cloud 설정 저장/);
-  assert.match(page, /Google로 YouTube 연결/);
-  assert.match(page, /Google Auth Platform/);
-  assert.match(page, /YouTube Data API v3/);
 });

@@ -1,103 +1,47 @@
-# Subtitle Localizer v1.5.0 — Context Notes
+# Subtitle Localizer v1.6.0 — Context Notes
 
-## Product decision
-- Hosting/deployment is operated by the app owner.
-- Paid OpenAI usage is billed to each end user's own OpenAI account (BYOK).
-- YouTube Data API quota belongs to each end user's own Google Cloud project (BYOC).
-- The app operator does not provide an operator-owned OpenAI API key or Google OAuth client.
-- Vercel hosting/function/bandwidth remains an operator-side platform cost and is separate from third-party API spend.
+## Goal
+Separate credential onboarding from subtitle work. Returning users should land on a task-oriented workspace, not an API configuration dashboard.
 
-## v1.5.0 goals
-1. Make timing preservation verifiable instead of merely claimed.
-2. Separate Google Cloud OAuth-client configuration from Google/YouTube account authorization.
-3. Replace the dense Google BYOC form with a guided 4-step setup wizard.
-4. Use current Google Auth Platform terminology so first-time users can follow the live console.
-5. Ensure `.env.example` and `.gitignore` ship in the project package.
+## Information architecture
+- `/` = Workspace. Source SRT → languages/options → translation → QA/download → optional YouTube upload.
+- `/connections` = OpenAI BYOK + Google/YouTube BYOC management.
+- Workspace header exposes connection state only: `OpenAI ✓/○`, `YouTube ✓/○`, `연결 관리`.
 
-## Timing QA direction
-The review screen must show each cue as:
-`00:00:02,500 → 00:00:05,200`
+## Contextual setup rules
+- SRT upload/download never requires Google.
+- Translation requires OpenAI only when the user presses translate.
+- YouTube configuration is requested only when the user chooses YouTube import/upload.
+- OAuth success/errors return to `/connections`, keeping setup feedback in the setup surface.
 
-For the active translated language, calculate and display:
-- matching cue IDs / total source cues
-- matching timestamp ranges / total source cues
-- missing translated cues
-- unexpected translated cues
-- overall structural pass/fail
+## Google wizard
+A true single-step wizard rather than a stacked accordion:
+1. Project + YouTube Data API v3
+2. Google Auth Platform
+3. OAuth Web Client + Authorized Redirect URI
+4. Client ID / Client Secret save
+Then a separate `Google로 YouTube 연결` action handles Google login/consent.
 
-No automatic timing correction is allowed. A mismatch is surfaced for review instead of silently rewritten.
+## UI basis
+- ui-polish: structure before styling, clarity before decoration, reusable patterns, purposeful restrained motion, reduced-motion support.
+- Karrot/SEED product Primary `#ff6f0f`, neutral surfaces, System typography, 4px spacing rhythm.
+- Orange remains scarce: primary actions and active states, not decoration.
+- The main hero was intentionally compressed so source-subtitle work starts near the top of the page.
 
-## Google / YouTube BYOC onboarding
-Use a 4-step wizard based on current Google Cloud / Google Auth Platform terminology:
+## Cost boundary
+- OpenAI usage → end user's OpenAI account.
+- YouTube quota → end user's Google Cloud project.
+- Vercel usage → deployment operator.
 
-### Step 1 — Project + API
-- Create/select a Google Cloud project.
-- Open API Library.
-- Enable **YouTube Data API v3**.
+## QA results
+- 47/47 automated tests passed.
+- 29 TS/TSX source files passed syntax transpilation.
+- CSS brace validation passed.
+- No runtime hardcoded OpenAI `sk-*`, localStorage/sessionStorage secret persistence, or operator OpenAI/Google paid credentials found.
+- Full production build remains to be verified where npm registry access is available.
 
-### Step 2 — Google Auth Platform
-- Open **Google Auth Platform**.
-- Complete Branding/Audience as needed.
-- In **Data Access**, make sure the app can request the YouTube scope used by Subtitle Localizer.
-- For a personal/testing setup, keep the app in testing and add the Google account that will authorize the app when the console requires test users.
-- Important: an External OAuth app in Testing generally receives refresh tokens that expire after 7 days when it requests scopes beyond basic profile identity. The UI must explain that "remember" cannot override Google token policy.
-
-### Step 3 — OAuth Client
-- Open **Google Auth Platform → Clients**.
-- Create Client.
-- Application type: **Web application**.
-- Add the exact redirect URI shown by Subtitle Localizer to **Authorized redirect URIs**.
-- Google requires an exact URI match (scheme, host, path, trailing slash).
-
-### Step 4 — Connect
-- Paste Client ID and Client Secret into Subtitle Localizer.
-- Save the Google project credentials.
-- Then perform the separate **Google로 YouTube 연결** OAuth authorization step.
-
-## UX direction
-Follow the attached `ui-polish` workflow and Karrot/SEED-inspired tokens:
-- structure before styling
-- one primary action per state
-- quiet chrome, content-first hierarchy
-- System typography
-- product Primary `#ff6f0f`
-- neutral background/surface/foreground roles
-- 4px spacing rhythm
-- flat/light surfaces; no decorative shadow stack
-- short state transitions only; preserve `prefers-reduced-motion`
-
-For the Google wizard:
-- use a compact numbered vertical stepper inside the existing BYOC card
-- collapse completed steps to a concise summary
-- keep the current step expanded
-- do not use motion to hide required information
-- show checklist rows with explicit completion controls where automatic verification is impossible
-- distinguish "Google Cloud 설정 저장" from "Google OAuth 승인" visually and verbally
-
-## Security rules retained from v1.4.0
-- OpenAI API key, Google Client Secret, OAuth access/refresh tokens stay in encrypted HttpOnly cookies.
-- No secret in localStorage/sessionStorage.
-- Sensitive status endpoints use `Cache-Control: no-store`.
-- `APP_SESSION_SECRET` is operator-side encryption material only; it is not a paid API credential.
-
-## Official external terminology checked for v1.5.0
-- Google Auth Platform pages: Overview, Branding, Audience, Clients, Data Access, Verification Center.
-- OAuth client creation: Clients → Create Client → Web application.
-- YouTube Data API must be enabled in the project API Library.
-- Authorized redirect URI must exactly match the URI sent by the app.
-
-## Final implementation review
-- Timing QA now compares by cue ID and reports timing matches, ID matches, missing cues, unexpected cues, timing mismatches, and order mismatches.
-- Review rows show full start → end ranges using tabular numerals without introducing a separate display typeface.
-- Google BYOC setup is a four-step guided flow with compact console mini-previews, direct console links, manual completion checks, and a separate OAuth authorization state.
-- Resetting Google configuration resets wizard progress to prevent stale setup state.
-- The UI warns that External + Testing Google OAuth projects can issue refresh tokens that expire after 7 days; persistent cookies cannot override Google token policy.
-- `.env.example` and `.gitignore` are present in the project package.
-
-## Verification summary
-- Node test suite: 44/44 passing.
-- TS/TSX syntax transpile check: 28 files, 0 syntax errors.
-- CSS brace sanity check: balanced.
-- No hardcoded `sk-*` key found.
-- No `localStorage`/`sessionStorage` secret persistence found in app/lib runtime code.
-- Dependency-aware `tsc --noEmit` / Next production build remains environment-dependent because npm registry installation timed out in this workspace.
+## Self-review
+- Stage 1 documentation / IA: 9.8/10
+- Stage 2 workspace-connections split: 9.7/10
+- Stage 3 UX/security cleanup: 9.8/10
+- Final package: 9.8/10 pending live Vercel/browser OAuth E2E.

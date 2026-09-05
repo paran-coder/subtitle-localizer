@@ -1,57 +1,54 @@
-# Subtitle Localizer v1.5.0 — Checklist
+# Subtitle Localizer v1.6.0 — Checklist
 
-## Phase 0 — Required docs
+## Documentation first
 - [x] context-notes.md created/updated before implementation
 - [x] checklist.md created/updated before implementation
-- [x] README.md created/updated before implementation
-- [x] User manual.md created/updated before implementation
+- [x] README.md updated before implementation
+- [x] User manual.md updated before implementation
 
-## Phase 1 — Timing review QA
-- [x] Add reusable timing/cue validation summary function
-- [x] Add tests for perfect match, missing cue, unexpected cue, ID mismatch, timing mismatch
-- [x] Display start → end timecode for source and translation
-- [x] Display `타임코드 n/n 일치`
-- [x] Display `Cue ID n/n 일치`
-- [x] Display missing/unexpected cue count
-- [x] Preserve download serialization exactly as source timing
+## Connections IA
+- [x] Add `/connections` page
+- [x] Move OpenAI BYOK controls out of workspace
+- [x] Move Google/YouTube BYOC controls out of workspace
+- [x] Show only compact connection status in workspace header
+- [x] Add return-to-workspace action
+- [x] Compress workspace hero so `원본 자막` appears earlier
 
-## Phase 2 — Google BYOC wizard
-- [x] Split Cloud-client configuration from account OAuth authorization
-- [x] Add 4-step Google Cloud setup wizard
-- [x] Step 1: project + YouTube Data API v3 instructions
-- [x] Step 2: Google Auth Platform instructions
-- [x] Step 3: Web application client + exact redirect URI instructions
-- [x] Step 4: Client ID/Secret + remember setting
-- [x] Rename OAuth CTA to `Google로 YouTube 연결`
-- [x] Add explicit checklist controls for steps the app cannot verify automatically
-- [x] Add concise current-console labels and external console links
-- [x] Preserve encrypted HttpOnly credential storage
+## Contextual gates
+- [x] Translation without OpenAI routes to `/connections?setup=openai`
+- [x] YouTube import without Google config routes to `/connections?setup=youtube`
+- [x] YouTube import with Cloud config but no OAuth routes to connection management
+- [x] YouTube upload missing connection routes to connection management
+- [x] OAuth callback/errors return to `/connections`
 
-## Phase 3 — UI polish
-- [x] Keep primary orange scarce and action-oriented
-- [x] Preserve Karrot/SEED neutral surfaces and 4px rhythm
-- [x] Responsive wizard layout
-- [x] Keyboard focus states
-- [x] `prefers-reduced-motion` support
-- [x] Avoid decorative animation/shadow overload
+## Google wizard
+- [x] One step body visible at a time
+- [x] 1/4 Project + YouTube Data API
+- [x] 2/4 Google Auth Platform
+- [x] 3/4 OAuth Web Client + redirect URI copy
+- [x] 4/4 Client ID/Secret save
+- [x] Previous / Next navigation
+- [x] Google OAuth approval visibly separate from Cloud configuration
+- [x] Existing Cloud configuration skips the setup wizard and shows OAuth/connect state
 
-## Phase 4 — Repository/deployment hygiene
-- [x] Include `.env.example`
-- [x] Include `.gitignore`
-- [x] Bump package/app version to 1.5.0
-- [x] Update README deployment instructions
-- [x] Update User manual
+## UI / accessibility
+- [x] Primary remains `#ff6f0f`
+- [x] Neutral surfaces/system typography/4px rhythm retained
+- [x] Orange remains limited to primary/active states
+- [x] Mobile connection page rules added
+- [x] reduced-motion respected for contextual setup scroll
 
-## Phase 5 — Verification
-- [x] Existing tests pass
-- [x] New v1.5.0 tests pass
-- [x] TS/TSX syntax transpile check
-- [x] CSS delimiter/syntax sanity check
-- [x] No hardcoded OpenAI API key
-- [x] No localStorage/sessionStorage secret persistence
-- [ ] Dependency-aware `tsc --noEmit` and production build when npm registry is available
-
-## Phase 6 — Packaging
-- [x] Final context notes updated
-- [x] Final checklist state updated
-- [x] Final ZIP created
+## QA
+- [x] Existing SRT/BYOK/BYOC/YouTube tests pass
+- [x] Architecture tests cover `/connections`
+- [x] Automated tests: 47/47
+- [x] TS/TSX syntax transpile: 29 files / 0 diagnostics
+- [x] CSS brace validation
+- [x] Runtime hardcoded `sk-*`: none
+- [x] Runtime localStorage/sessionStorage secret storage: none
+- [x] `.env.example` included
+- [x] `.gitignore` included
+- [ ] Dependency-aware `tsc --noEmit` (npm registry unavailable in this environment)
+- [ ] Next production build (npm registry unavailable in this environment)
+- [ ] Live Vercel browser QA after deployment
+- [ ] Real Google OAuth → videos → captions import/upload E2E after deployment

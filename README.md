@@ -1,28 +1,31 @@
-# Subtitle Localizer v1.5.0
+# Subtitle Localizer v1.6.0
 
-A YouTube subtitle-localization web app built around **user-owned paid API credentials** and explicit subtitle-structure QA.
+Subtitle localization workspace with user-owned paid API credentials.
 
-## What v1.5.0 adds
-- Review rows show full `start → end` timestamps.
-- Structural QA reports cue-ID matches, timestamp matches, missing cues, and unexpected cues.
-- Google/YouTube setup is split into **Google Cloud configuration** and **Google OAuth authorization**.
-- A 4-step Google Cloud setup wizard uses current Google Auth Platform terminology.
-- `.env.example` and `.gitignore` are included in the package.
+## What changed in v1.6.0
+- `/` is now a focused subtitle workspace. Persistent API setup blocks were removed from the main task flow.
+- `/connections` manages OpenAI BYOK and Google/YouTube BYOC.
+- The workspace header only shows compact `OpenAI ✓/○`, `YouTube ✓/○`, and `연결 관리` status/actions.
+- The former large hero was reduced so `원본 자막` appears much earlier in the page.
+- Missing OpenAI credentials are requested only when translation is attempted.
+- Missing YouTube setup is requested only when the user chooses YouTube import/upload.
+- Google Cloud setup is a true one-step-at-a-time 4-step wizard.
+- OAuth success/error returns to `/connections`, where the user can return to the workspace.
+- Timestamp QA from v1.5.0 remains: full `start → end` display plus cue/timing/missing/extra metrics.
+
+## Routes
+- `/` — subtitle workspace
+- `/connections` — connection management and Google Cloud setup wizard
 
 ## Cost ownership
-- **OpenAI translation usage:** each user supplies their own OpenAI API key; OpenAI usage is billed to that user's account.
-- **YouTube Data API quota:** each user supplies OAuth credentials from their own Google Cloud project; quota is consumed from that user's project.
-- **Vercel hosting/function usage:** remains part of the operator's hosting account.
+- OpenAI translation usage: each end user's own OpenAI API key/account.
+- YouTube Data API quota: each end user's own Google Cloud project.
+- Vercel hosting/function usage: deployment operator.
 
-## Main flow
-1. Load/upload an English SRT or import an existing caption from YouTube.
-2. Connect the user's own OpenAI API key.
-3. Select languages and localization style.
-4. Translate.
-5. Review text plus exact cue/timing preservation metrics.
-6. Download SRT/ZIP.
-7. Optionally configure the user's Google Cloud OAuth client and authorize their YouTube account.
-8. Upload localized caption tracks to YouTube.
+## Secret handling
+- User OpenAI API keys, Google OAuth Client Secret, and YouTube OAuth tokens are sealed server-side with AES-256-GCM and stored in HttpOnly cookies.
+- `APP_SESSION_SECRET` is the operator's encryption secret; it is not a paid API credential.
+- Runtime code does not intentionally store user secrets in localStorage/sessionStorage/database/repository/server files.
 
 ## Deployment environment variables
 ```env
@@ -31,48 +34,26 @@ NEXT_PUBLIC_APP_URL=https://your-app.example.com
 OPENAI_TRANSLATION_MODEL=gpt-5.6-luna
 ```
 
-The operator does **not** configure an OpenAI API key, Google Client ID, or Google Client Secret.
+## Google / YouTube setup
+The `/connections` page guides each user through:
+1. Google Cloud project + YouTube Data API v3
+2. Google Auth Platform (Branding / Audience / Data Access)
+3. OAuth Web application Client + exact Authorized Redirect URI
+4. Client ID / Client Secret save
 
-## Google Cloud setup — user-owned project
-The in-app wizard mirrors the current console flow:
+Cloud configuration and Google OAuth consent are deliberately separate. After step 4, the user selects `Google로 YouTube 연결` to approve access to the actual YouTube account.
 
-1. **Project + YouTube Data API v3**
-   - Create/select a Google Cloud project.
-   - Enable YouTube Data API v3 in API Library.
-2. **Google Auth Platform**
-   - Configure Branding and Audience as needed.
-   - Review Data Access for the YouTube permission requested by the app.
-   - If the app is in Testing, add the Google account that will authorize it when required.
-   - External + Testing projects can have refresh tokens expire after 7 days for non-basic scopes, so long-lived YouTube authorization may require re-approval or an appropriate production/verification setup.
-3. **Clients**
-   - Google Auth Platform → Clients → Create Client.
-   - Type: Web application.
-   - Add the exact redirect URI shown by Subtitle Localizer to Authorized redirect URIs.
-4. **Connect**
-   - Paste the Client ID and Client Secret in Subtitle Localizer.
-   - Save configuration.
-   - Click **Google로 YouTube 연결** to perform the separate OAuth consent flow.
-
-## Secret handling
-- OpenAI key, Google Client Secret, and OAuth tokens are encrypted with AES-256-GCM.
-- Secrets live in HttpOnly cookies, not localStorage/sessionStorage.
-- Remember mode uses encrypted persistent cookies; session mode expires with the browser session.
-- Stored secrets are never returned to browser JavaScript.
+## Verification performed for this package
+- Node domain/architecture tests: 47/47 passed.
+- TypeScript/TSX syntax transpile check: 29 source files, 0 syntax diagnostics.
+- CSS brace structure check: passed.
+- Runtime hardcoded `sk-*`: none found.
+- Runtime localStorage/sessionStorage secret storage: none found.
+- Runtime operator `process.env.OPENAI_API_KEY` / `GOOGLE_CLIENT_SECRET`: none found.
+- `npm install` was attempted in the build environment but npm registry access timed out, so dependency-aware `tsc` and `next build` still need deployment/local verification.
 
 ## Local verification
 ```bash
 npm install
 npm run check
 ```
-
-## Manual GitHub upload note
-If you upload the extracted project through the GitHub web UI, make sure the two dotfiles below are included:
-- `.env.example`
-- `.gitignore`
-
-They are present at the root of the v1.5.0 package. `.env.example` contains placeholders only; never put a real `APP_SESSION_SECRET` in the repository.
-
-## Official references used for the Google setup guide
-- Google Auth Platform setup: https://support.google.com/cloud/answer/15544987
-- YouTube Data API OAuth for web server apps: https://developers.google.com/youtube/v3/guides/auth/server-side-web-apps
-- Google OAuth refresh-token behavior: https://developers.google.com/identity/protocols/oauth2

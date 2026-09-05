@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const server = appSessionSecret();
-  const home = new URL("/", request.url);
+  const home = new URL("/connections", request.url);
   if (!server.configured) {
     home.searchParams.set("youtube", "server-not-configured");
     return NextResponse.redirect(home);

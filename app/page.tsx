@@ -132,13 +132,7 @@ export default function Home() {
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>(["ko", "ja", "es"]);
   const [style, setStyle] = useState<TranslationStyle>("natural");
   const [glossary, setGlossary] = useState("");
-  const [openAiKey, setOpenAiKey] = useState("");
   const [openAiConfigured, setOpenAiConfigured] = useState(false);
-  const [openAiServerConfigured, setOpenAiServerConfigured] = useState(true);
-  const [rememberOpenAiKey, setRememberOpenAiKey] = useState(false);
-  const [showOpenAiKey, setShowOpenAiKey] = useState(false);
-  const [openAiSaving, setOpenAiSaving] = useState(false);
-  const [openAiMessage, setOpenAiMessage] = useState("");
   const [progress, setProgress] = useState<Record<string, LanguageProgress>>({});
   const [results, setResults] = useState<Record<string, SubtitleCue[]>>({});
   const [activePreview, setActivePreview] = useState<string>("source");
@@ -151,12 +145,6 @@ export default function Home() {
   const [importingCaption, setImportingCaption] = useState(false);
 
   const [youtubeStatus, setYoutubeStatus] = useState<YouTubeStatus>("checking");
-  const [googleClientId, setGoogleClientId] = useState("");
-  const [googleClientSecret, setGoogleClientSecret] = useState("");
-  const [rememberGoogle, setRememberGoogle] = useState(false);
-  const [showGoogleSecret, setShowGoogleSecret] = useState(false);
-  const [googleConfigSaving, setGoogleConfigSaving] = useState(false);
-  const [youtubeRedirectUri, setYoutubeRedirectUri] = useState("");
   const [youtubeChannel, setYoutubeChannel] = useState<YouTubeChannel | null>(null);
   const [youtubeVideos, setYoutubeVideos] = useState<YouTubeVideo[]>([]);
   const [youtubeLoading, setYoutubeLoading] = useState(false);
@@ -166,8 +154,6 @@ export default function Home() {
   const [uploadLanguages, setUploadLanguages] = useState<string[]>([]);
   const [uploadState, setUploadState] = useState<Record<string, UploadState>>({});
   const [uploadRunning, setUploadRunning] = useState(false);
-  const [googleWizardStep, setGoogleWizardStep] = useState(1);
-  const [googleSetupChecks, setGoogleSetupChecks] = useState({ projectApi: false, authPlatform: false, oauthClient: false });
 
   const chunks = useMemo(() => chunkSubtitleCues(cues), [cues]);
   const stats = useMemo(() => {
@@ -210,50 +196,28 @@ export default function Home() {
       if (cancelled) return;
 
       if (openAiResult.status === "fulfilled") {
-        const payload = (await openAiResult.value.json()) as { serverConfigured?: boolean; configured?: boolean; remember?: boolean };
-        if (!cancelled) {
-          setOpenAiServerConfigured(Boolean(payload.serverConfigured));
-          setOpenAiConfigured(Boolean(payload.configured));
-          setRememberOpenAiKey(Boolean(payload.remember));
-        }
+        const payload = (await openAiResult.value.json()) as { configured?: boolean };
+        if (!cancelled) setOpenAiConfigured(Boolean(payload.configured));
       } else {
-        setOpenAiServerConfigured(false);
+        setOpenAiConfigured(false);
       }
 
       if (youtubeResult.status === "fulfilled") {
-        const payload = (await youtubeResult.value.json()) as { serverConfigured?: boolean; configured?: boolean; connected?: boolean; remember?: boolean; redirectUri?: string };
-        if (!cancelled) {
-          setYoutubeRedirectUri(payload.redirectUri ?? "");
-          setRememberGoogle(Boolean(payload.remember));
-          setYoutubeStatus(!payload.serverConfigured
-            ? "server-unavailable"
-            : !payload.configured
-              ? "unconfigured"
-              : payload.connected ? "connected" : "disconnected");
-        }
+        const payload = (await youtubeResult.value.json()) as { serverConfigured?: boolean; configured?: boolean; connected?: boolean };
+        if (!cancelled) setYoutubeStatus(!payload.serverConfigured
+          ? "server-unavailable"
+          : !payload.configured
+            ? "unconfigured"
+            : payload.connected ? "connected" : "disconnected");
       } else {
         setYoutubeStatus("server-unavailable");
       }
     }
     void checkConnections();
 
-    const query = new URLSearchParams(window.location.search).get("youtube");
-    if (query === "connected") setYoutubeMessage("YouTube 채널이 연결되었습니다.");
-    if (query === "denied") setYoutubeMessage("YouTube 연결이 취소되었습니다.");
-    if (query === "invalid-state") setYoutubeMessage("YouTube 인증 상태를 확인하지 못했습니다. 다시 연결해 주세요.");
-    if (query === "token-error") setYoutubeMessage("Google OAuth Client 설정 또는 승인 상태를 확인해 주세요.");
-    if (query === "client-not-configured") setYoutubeMessage("본인의 Google OAuth Client ID와 Secret을 먼저 연결해 주세요.");
-    if (query === "server-not-configured") setYoutubeMessage("배포 서버에 APP_SESSION_SECRET 설정이 필요합니다.");
-    if (query) window.history.replaceState({}, "", window.location.pathname);
     return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    if (youtubeStatus === "connected" || youtubeStatus === "disconnected") {
-      setGoogleSetupChecks({ projectApi: true, authPlatform: true, oauthClient: true });
-      setGoogleWizardStep(4);
-    }
-  }, [youtubeStatus]);
 
   useEffect(() => {
     if (youtubeStatus !== "connected") return;
@@ -413,111 +377,6 @@ export default function Home() {
     setGlossary(next);
   }
 
-  async function persistOpenAiKey(nextRemember = rememberOpenAiKey): Promise<boolean> {
-    const key = openAiKey.trim();
-    if (!key || openAiSaving) {
-      setOpenAiMessage("OpenAI API Key를 입력해 주세요.");
-      return false;
-    }
-    setOpenAiSaving(true);
-    setOpenAiMessage("");
-    try {
-      const response = await fetch("/api/openai/credential", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: key, remember: nextRemember }),
-        cache: "no-store"
-      });
-      const payload = (await response.json()) as { error?: string; configured?: boolean; remember?: boolean };
-      if (!response.ok) throw new Error(payload.error || "OpenAI API Key를 저장하지 못했습니다.");
-      setOpenAiConfigured(true);
-      setRememberOpenAiKey(Boolean(payload.remember));
-      setOpenAiKey("");
-      setOpenAiMessage(payload.remember
-        ? "이 브라우저의 암호화된 HttpOnly 쿠키에 OpenAI 키를 기억합니다."
-        : "현재 브라우저 세션의 암호화된 HttpOnly 쿠키에서만 OpenAI 키를 사용합니다.");
-      return true;
-    } catch (error) {
-      setOpenAiMessage(error instanceof Error ? error.message : "OpenAI API Key를 저장하지 못했습니다.");
-      return false;
-    } finally {
-      setOpenAiSaving(false);
-    }
-  }
-
-  async function updateOpenAiRemember(remember: boolean) {
-    setRememberOpenAiKey(remember);
-    if (!openAiConfigured) return;
-    try {
-      const response = await fetch("/api/openai/credential", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ remember }),
-        cache: "no-store"
-      });
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(payload.error || "기억 설정을 변경하지 못했습니다.");
-      setOpenAiMessage(remember ? "이 브라우저에 암호화해 기억합니다." : "브라우저 세션이 끝나면 키가 삭제됩니다.");
-    } catch (error) {
-      setOpenAiMessage(error instanceof Error ? error.message : "기억 설정을 변경하지 못했습니다.");
-    }
-  }
-
-  async function forgetOpenAiKey() {
-    await fetch("/api/openai/credential", { method: "DELETE" });
-    setOpenAiConfigured(false);
-    setOpenAiKey("");
-    setRememberOpenAiKey(false);
-    setOpenAiMessage("저장된 OpenAI 키를 지웠습니다.");
-  }
-
-  async function saveGoogleConfig() {
-    const clientId = googleClientId.trim();
-    const clientSecret = googleClientSecret.trim();
-    if (!clientId || !clientSecret || googleConfigSaving) {
-      setYoutubeMessage("Google OAuth Client ID와 Client Secret을 모두 입력해 주세요.");
-      return;
-    }
-    setGoogleConfigSaving(true);
-    setYoutubeMessage("");
-    try {
-      const response = await fetch("/api/youtube/config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId, clientSecret, remember: rememberGoogle }),
-        cache: "no-store"
-      });
-      const payload = (await response.json()) as { error?: string; redirectUri?: string };
-      if (!response.ok) throw new Error(payload.error || "Google OAuth 설정을 저장하지 못했습니다.");
-      setYoutubeRedirectUri(payload.redirectUri ?? youtubeRedirectUri);
-      setGoogleClientSecret("");
-      setYoutubeStatus("disconnected");
-      setYoutubeMessage("사용자 Google Cloud 프로젝트 설정을 저장했습니다.");
-    } catch (error) {
-      setYoutubeMessage(error instanceof Error ? error.message : "Google OAuth 설정을 저장하지 못했습니다.");
-    } finally {
-      setGoogleConfigSaving(false);
-    }
-  }
-
-  async function forgetGoogleConfig() {
-    await fetch("/api/youtube/config", { method: "DELETE" });
-    setGoogleClientId("");
-    setGoogleClientSecret("");
-    setRememberGoogle(false);
-    setYoutubeStatus("unconfigured");
-    setYoutubeChannel(null);
-    setYoutubeVideos([]);
-    setSelectedVideoId("");
-    setSourceVideoId("");
-    setCaptionTracks([]);
-    setSelectedCaptionId("");
-    setSourceMode("file");
-    setGoogleSetupChecks({ projectApi: false, authPlatform: false, oauthClient: false });
-    setGoogleWizardStep(1);
-    setYoutubeMessage("저장된 Google OAuth 설정과 YouTube 연결을 지웠습니다.");
-  }
-
   async function runOneLanguage(code: string) {
     const totalChunks = chunks.length;
     const cache = partialTranslationsRef.current[code] ?? new Map<number, string>();
@@ -543,10 +402,7 @@ export default function Home() {
       setActivePreview((current) => current === "source" ? code : current);
     } catch (error) {
       const message = error instanceof Error ? error.message : "번역 실패";
-      if (/OpenAI API Key|API Key/.test(message)) {
-        setOpenAiConfigured(false);
-        setOpenAiMessage(message);
-      }
+      if (/OpenAI API Key|API Key/.test(message)) setOpenAiConfigured(false);
       setProgress((current) => ({
         ...current,
         [code]: {
@@ -568,14 +424,8 @@ export default function Home() {
   async function startTranslation() {
     if (!cues.length || !selectedLanguages.length || running) return;
     if (!openAiConfigured) {
-      if (openAiKey.trim()) {
-        const saved = await persistOpenAiKey();
-        if (!saved) return;
-      } else {
-        setOpenAiMessage("번역 비용을 본인 계정으로 처리하려면 OpenAI API Key를 먼저 연결해 주세요.");
-        document.getElementById("api-connections")?.scrollIntoView({ behavior: "smooth", block: "start" });
-        return;
-      }
+      window.location.href = "/connections?setup=openai&return=/";
+      return;
     }
     setRunning(true);
     setResults({});
@@ -644,19 +494,6 @@ export default function Home() {
     }
   }
 
-  async function disconnectYouTube() {
-    await fetch("/api/youtube/oauth/logout", { method: "POST" });
-    setYoutubeStatus("disconnected");
-    setYoutubeChannel(null);
-    setYoutubeVideos([]);
-    setSelectedVideoId("");
-    setSourceVideoId("");
-    setCaptionTracks([]);
-    setSelectedCaptionId("");
-    setSourceMode("file");
-    setYoutubeMessage("YouTube 연결을 해제했습니다.");
-  }
-
   function toggleUploadLanguage(code: string) {
     setUploadLanguages((current) => current.includes(code)
       ? current.filter((item) => item !== code)
@@ -703,263 +540,23 @@ export default function Home() {
         <div className="topbar-inner">
           <a className="brand" href="#top" aria-label="Subtitle Localizer 홈">
             <span className="brand-symbol" aria-hidden="true">S</span>
-            <span><strong>Subtitle Localizer</strong><small>v1.5.0</small></span>
+            <span><strong>Subtitle Localizer</strong><small>v1.6.0</small></span>
           </a>
-          <div className="topbar-actions">
+          <div className="topbar-actions connection-status-strip">
             <span className="privacy-label">파일을 서버에 저장하지 않습니다</span>
-            <a className="quiet-button" href="#api-connections">{openAiConfigured ? "OpenAI 연결됨" : "API 연결"}</a>
-            {youtubeStatus === "connected" && <a className="quiet-button" href="#youtube-title">YouTube 연결됨</a>}
+            <span className={`status-pill ${openAiConfigured ? "is-ready" : ""}`}>OpenAI {openAiConfigured ? "✓" : "○"}</span>
+            <span className={`status-pill ${youtubeStatus === "connected" ? "is-ready" : ""}`}>YouTube {youtubeStatus === "connected" ? "✓" : "○"}</span>
+            <a className="quiet-button" href="/connections">연결 관리</a>
           </div>
         </div>
       </header>
 
-      <section className="hero" id="top">
-        <div className="hero-copy-block">
+      <section className="workspace-intro" id="top">
+        <div>
           <span className="eyebrow">SRT LOCALIZATION WORKSPACE</span>
-          <h1>타임코드는 그대로.<br />자막은 현지 언어처럼.</h1>
-          <p>SRT를 올리거나 YouTube의 기존 자막을 바로 가져와 여러 언어로 현지화하고, 검토 후 다시 YouTube에 올립니다.</p>
+          <h1>타임코드는 그대로. 자막은 현지 언어처럼.</h1>
         </div>
-        <div className="hero-facts" aria-label="핵심 기능">
-          <span><strong>17</strong> 지원 언어</span>
-          <span><strong>100%</strong> 타임코드 보존</span>
-          <span><strong>YouTube</strong> 자막 직접 가져오기</span>
-        </div>
-      </section>
-
-      <section className="api-connections" id="api-connections" aria-labelledby="connections-title">
-        <div className="connections-heading">
-          <div>
-            <span className="eyebrow">USER-PAID API CONNECTIONS</span>
-            <h2 id="connections-title">비용이 생기는 API는 각자의 계정으로</h2>
-            <p>이 배포는 호스팅만 제공합니다. OpenAI 사용료와 YouTube API quota는 입력한 사용자 계정·프로젝트에서 사용됩니다.</p>
-          </div>
-          <span className="cost-owner-badge">외부 API 비용 · 사용자 부담</span>
-        </div>
-
-        <div className="connection-grid">
-          <article className={`connection-card ${openAiConfigured ? "is-ready" : ""}`}>
-            <div className="connection-card-head">
-              <div><span className="service-kicker">OPENAI · BYOK</span><h3>내 OpenAI API Key</h3></div>
-              <span className="connection-status">{openAiConfigured ? "키 저장됨" : "연결 필요"}</span>
-            </div>
-            <p className="connection-description">번역 요청은 이 키로 실행되며 사용료는 해당 OpenAI 계정에 청구됩니다. 저장 시 키는 암호화된 HttpOnly 쿠키로 보호되며 실제 유효성은 첫 번역 요청에서 확인됩니다.</p>
-            {!openAiServerConfigured && <div className="setup-notice"><strong>배포 설정 1개가 필요합니다</strong><span>과금 키가 아니라 자격 증명 암호화용 <code>APP_SESSION_SECRET</code>만 Vercel에 설정하면 됩니다.</span></div>}
-            <div className="secret-input-row">
-              <input
-                className="text-input"
-                type={showOpenAiKey ? "text" : "password"}
-                autoComplete="off"
-                spellCheck={false}
-                value={openAiKey}
-                disabled={!openAiServerConfigured}
-                onChange={(event) => { setOpenAiKey(event.target.value); setOpenAiMessage(""); }}
-                placeholder={openAiConfigured ? "새 키로 교체하려면 입력" : "OpenAI API Key"}
-                aria-label="OpenAI API Key"
-              />
-              <button type="button" className="input-action" onClick={() => setShowOpenAiKey((value) => !value)}>{showOpenAiKey ? "숨기기" : "보기"}</button>
-            </div>
-            <label className="remember-row">
-              <input
-                type="checkbox"
-                disabled={!openAiServerConfigured}
-                checked={rememberOpenAiKey}
-                onChange={(event) => {
-                  const checked = event.target.checked;
-                  void updateOpenAiRemember(checked);
-                }}
-              />
-              <span><strong>이 브라우저에 기억하기</strong><small>켜면 암호화된 지속 HttpOnly 쿠키로 기억합니다. 끄면 브라우저 세션에서만 유지됩니다.</small></span>
-            </label>
-            <div className="connection-actions">
-              <button className="dark-button" type="button" disabled={!openAiServerConfigured || openAiSaving || !openAiKey.trim()} onClick={() => void persistOpenAiKey()}>{openAiSaving ? "저장 중…" : openAiConfigured ? "키 교체" : "키 연결"}</button>
-              {openAiConfigured && <button className="text-button" type="button" onClick={() => void forgetOpenAiKey()}>키 지우기</button>}
-            </div>
-            {openAiMessage && <p className="connection-message">{openAiMessage}</p>}
-          </article>
-
-          <article className={`connection-card google-connection-card ${youtubeStatus === "connected" || youtubeStatus === "disconnected" ? "is-ready" : ""}`}>
-            <div className="connection-card-head">
-              <div><span className="service-kicker">GOOGLE CLOUD · BYOC</span><h3>내 YouTube API 프로젝트</h3></div>
-              <span className="connection-status">{youtubeStatus === "checking" ? "확인 중" : youtubeStatus === "connected" ? "YouTube 연결됨" : youtubeStatus === "disconnected" ? "Cloud 설정됨" : "설정 필요"}</span>
-            </div>
-            <p className="connection-description">내 Google Cloud 프로젝트를 먼저 설정한 뒤, 별도의 Google OAuth 승인으로 YouTube 계정을 연결합니다. YouTube Data API quota는 내 프로젝트에서 사용됩니다.</p>
-
-            {youtubeStatus === "checking" ? (
-              <div className="setup-notice"><strong>연결 상태 확인 중</strong><span>저장된 사용자 Google 프로젝트와 YouTube 연결 상태를 확인하고 있습니다.</span></div>
-            ) : youtubeStatus === "server-unavailable" ? (
-              <div className="setup-notice"><strong>배포 설정 1개가 필요합니다</strong><span>운영자는 과금 키가 아닌 세션 암호화용 <code>APP_SESSION_SECRET</code>만 Vercel에 설정하면 됩니다.</span></div>
-            ) : youtubeStatus === "connected" ? (
-              <div className="connected-summary oauth-connected-summary">
-                <span className="summary-kicker">GOOGLE OAUTH · CONNECTED</span>
-                <strong>{youtubeChannel?.title || "내 YouTube 계정이 연결되었습니다"}</strong>
-                <span>Google Cloud 자격 증명과 OAuth 토큰은 암호화된 HttpOnly 세션으로 보호됩니다.</span>
-                <div className="connection-actions">
-                  <button className="dark-button" type="button" onClick={() => void disconnectYouTube()}>YouTube 연결 해제</button>
-                  <button className="text-button" type="button" onClick={() => void forgetGoogleConfig()}>Google 설정 지우기</button>
-                </div>
-              </div>
-            ) : youtubeStatus === "disconnected" ? (
-              <div className="oauth-ready-panel">
-                <span className="summary-kicker">STEP 4 · GOOGLE OAUTH</span>
-                <strong>Google Cloud 설정이 저장되었습니다.</strong>
-                <p>이제 Google 로그인·동의 화면에서 실제 YouTube 계정을 승인합니다. Cloud Client 설정과 계정 승인은 서로 다른 단계입니다.</p>
-                <div className="oauth-separation" aria-label="Google 연결 단계">
-                  <span className="done">1. Cloud Client 저장 ✓</span>
-                  <span>2. Google OAuth 승인</span>
-                  <span>3. YouTube 채널 연결</span>
-                </div>
-                <div className="connection-actions">
-                  <a className="primary-button inline-primary" href="/api/youtube/oauth/start">Google로 YouTube 연결</a>
-                  <button className="text-button" type="button" onClick={() => void forgetGoogleConfig()}>다른 Google 프로젝트 사용</button>
-                </div>
-              </div>
-            ) : (
-              <div className="setup-wizard" aria-label="Google Cloud 설정 4단계">
-                <div className="wizard-progress" aria-label={`Google Cloud 설정 ${googleWizardStep}/4 단계`}>
-                  {[1, 2, 3, 4].map((step) => (
-                    <span key={step} className={`${googleWizardStep === step ? "active" : ""} ${googleWizardStep > step ? "complete" : ""}`}>{step}</span>
-                  ))}
-                </div>
-
-                <section className={`wizard-step ${googleSetupChecks.projectApi ? "is-complete" : ""} ${googleWizardStep === 1 ? "is-active" : ""}`}>
-                  <button className="wizard-step-trigger" type="button" onClick={() => setGoogleWizardStep(1)} aria-expanded={googleWizardStep === 1}>
-                    <span className="wizard-step-number">1</span>
-                    <span><strong>프로젝트 + YouTube API</strong><small>Google Cloud 프로젝트에서 YouTube Data API v3를 활성화합니다.</small></span>
-                  </button>
-                  {googleWizardStep === 1 && (
-                    <div className="wizard-step-body">
-                      <div className="console-example">
-                        <div className="console-example-title"><span>Google Cloud Console</span><strong>찾아야 할 화면 예시</strong></div>
-                        <div className="console-mini-screen"><div className="console-mini-bar">API Library</div><div className="console-mini-content"><span>YouTube Data API v3</span><b>Enable</b></div></div>
-                        <small>API Library → YouTube Data API v3 → Enable</small>
-                      </div>
-                      <ul className="wizard-checklist">
-                        <li>새 프로젝트를 만들거나 사용할 프로젝트를 선택합니다.</li>
-                        <li>API Library에서 <strong>YouTube Data API v3</strong>를 찾아 활성화합니다.</li>
-                      </ul>
-                      <div className="wizard-link-row">
-                        <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noreferrer">프로젝트 만들기 ↗</a>
-                        <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noreferrer">YouTube Data API 열기 ↗</a>
-                      </div>
-                      <label className="wizard-confirm">
-                        <input type="checkbox" checked={googleSetupChecks.projectApi} onChange={(event) => {
-                          const checked = event.target.checked;
-                          setGoogleSetupChecks((current) => checked
-                            ? { ...current, projectApi: true }
-                            : { projectApi: false, authPlatform: false, oauthClient: false });
-                          setGoogleWizardStep(checked ? 2 : 1);
-                        }} />
-                        <span><strong>YouTube Data API v3를 활성화했습니다</strong><small>앱에서 이 작업을 자동 확인할 수 없어 직접 체크합니다.</small></span>
-                      </label>
-                    </div>
-                  )}
-                </section>
-
-                <section className={`wizard-step ${googleSetupChecks.authPlatform ? "is-complete" : ""} ${googleWizardStep === 2 ? "is-active" : ""}`}>
-                  <button className="wizard-step-trigger" type="button" disabled={!googleSetupChecks.projectApi} onClick={() => setGoogleWizardStep(2)} aria-expanded={googleWizardStep === 2}>
-                    <span className="wizard-step-number">2</span>
-                    <span><strong>Google Auth Platform</strong><small>Branding · Audience · Data Access를 설정합니다.</small></span>
-                  </button>
-                  {googleWizardStep === 2 && (
-                    <div className="wizard-step-body">
-                      <div className="console-example">
-                        <div className="console-example-title"><span>Google Auth Platform</span><strong>찾아야 할 화면 예시</strong></div>
-                        <div className="console-mini-screen auth-mini"><div className="console-mini-bar">Google Auth Platform</div><div className="console-mini-tabs"><span>Branding</span><span>Audience</span><span>Data Access</span></div></div>
-                        <small>Get Started → Branding / Audience / Data Access</small>
-                      </div>
-                      <ul className="wizard-checklist">
-                        <li>처음이면 <strong>Get Started</strong>로 앱 이름과 연락처를 등록합니다.</li>
-                        <li><strong>Audience</strong>가 Testing이면 실제 연결할 Google 계정을 테스트 사용자로 추가해야 할 수 있습니다.</li>
-                        <li><strong>Data Access</strong>에서 앱이 요청할 YouTube 권한을 확인합니다.</li>
-                      </ul>
-                      <div className="scope-box"><span>Subtitle Localizer 요청 scope</span><code>https://www.googleapis.com/auth/youtube.force-ssl</code></div>
-                      <p className="wizard-warning">External + Testing 상태에서는 이 범위처럼 기본 프로필 이외의 OAuth 권한을 사용할 때 refresh token이 7일 후 만료될 수 있습니다. 개인 테스트는 다시 승인하면 되고, 장기 운영은 Google의 게시·검증 정책을 확인해야 합니다.</p>
-                      <div className="wizard-link-row">
-                        <a href="https://console.cloud.google.com/auth/overview" target="_blank" rel="noreferrer">Google Auth Platform 열기 ↗</a>
-                      </div>
-                      <label className="wizard-confirm">
-                        <input type="checkbox" checked={googleSetupChecks.authPlatform} onChange={(event) => {
-                          const checked = event.target.checked;
-                          setGoogleSetupChecks((current) => checked
-                            ? { ...current, authPlatform: true }
-                            : { ...current, authPlatform: false, oauthClient: false });
-                          setGoogleWizardStep(checked ? 3 : 2);
-                        }} />
-                        <span><strong>Auth Platform 설정을 확인했습니다</strong><small>Branding/Audience/Data Access를 확인한 뒤 진행합니다.</small></span>
-                      </label>
-                    </div>
-                  )}
-                </section>
-
-                <section className={`wizard-step ${googleSetupChecks.oauthClient ? "is-complete" : ""} ${googleWizardStep === 3 ? "is-active" : ""}`}>
-                  <button className="wizard-step-trigger" type="button" disabled={!googleSetupChecks.authPlatform} onClick={() => setGoogleWizardStep(3)} aria-expanded={googleWizardStep === 3}>
-                    <span className="wizard-step-number">3</span>
-                    <span><strong>OAuth Web Client 만들기</strong><small>Clients에서 Web application을 만들고 redirect URI를 등록합니다.</small></span>
-                  </button>
-                  {googleWizardStep === 3 && (
-                    <div className="wizard-step-body">
-                      <div className="console-example">
-                        <div className="console-example-title"><span>Google Auth Platform → Clients</span><strong>찾아야 할 화면 예시</strong></div>
-                        <div className="console-mini-screen"><div className="console-mini-bar">Create Client</div><div className="console-mini-form"><span>Application type</span><b>Web application</b><span>Authorized redirect URIs</span><b>https://…/callback</b></div></div>
-                        <small>Clients → Create Client → Web application</small>
-                      </div>
-                      <ul className="wizard-checklist">
-                        <li>Application type은 <strong>Web application</strong>을 선택합니다.</li>
-                        <li>아래 주소를 <strong>Authorized redirect URIs</strong>에 그대로 추가합니다.</li>
-                        <li>프로토콜·도메인·경로·마지막 슬래시까지 정확히 일치해야 합니다.</li>
-                      </ul>
-                      {youtubeRedirectUri ? (
-                        <div className="redirect-box wizard-redirect"><span>Authorized redirect URI</span><code>{youtubeRedirectUri}</code><button type="button" onClick={() => void navigator.clipboard?.writeText(youtubeRedirectUri)}>복사</button></div>
-                      ) : <p className="wizard-inline-note">Redirect URI를 확인하고 있습니다.</p>}
-                      <div className="wizard-link-row">
-                        <a href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noreferrer">OAuth Clients 열기 ↗</a>
-                      </div>
-                      <label className="wizard-confirm">
-                        <input type="checkbox" checked={googleSetupChecks.oauthClient} onChange={(event) => {
-                          const checked = event.target.checked;
-                          setGoogleSetupChecks((current) => ({ ...current, oauthClient: checked }));
-                          setGoogleWizardStep(checked ? 4 : 3);
-                        }} />
-                        <span><strong>Web application Client를 만들었습니다</strong><small>발급된 Client ID와 Client Secret을 다음 단계에서 입력합니다.</small></span>
-                      </label>
-                    </div>
-                  )}
-                </section>
-
-                <section className={`wizard-step ${googleWizardStep === 4 ? "is-active" : ""}`}>
-                  <button className="wizard-step-trigger" type="button" disabled={!googleSetupChecks.oauthClient} onClick={() => setGoogleWizardStep(4)} aria-expanded={googleWizardStep === 4}>
-                    <span className="wizard-step-number">4</span>
-                    <span><strong>Google Cloud 설정 저장</strong><small>Client ID/Secret을 저장한 뒤 별도로 Google OAuth 승인을 진행합니다.</small></span>
-                  </button>
-                  {googleWizardStep === 4 && googleSetupChecks.oauthClient && (
-                    <div className="wizard-step-body google-config-form">
-                      <div className="field-block compact">
-                        <div className="field-row"><label htmlFor="google-client-id">Google OAuth Client ID</label><span>사용자 프로젝트</span></div>
-                        <input id="google-client-id" className="text-input" value={googleClientId} onChange={(event) => setGoogleClientId(event.target.value)} autoComplete="off" spellCheck={false} placeholder="...apps.googleusercontent.com" />
-                      </div>
-                      <div className="field-block compact">
-                        <div className="field-row"><label htmlFor="google-client-secret">Google OAuth Client Secret</label><span>브라우저 JS에 재노출 안 함</span></div>
-                        <div className="secret-input-row">
-                          <input id="google-client-secret" className="text-input" type={showGoogleSecret ? "text" : "password"} value={googleClientSecret} onChange={(event) => setGoogleClientSecret(event.target.value)} autoComplete="off" spellCheck={false} placeholder="Google Client Secret" />
-                          <button type="button" className="input-action" onClick={() => setShowGoogleSecret((value) => !value)}>{showGoogleSecret ? "숨기기" : "보기"}</button>
-                        </div>
-                      </div>
-                      <label className="remember-row">
-                        <input type="checkbox" checked={rememberGoogle} onChange={(event) => setRememberGoogle(event.target.checked)} />
-                        <span><strong>이 브라우저에서 Google 연결 유지</strong><small>Client ID·Secret·토큰을 암호화된 HttpOnly 쿠키로 유지합니다. Google 프로젝트가 Testing이면 Google 정책에 따라 OAuth 갱신 토큰이 더 일찍 만료되어 재승인이 필요할 수 있습니다.</small></span>
-                      </label>
-                      <div className="cloud-vs-oauth-note"><strong>이 버튼은 Cloud 설정만 저장합니다.</strong><span>저장 후 별도의 `Google로 YouTube 연결` 버튼이 나타나며, 그때 Google 로그인·동의를 진행합니다.</span></div>
-                      <button className="primary-button full-width" type="button" disabled={googleConfigSaving || !googleClientId.trim() || !googleClientSecret.trim()} onClick={() => void saveGoogleConfig()}>
-                        {googleConfigSaving ? "설정 저장 중…" : "Google Cloud 설정 저장"}
-                      </button>
-                    </div>
-                  )}
-                </section>
-              </div>
-            )}
-            {youtubeMessage && <p className="connection-message">{youtubeMessage}</p>}
-          </article>
-        </div>
+        <p>SRT 업로드 또는 YouTube 자막 가져오기부터 바로 시작하세요.</p>
       </section>
 
       <div className="workspace">
@@ -1016,9 +613,9 @@ export default function Home() {
               <div className="youtube-source-panel">
                 {youtubeStatus === "checking" && <p className="source-empty">YouTube 연결 상태를 확인하고 있습니다.</p>}
                 {youtubeStatus === "server-unavailable" && <p className="source-empty">배포 서버에 세션 암호화용 APP_SESSION_SECRET 설정이 필요합니다.</p>}
-                {youtubeStatus === "unconfigured" && <div className="source-empty"><strong>본인의 Google Cloud OAuth Client를 먼저 설정해 주세요.</strong><a className="primary-button source-connect" href="#api-connections">API 연결 설정</a></div>}
+                {youtubeStatus === "unconfigured" && <div className="source-empty"><strong>본인의 Google Cloud OAuth Client를 먼저 설정해 주세요.</strong><a className="primary-button source-connect" href="/connections?setup=youtube&return=/">연결 설정</a></div>}
                 {youtubeStatus === "disconnected" && (
-                  <div className="source-empty"><strong>YouTube 채널을 먼저 연결해 주세요.</strong><a className="primary-button source-connect" href="/api/youtube/oauth/start">Google로 YouTube 연결</a></div>
+                  <div className="source-empty"><strong>YouTube 채널을 먼저 연결해 주세요.</strong><a className="primary-button source-connect" href="/connections?setup=youtube&return=/">Google로 YouTube 연결</a></div>
                 )}
                 {youtubeStatus === "connected" && (
                   <div className="youtube-source-grid">
@@ -1117,7 +714,7 @@ export default function Home() {
                 </div>
                 <div className="field-block compact cost-note-card">
                   <div className="field-row"><label>API 비용</label><span>사용자 부담</span></div>
-                  <p>번역은 위에 입력한 사용자 OpenAI API Key로만 실행됩니다. 운영자 OpenAI 키는 사용하지 않습니다.</p>
+                  <p>번역은 연결 관리에서 저장한 사용자 OpenAI API Key로만 실행됩니다. 운영자 OpenAI 키는 사용하지 않습니다.</p>
                 </div>
               </div>
             </details>
@@ -1248,10 +845,10 @@ export default function Home() {
               <div className="side-empty"><strong>배포 세션 암호화 설정 필요</strong><p>과금 자격 증명은 필요하지 않습니다. Vercel에 APP_SESSION_SECRET만 설정합니다.</p></div>
             )}
             {youtubeStatus === "unconfigured" && (
-              <div className="side-empty"><strong>내 Google 프로젝트 연결</strong><p>YouTube quota가 본인 프로젝트에서 사용되도록 Client ID/Secret을 설정합니다.</p><a className="dark-button full" href="#api-connections">Google 설정하기</a></div>
+              <div className="side-empty"><strong>내 Google 프로젝트 연결</strong><p>YouTube quota가 본인 프로젝트에서 사용되도록 Client ID/Secret을 설정합니다.</p><a className="dark-button full" href="/connections?setup=youtube&return=/">Google 설정하기</a></div>
             )}
             {youtubeStatus === "disconnected" && (
-              <div className="side-empty"><strong>내 채널과 연결</strong><p>영상 목록을 불러오고 자막을 올릴 때만 YouTube 권한을 사용합니다.</p><a className="dark-button full" href="/api/youtube/oauth/start">Google로 YouTube 연결</a></div>
+              <div className="side-empty"><strong>내 채널과 연결</strong><p>영상 목록을 불러오고 자막을 올릴 때만 YouTube 권한을 사용합니다.</p><a className="dark-button full" href="/connections?setup=youtube&return=/">Google로 YouTube 연결</a></div>
             )}
 
             {youtubeStatus === "connected" && (
@@ -1259,7 +856,7 @@ export default function Home() {
                 <div className="channel-row">
                   {youtubeChannel?.thumbnail ? <img src={youtubeChannel.thumbnail} alt="" /> : <span className="channel-placeholder" aria-hidden="true">Y</span>}
                   <div><strong>{youtubeChannel?.title ?? "연결된 채널"}</strong><span>최근 업로드 최대 50개</span></div>
-                  <button type="button" onClick={() => void disconnectYouTube()}>해제</button>
+                  <a className="channel-manage-link" href="/connections?setup=youtube&return=/">관리</a>
                 </div>
 
                 <div className="field-block compact">
@@ -1316,7 +913,7 @@ export default function Home() {
         </aside>
       </div>
 
-      <footer className="footer">Subtitle Localizer v1.5.0 · 사용자 API 비용 분리형 다국어 자막 작업 도구</footer>
+      <footer className="footer">Subtitle Localizer v1.6.0 · 사용자 API 비용 분리형 다국어 자막 작업 도구</footer>
     </main>
   );
 }

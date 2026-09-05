@@ -21,7 +21,7 @@ function sameState(left: string, right: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const home = new URL("/", request.url);
+  const home = new URL("/connections", request.url);
   const errorParam = request.nextUrl.searchParams.get("error");
   if (errorParam) {
     home.searchParams.set("youtube", "denied");
