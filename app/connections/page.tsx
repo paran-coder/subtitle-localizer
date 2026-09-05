@@ -6,12 +6,30 @@ type YouTubeStatus = "checking" | "server-unavailable" | "unconfigured" | "disco
 
 type SetupTarget = "openai" | "youtube" | null;
 
-function WizardGuide({ click, see, done }: { click: string; see: string; done: string }) {
+type WizardAction = {
+  index: number;
+  title: string;
+  click: string;
+  see: string;
+  done: string;
+  action?: ReactNode;
+  secondary?: ReactNode;
+};
+
+function WizardActionList({ items }: { items: WizardAction[] }) {
   return (
-    <div className="wizard-guide-grid" aria-label="이 단계의 길찾기 가이드">
-      <article><span>1</span><div><strong>어디를 클릭하세요</strong><p>{click}</p></div></article>
-      <article><span>2</span><div><strong>무엇이 보여야 합니다</strong><p>{see}</p></div></article>
-      <article><span>3</span><div><strong>완료 기준</strong><p>{done}</p></div></article>
+    <div className="wizard-action-list" aria-label="이 단계에서 할 일">
+      {items.map((item) => (
+        <article className="wizard-action-card" key={item.index}>
+          <div className="wizard-action-head"><span>{item.index}</span><strong>{item.title}</strong></div>
+          <dl className="wizard-action-details">
+            <div><dt>어디를 클릭하세요</dt><dd>{item.click}</dd></div>
+            <div><dt>무엇이 보여야 합니다</dt><dd>{item.see}</dd></div>
+            <div><dt>완료 기준</dt><dd>{item.done}</dd></div>
+          </dl>
+          {(item.action || item.secondary) && <div className="wizard-action-cta">{item.action}{item.secondary}</div>}
+        </article>
+      ))}
     </div>
   );
 }
@@ -87,10 +105,10 @@ function OAuthClientVisual({ redirectUri }: { redirectUri: string }) {
   return (
     <ReconstructedFrame label="Google Auth Platform · Clients">
       <div className="reconstructed-console">
-        <div className="mock-topbar"><strong>Google Auth Platform</strong><span className="mock-project">Clients</span></div>
+        <div className="mock-topbar"><strong>Google Auth Platform</strong><span className="mock-project"><Marker>1</Marker> Clients</span></div>
         <div className="mock-client-panel">
-          <div className="mock-client-heading"><div><Marker>1</Marker><span>Create OAuth client</span></div><small>Application type과 redirect URI를 설정합니다.</small></div>
-          <label><span>Application type</span><b><Marker>2</Marker> Web application</b></label>
+          <div className="mock-client-heading"><div><Marker>2</Marker><span>Create OAuth client</span></div><small>Application type과 redirect URI를 설정합니다.</small></div>
+          <label><span>Application type</span><b>Web application</b></label>
           <label><span>Name</span><b>Subtitle Localizer</b></label>
           <label className="mock-uri-field"><span>Authorized redirect URIs</span><b><Marker>3</Marker> {redirectUri || "https://subtitle-localizer.vercel.app/api/youtube/oauth/callback"}</b></label>
           <div className="mock-client-footer"><span>Cancel</span><strong>Create</strong></div>
@@ -110,7 +128,7 @@ function CloudToOAuthVisual() {
         <b aria-hidden="true">→</b>
         <div><span>3</span><strong>Google OAuth 승인</strong><small>Google로 YouTube 연결</small></div>
         <b aria-hidden="true">→</b>
-        <div><span>4</span><strong>YouTube 연결 ✓</strong><small>영상·자막 접근 준비</small></div>
+        <div className="flow-outcome"><span aria-hidden="true">✓</span><strong>YouTube 연결 완료</strong><small>영상·자막 접근 준비</small></div>
       </div>
     </ReconstructedFrame>
   );
@@ -304,7 +322,7 @@ export default function ConnectionsPage() {
         <div className="topbar-inner">
           <a className="brand" href="/" aria-label="Subtitle Localizer 작업공간으로 이동">
             <span className="brand-symbol" aria-hidden="true">S</span>
-            <span><strong>Subtitle Localizer</strong><small>v1.6.3</small></span>
+            <span><strong>Subtitle Localizer</strong><small>v1.6.4</small></span>
           </a>
           <div className="topbar-actions connection-status-strip">
             <span className={`status-pill ${openAiConfigured ? "is-ready" : ""}`}>OpenAI {openAiConfigured ? "✓" : "○"}</span>
@@ -390,58 +408,140 @@ export default function ConnectionsPage() {
 
             {wizardStep === 1 && <div className="single-step-body">
               <p className="wizard-lead">먼저 이 도구가 사용할 <strong>내 Google Cloud 프로젝트</strong>를 정하고, 그 프로젝트에서 YouTube Data API v3를 켭니다.</p>
-              <WizardGuide
-                click="Google Cloud 상단 프로젝트 선택기 → APIs & Services → Library 순서로 이동합니다."
-                see="API Library에서 YouTube Data API v3 상세 화면과 Enable 버튼이 보여야 합니다."
-                done="선택한 프로젝트에서 YouTube Data API v3가 Enabled 상태가 되면 완료입니다."
-              />
+              <WizardActionList items={[
+                {
+                  index: 1,
+                  title: "Google Cloud 프로젝트 준비",
+                  click: "Google Cloud 상단 프로젝트 선택기에서 사용할 프로젝트를 고르거나 새 프로젝트를 만듭니다.",
+                  see: "상단 프로젝트 선택기에 앞으로 OAuth Client와 YouTube API를 함께 둘 프로젝트 이름이 보여야 합니다.",
+                  done: "사용할 프로젝트가 선택되어 있으면 완료입니다.",
+                  action: <a className="wizard-action-primary" href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noreferrer">프로젝트 만들기 ↗</a>,
+                  secondary: <span className="wizard-action-secondary">기존 프로젝트는 Google Cloud 상단 선택기에서 고르세요.</span>
+                },
+                {
+                  index: 2,
+                  title: "API Library 열기",
+                  click: "선택한 프로젝트에서 APIs & Services → Library로 이동합니다.",
+                  see: "API Library 검색창과 API 목록이 보여야 합니다.",
+                  done: "현재 프로젝트의 API Library 화면이면 완료입니다.",
+                  action: <a className="wizard-action-primary" href="https://console.cloud.google.com/apis/library" target="_blank" rel="noreferrer">API Library 열기 ↗</a>
+                },
+                {
+                  index: 3,
+                  title: "YouTube Data API v3 활성화",
+                  click: "API Library에서 YouTube Data API v3를 열고 Enable을 누릅니다.",
+                  see: "YouTube Data API v3 상세 화면에서 Enable 또는 활성화된 경우 Manage 상태가 보여야 합니다.",
+                  done: "Enable이 완료되어 API가 Enabled 상태면 완료입니다.",
+                  action: <a className="wizard-action-primary" href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noreferrer">YouTube Data API v3 열기 ↗</a>
+                }
+              ]} />
               <ProjectApiVisual />
-              <div className="wizard-link-row"><a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noreferrer">프로젝트 만들기 ↗</a><a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noreferrer">YouTube Data API 열기 ↗</a></div>
               <label className="wizard-confirm"><input type="checkbox" checked={confirmedSteps.projectApi} onChange={(event) => setConfirmedSteps((current) => ({ ...current, projectApi: event.target.checked }))} /><span><strong>YouTube Data API v3가 Enabled 상태입니다</strong><small>반드시 앞으로 사용할 OAuth Client와 같은 Google Cloud 프로젝트인지도 확인해 주세요.</small></span></label>
             </div>}
 
             {wizardStep === 2 && <div className="single-step-body">
               <p className="wizard-lead">이제 <strong>Google Auth Platform</strong>에서 OAuth 동의 화면에 표시될 앱 정보, 로그인 가능한 사용자, 요청할 YouTube 권한을 준비합니다.</p>
-              <WizardGuide
-                click="Google Auth Platform에서 Branding → Audience → Data Access를 차례로 확인합니다."
-                see="Branding의 앱 정보, Audience의 External/Testing 및 Test users, Data Access의 OAuth scope 목록이 보여야 합니다."
-                done="테스트 계정과 youtube.force-ssl scope가 준비되어 실제 OAuth 동의를 진행할 수 있으면 완료입니다."
-              />
+              <WizardActionList items={[
+                {
+                  index: 1,
+                  title: "Branding 확인",
+                  click: "Google Auth Platform에서 Branding을 엽니다.",
+                  see: "App name과 User support email 등 OAuth 동의 화면의 기본 앱 정보가 보여야 합니다.",
+                  done: "앱 이름과 지원 이메일이 현재 프로젝트에 맞게 저장되어 있으면 완료입니다.",
+                  action: <a className="wizard-action-primary" href="https://console.cloud.google.com/auth/branding" target="_blank" rel="noreferrer">Branding 열기 ↗</a>
+                },
+                {
+                  index: 2,
+                  title: "Audience / Test users 준비",
+                  click: "Audience를 열고 User type과 Publishing status를 확인합니다.",
+                  see: "External · Testing인 경우 Test users 영역과 Add users 버튼이 보여야 합니다.",
+                  done: "실제로 YouTube에 로그인할 Google 계정이 Test users에 포함되어 있으면 완료입니다.",
+                  action: <a className="wizard-action-primary" href="https://console.cloud.google.com/auth/audience" target="_blank" rel="noreferrer">Audience 열기 ↗</a>
+                },
+                {
+                  index: 3,
+                  title: "Data Access scope 확인",
+                  click: "Data Access에서 Add or Remove Scopes를 열고 YouTube scope를 추가합니다.",
+                  see: "OAuth scope 목록에 youtube.force-ssl이 포함되어 있어야 합니다.",
+                  done: "필요 scope가 저장되어 OAuth 동의에서 요청할 준비가 되면 완료입니다.",
+                  action: <a className="wizard-action-primary" href="https://console.cloud.google.com/auth/scopes" target="_blank" rel="noreferrer">Data Access 열기 ↗</a>
+                }
+              ]} />
               <AuthPlatformVisual />
               <div className="scope-box"><span>Subtitle Localizer가 요청하는 YouTube scope</span><code>https://www.googleapis.com/auth/youtube.force-ssl</code></div>
               <div className="wizard-callout"><strong>개인 테스트라면</strong><p>Audience가 <b>External · Testing</b>인 경우, 실제로 YouTube에 로그인할 자신의 Google 계정을 <b>Test users</b>에 추가하세요.</p></div>
               <p className="wizard-warning">Testing 상태의 OAuth 앱은 Google 정책에 따라 refresh token이 일찍 만료될 수 있어 재승인이 필요할 수 있습니다. 공개 서비스로 운영하려면 별도의 OAuth 검증 요구사항이 생길 수 있습니다.</p>
-              <div className="wizard-link-row"><a href="https://console.cloud.google.com/auth/overview" target="_blank" rel="noreferrer">Google Auth Platform 열기 ↗</a></div>
               <label className="wizard-confirm"><input type="checkbox" checked={confirmedSteps.authPlatform} onChange={(event) => setConfirmedSteps((current) => ({ ...current, authPlatform: event.target.checked }))} /><span><strong>Branding / Audience / Data Access 준비를 마쳤습니다</strong><small>External · Testing이면 로그인할 계정을 Test users에 넣었는지도 확인했습니다.</small></span></label>
             </div>}
 
             {wizardStep === 3 && <div className="single-step-body">
               <p className="wizard-lead">Google Auth Platform의 <strong>Clients</strong>에서 Web application OAuth Client를 만들고, Subtitle Localizer의 callback 주소를 Authorized redirect URI로 등록합니다.</p>
-              <WizardGuide
-                click="Google Auth Platform → Clients → Create Client를 누르고 Application type을 Web application으로 선택합니다."
-                see="Name과 Authorized redirect URIs를 입력하는 Web application 설정 폼이 보여야 합니다."
-                done="아래 Redirect URI가 정확히 등록되고 Client ID와 Client Secret이 발급되면 완료입니다."
-              />
+              <WizardActionList items={[
+                {
+                  index: 1,
+                  title: "Clients로 이동",
+                  click: "Google Auth Platform에서 Clients 메뉴를 엽니다.",
+                  see: "OAuth 2.0 Client 목록과 Create Client 버튼이 보여야 합니다.",
+                  done: "현재 프로젝트의 Clients 화면에 들어가 있으면 완료입니다.",
+                  action: <a className="wizard-action-primary" href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noreferrer">Clients 열기 ↗</a>
+                },
+                {
+                  index: 2,
+                  title: "Web application Client 만들기",
+                  click: "Create Client를 누르고 Application type을 Web application으로 선택합니다.",
+                  see: "Name과 Authorized redirect URIs를 입력하는 Web application 설정 폼이 보여야 합니다.",
+                  done: "Web application 유형이 선택된 새 OAuth Client 폼이면 완료입니다.",
+                  action: <a className="wizard-action-primary" href="https://console.cloud.google.com/auth/clients/create" target="_blank" rel="noreferrer">OAuth Client 만들기 ↗</a>
+                },
+                {
+                  index: 3,
+                  title: "Redirect URI 등록",
+                  click: "Authorized redirect URIs에 아래 Subtitle Localizer callback 주소를 추가합니다.",
+                  see: "등록 목록에 앱이 표시한 Redirect URI가 문자 하나까지 동일하게 보여야 합니다.",
+                  done: "Create 후 Client ID와 Client Secret이 발급되면 완료입니다.",
+                  action: youtubeRedirectUri ? <button className="wizard-action-primary" type="button" onClick={() => void navigator.clipboard?.writeText(youtubeRedirectUri)}>Redirect URI 복사</button> : <span className="wizard-action-pending">Redirect URI 확인 중</span>
+                }
+              ]} />
               <OAuthClientVisual redirectUri={youtubeRedirectUri} />
               {youtubeRedirectUri ? <div className="redirect-box wizard-redirect"><span>등록할 Authorized redirect URI</span><code>{youtubeRedirectUri}</code><button type="button" onClick={() => void navigator.clipboard?.writeText(youtubeRedirectUri)}>복사</button></div> : <p className="wizard-inline-note">Redirect URI를 확인하고 있습니다.</p>}
               <div className="wizard-callout"><strong>문자 하나까지 같아야 합니다</strong><p>프로토콜, 도메인, 경로, 마지막 슬래시까지 OAuth 요청의 redirect URI와 Google Cloud에 등록한 값이 정확히 일치해야 합니다.</p></div>
-              <div className="wizard-link-row"><a href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noreferrer">OAuth Clients 열기 ↗</a></div>
               <label className="wizard-confirm"><input type="checkbox" checked={confirmedSteps.oauthClient} onChange={(event) => setConfirmedSteps((current) => ({ ...current, oauthClient: event.target.checked }))} /><span><strong>Web application Client를 만들었습니다</strong><small>Client ID와 Client Secret이 발급되었고 Redirect URI도 등록했습니다.</small></span></label>
             </div>}
 
             {wizardStep === 4 && <div className="single-step-body google-config-form">
               <p className="wizard-lead">마지막으로 발급받은 Client ID와 Client Secret을 Subtitle Localizer에 저장합니다. <strong>저장과 실제 Google 계정 OAuth 승인은 서로 다른 단계</strong>입니다.</p>
-              <WizardGuide
-                click="Google에서 발급받은 Client ID와 Client Secret을 아래 입력란에 넣고 Google Cloud 설정 저장을 누릅니다."
-                see="저장 후 Cloud Client 준비 완료 상태와 Google로 YouTube 연결 버튼이 보여야 합니다."
-                done="Google 로그인·동의까지 승인해 연결 페이지 상단이 YouTube ✓ 상태가 되면 전체 설정 완료입니다."
-              />
+              <WizardActionList items={[
+                {
+                  index: 1,
+                  title: "Client ID / Secret 입력",
+                  click: "Google에서 발급받은 Client ID와 Client Secret을 아래 입력란에 넣습니다.",
+                  see: "두 입력란에 발급값이 들어가고 필요하면 브라우저 연결 유지 옵션을 선택할 수 있어야 합니다.",
+                  done: "Client ID와 Client Secret이 모두 입력되면 저장 준비가 완료됩니다.",
+                  action: <a className="wizard-action-primary" href="#google-client-id">Client 정보 입력하기</a>
+                },
+                {
+                  index: 2,
+                  title: "Cloud 설정 저장",
+                  click: "입력값 아래의 Google Cloud 설정 저장 버튼을 누릅니다.",
+                  see: "저장 후 Cloud Client 준비 완료 상태와 Google OAuth 연결 안내가 보여야 합니다.",
+                  done: "Cloud Client 저장 ✓ 상태가 되면 완료입니다.",
+                  action: <a className="wizard-action-primary" href="#save-google-config">저장 버튼으로 이동</a>
+                },
+                {
+                  index: 3,
+                  title: "Google OAuth 승인",
+                  click: "Cloud 설정 저장 후 나타나는 Google로 YouTube 연결 버튼을 누릅니다.",
+                  see: "Google 로그인·동의 화면이 열리고 YouTube 권한 승인 요청이 보여야 합니다.",
+                  done: "연결 페이지 상단이 YouTube ✓ 상태가 되면 전체 연결이 완료됩니다.",
+                  secondary: <span className="wizard-action-pending">Cloud 설정 저장 후 진행</span>
+                }
+              ]} />
               <CloudToOAuthVisual />
               <div className="field-block compact"><div className="field-row"><label htmlFor="google-client-id">Google OAuth Client ID</label><span>사용자 프로젝트</span></div><input id="google-client-id" className="text-input" value={googleClientId} onChange={(event) => setGoogleClientId(event.target.value)} autoComplete="off" spellCheck={false} placeholder="...apps.googleusercontent.com" /></div>
               <div className="field-block compact"><div className="field-row"><label htmlFor="google-client-secret">Google OAuth Client Secret</label><span>JS에 재노출 안 함</span></div><div className="secret-input-row"><input id="google-client-secret" className="text-input" type={showGoogleSecret ? "text" : "password"} value={googleClientSecret} onChange={(event) => setGoogleClientSecret(event.target.value)} autoComplete="off" spellCheck={false} placeholder="Google Client Secret" /><button type="button" className="input-action" onClick={() => setShowGoogleSecret((value) => !value)}>{showGoogleSecret ? "숨기기" : "보기"}</button></div></div>
               <label className="remember-row"><input type="checkbox" checked={rememberGoogle} onChange={(event) => setRememberGoogle(event.target.checked)} /><span><strong>이 브라우저에서 Google 연결 유지</strong><small>Client 설정과 OAuth 토큰을 암호화된 HttpOnly 쿠키로 유지합니다.</small></span></label>
               <div className="cloud-vs-oauth-note"><strong>여기서는 Cloud Client 자격증명만 저장합니다.</strong><span>저장이 끝나면 별도 화면에서 `Google로 YouTube 연결`을 눌러 Google 로그인·동의를 승인합니다.</span></div>
-              <button className="primary-button full-width" type="button" disabled={googleSaving || !googleClientId.trim() || !googleClientSecret.trim()} onClick={() => void saveGoogleConfig()}>{googleSaving ? "저장 중…" : "Google Cloud 설정 저장"}</button>
+              <button id="save-google-config" className="primary-button full-width" type="button" disabled={googleSaving || !googleClientId.trim() || !googleClientSecret.trim()} onClick={() => void saveGoogleConfig()}>{googleSaving ? "저장 중…" : "Google Cloud 설정 저장"}</button>
             </div>}
 
             <div className="wizard-nav">

@@ -101,29 +101,49 @@ test("v1.6.2 wizard 비활성 CTA는 neutral이고 활성 CTA만 primary를 사�
   assert.match(css, /\.primary-button \{ background: var\(--primary\)/);
 });
 
-test("v1.6.3 wizard는 모든 단계에 동일한 길찾기 패턴을 제공한다", () => {
+test("v1.6.4 wizard는 행동 설명·CTA·시각화 번호를 하나의 체계로 묶는다", () => {
   const connections = read("app/connections/page.tsx");
-  assert.match(connections, /function WizardGuide/);
+  assert.match(connections, /function WizardActionList/);
   assert.match(connections, /어디를 클릭하세요/);
   assert.match(connections, /무엇이 보여야 합니다/);
   assert.match(connections, /완료 기준/);
-  assert.equal((connections.match(/<WizardGuide/g) ?? []).length, 4);
+  assert.equal((connections.match(/<WizardActionList/g) ?? []).length, 4);
+  assert.match(connections, /Google Cloud 프로젝트 준비/);
+  assert.match(connections, /API Library 열기/);
+  assert.match(connections, /YouTube Data API v3 활성화/);
+  assert.equal(connections.includes('className="wizard-link-row"'), false);
 });
 
-test("v1.6.3 Google 시각 예시는 재구성 화면임을 명시하고 실제 길찾기 요소를 포함한다", () => {
+test("v1.6.4 단계별 주 CTA는 행동 카드 안에서 직접 매칭된다", () => {
+  const connections = read("app/connections/page.tsx");
+  assert.match(connections, /프로젝트 만들기 ↗/);
+  assert.match(connections, /API Library 열기 ↗/);
+  assert.match(connections, /YouTube Data API v3 열기 ↗/);
+  assert.match(connections, /Branding 열기 ↗/);
+  assert.match(connections, /Audience 열기 ↗/);
+  assert.match(connections, /Data Access 열기 ↗/);
+  assert.match(connections, /Clients 열기 ↗/);
+  assert.match(connections, /OAuth Client 만들기 ↗/);
+  assert.match(connections, /Redirect URI 복사/);
+});
+
+test("v1.6.4 Google 시각 예시는 같은 1·2·3 마커와 재구성 화면 라벨을 유지한다", () => {
   const connections = read("app/connections/page.tsx");
   assert.match(connections, /안내용 재구성 화면/);
   assert.match(connections, /실제 Google Cloud Console은 업데이트에 따라/);
+  assert.match(connections, /<Marker>1<\/Marker>/);
+  assert.match(connections, /<Marker>2<\/Marker>/);
+  assert.match(connections, /<Marker>3<\/Marker>/);
   assert.match(connections, /APIs &amp; Services/);
   assert.match(connections, /Test users/);
   assert.match(connections, /ADD OR REMOVE SCOPES/);
   assert.match(connections, /Authorized redirect URIs/);
 });
 
-test("v1.6.3 시각 가이드는 desktop과 mobile에서 재배치된다", () => {
+test("v1.6.4 행동 카드와 시각 가이드는 desktop과 mobile에서 재배치된다", () => {
   const css = read("app/globals.css");
-  assert.match(css, /\.wizard-guide-grid[\s\S]*grid-template-columns: repeat\(3/);
+  assert.match(css, /\.wizard-action-list[\s\S]*grid-template-columns: repeat\(3/);
   assert.match(css, /\.mock-console-layout[\s\S]*grid-template-columns: 190px/);
-  assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.wizard-guide-grid \{ grid-template-columns: 1fr/);
+  assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.wizard-action-list \{ grid-template-columns: 1fr/);
   assert.match(css, /\.connection-flow-visual[\s\S]*grid-template-columns: 1fr/);
 });
