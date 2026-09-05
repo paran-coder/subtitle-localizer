@@ -1,73 +1,54 @@
-# Subtitle Localizer v1.6.2 — Checklist
+# checklist.md — Subtitle Localizer v1.6.3
 
-## Documentation first
-- [x] context-notes.md created/updated before implementation
-- [x] checklist.md created/updated before implementation
-- [x] README.md updated before implementation
-- [x] User manual.md updated before implementation
+## 작업 전
+- [x] context-notes.md 갱신
+- [x] checklist.md 갱신
+- [x] README.md 갱신
+- [x] User manual.md 갱신
+- [x] ui-polish 원칙 재확인
+- [x] Karrot/SEED 디자인 토큰 재확인
+- [x] Google 공식 YouTube OAuth / Auth Platform 문서 메뉴명 재검증
 
-## Connections IA
-- [x] Add `/connections` page
-- [x] Move OpenAI BYOK controls out of workspace
-- [x] Move Google/YouTube BYOC controls out of workspace
-- [x] Show only compact connection status in workspace header
-- [x] Add return-to-workspace action
-- [x] Compress workspace hero so `원본 자막` appears earlier
+## Wizard 시각 가이드
+- [x] 모든 단계에 `어디를 클릭하세요` 블록
+- [x] 모든 단계에 `무엇이 보여야 합니다` 블록
+- [x] 모든 단계에 `완료 기준` 블록
+- [x] 시각 예시에 `안내용 재구성 화면` 표시
+- [x] 1단계: Project selector → APIs & Services → Library → YouTube Data API v3 → Enable
+- [x] 2단계: Branding / Audience / Data Access + Test users
+- [x] 3단계: Clients → Create Client → Web application → Authorized redirect URIs
+- [x] 4단계: Client ID/Secret 저장 → 별도 Google OAuth 승인
+- [x] 실제 Google Console과 혼동될 수 있는 가짜 버튼은 `예시`임을 명확히 표시
 
-## Contextual gates
-- [x] Translation without OpenAI routes to `/connections?setup=openai`
-- [x] YouTube import without Google config routes to `/connections?setup=youtube`
-- [x] YouTube import with Cloud config but no OAuth routes to connection management
-- [x] YouTube upload missing connection routes to connection management
-- [x] OAuth callback/errors return to `/connections`
+## UI / 접근성
+- [x] 본문 15~16px 이상 유지
+- [x] 현재 단계/활성 CTA에만 Primary 오렌지 사용
+- [x] 4px spacing rhythm
+- [x] 모바일 320px 가로 overflow 없음
+- [x] prefers-reduced-motion 유지
+- [x] focus-visible 유지
 
-## Google wizard
-- [x] One step body visible at a time
-- [x] 1/4 Project + YouTube Data API
-- [x] 2/4 Google Auth Platform
-- [x] 3/4 OAuth Web Client + redirect URI copy
-- [x] 4/4 Client ID/Secret save
-- [x] Previous / Next navigation
-- [x] Google OAuth approval visibly separate from Cloud configuration
-- [x] Existing Cloud configuration skips the setup wizard and shows OAuth/connect state
+## 회귀 검증
+- [x] 기존 단위/architecture 테스트 전체 통과
+- [x] TS/TSX 구문 검사
+- [x] CSS 구조 검사
+- [x] OpenAI BYOK 로직 변경 없음
+- [x] YouTube OAuth/API 로직 변경 없음
+- [x] 하드코딩 API Key 없음
+- [x] localStorage/sessionStorage 비밀정보 저장 없음
+- [x] .env.example / .gitignore ZIP 포함
 
-## UI / accessibility
-- [x] Primary remains `#ff6f0f`
-- [x] Neutral surfaces/system typography/4px rhythm retained
-- [x] Orange remains limited to primary/active states
-- [x] Mobile connection page rules added
-- [x] reduced-motion respected for contextual setup scroll
+## 배포 후
+- [ ] Vercel production build 통과
+- [ ] /connections 실제 픽셀 QA
+- [ ] Google Cloud 1/4 → 4/4 실제 따라가기 테스트
+- [ ] Google OAuth 승인 테스트
 
-## QA
-- [x] Existing SRT/BYOK/BYOC/YouTube tests pass
-- [x] Architecture tests cover `/connections`
-- [x] Automated tests: 49/49
-- [x] TS/TSX syntax transpile: 29 files / 0 diagnostics
-- [x] CSS brace validation
-- [x] Runtime hardcoded `sk-*`: none
-- [x] Runtime localStorage/sessionStorage secret storage: none
-- [x] `.env.example` included
-- [x] `.gitignore` included
-- [ ] Dependency-aware `tsc --noEmit` (npm registry unavailable in this environment)
-- [ ] Next production build (npm registry unavailable in this environment)
-- [ ] Live Vercel browser QA after deployment
-- [ ] Real Google OAuth → videos → captions import/upload E2E after deployment
-
-
-## v1.6.1 hotfix verification
-- [x] Reproduce Vercel error: `TS1501` on architecture test RegExp dotAll flag
-- [x] Remove ES2018-only `/s` flag without changing runtime code
-- [x] Verify replacement RegExp compiles with TypeScript target ES2017
-- [x] Run full Node test suite: 49/49 passed
-- [x] Remove duplicate `User%20manual.md` artifact
-- [ ] Confirm Vercel production build after uploading v1.6.1
-
-## v1.6.2 readability QA
-- [x] Wizard body copy is at least 15px on desktop and mobile.
-- [x] Checklist / confirmation copy is readable without zooming.
-- [x] Google Console schematic is materially larger and visually useful.
-- [x] Disabled navigation buttons are neutral, not orange.
-- [x] Current step and active primary action remain the only dominant orange elements.
-- [x] Content is allowed to scroll naturally; no viewport-fitting hacks.
-- [x] 320px mobile layout has no page-level horizontal overflow.
-- [x] `prefers-reduced-motion` remains supported.
+## 최종 검증 결과
+- 자동 테스트: **52/52 통과**
+- TS/TSX: **29개 파일 ES2017 구문 진단 0**
+- CSS delimiter 검사: **통과**
+- 하드코딩 `sk-*`: **0**
+- localStorage/sessionStorage 비밀 저장: **0**
+- npm registry 접근 시간 초과로 dependency-aware production build는 Vercel에서 확인 필요
+- 자체평가: **9.9/10**

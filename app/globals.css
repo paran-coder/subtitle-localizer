@@ -1144,3 +1144,402 @@ textarea:focus, .text-input:focus { border-color: var(--primary); box-shadow: 0 
 @media (max-width: 760px) {
   #youtube-connection .wizard-lead { font-size: 15px; line-height: 1.7; }
 }
+
+/* v1.6.3 — Google Cloud wayfinding visuals */
+#youtube-connection .single-step-progress > div:first-child strong {
+  max-width: 520px;
+}
+
+#youtube-connection .wizard-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+#youtube-connection .wizard-guide-grid article {
+  min-width: 0;
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--canvas);
+}
+#youtube-connection .wizard-guide-grid article > span {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--brand-tint);
+  color: #9a4d17;
+  font-size: 12px;
+  font-weight: 800;
+}
+#youtube-connection .wizard-guide-grid article div { min-width: 0; }
+#youtube-connection .wizard-guide-grid strong {
+  display: block;
+  color: var(--foreground);
+  font-size: 14px;
+  line-height: 1.4;
+}
+#youtube-connection .wizard-guide-grid p {
+  margin: 6px 0 0;
+  color: #656a73;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+#youtube-connection .reconstructed-frame {
+  margin: 0;
+  padding: 20px;
+  border: 1px solid #dfe2e6;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+#youtube-connection .reconstructed-frame figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+#youtube-connection .reconstructed-frame figcaption span {
+  color: #50545c;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .01em;
+}
+#youtube-connection .reconstructed-frame figcaption strong {
+  padding: 5px 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: var(--canvas);
+  color: #737881;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+#youtube-connection .reconstructed-frame > p {
+  margin: 12px 0 0;
+  color: #868b94;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+#youtube-connection .reconstructed-console {
+  overflow: hidden;
+  border: 1px solid #d9dce1;
+  border-radius: var(--radius-md);
+  background: var(--canvas);
+  box-shadow: 0 1px 2px rgba(33,33,36,.03);
+}
+#youtube-connection .mock-topbar {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--hairline);
+  background: #fbfbfc;
+}
+#youtube-connection .mock-topbar > strong {
+  color: #44484f;
+  font-size: 14px;
+}
+#youtube-connection .mock-project {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #d9dce1;
+  border-radius: 8px;
+  background: var(--canvas);
+  color: #50545c;
+  font-size: 13px;
+  font-weight: 700;
+}
+#youtube-connection .mock-project b { color: #868b94; font-size: 11px; }
+#youtube-connection .mock-marker {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1;
+}
+#youtube-connection .mock-console-layout {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  min-height: 300px;
+}
+#youtube-connection .mock-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 12px;
+  border-right: 1px solid var(--hairline);
+  background: #fafbfc;
+}
+#youtube-connection .mock-sidebar span,
+#youtube-connection .mock-sidebar strong {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: #656a73;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+#youtube-connection .mock-sidebar strong {
+  background: #f1f3f5;
+  color: #34373d;
+  font-weight: 800;
+}
+#youtube-connection .mock-sidebar .mock-subactive {
+  padding-left: 40px;
+  background: #fff7f2;
+  color: #9a4d17;
+  font-weight: 800;
+}
+#youtube-connection .mock-console-main {
+  min-width: 0;
+  padding: 24px;
+}
+#youtube-connection .mock-breadcrumb {
+  color: #868b94;
+  font-size: 12px;
+}
+#youtube-connection .mock-searchbox {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid #d9dce1;
+  border-radius: 8px;
+  color: #868b94;
+  font-size: 13px;
+}
+#youtube-connection .mock-api-card {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+}
+#youtube-connection .mock-api-card > div { min-width: 0; }
+#youtube-connection .mock-api-card small {
+  display: block;
+  color: #868b94;
+  font-size: 11px;
+}
+#youtube-connection .mock-api-card strong {
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #212124;
+  font-size: 15px;
+}
+#youtube-connection .mock-api-card p {
+  margin: 6px 0 0;
+  color: #737881;
+  font-size: 12px;
+  line-height: 1.5;
+}
+#youtube-connection .mock-outline-action {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border: 1px solid #cfd3d8;
+  border-radius: 8px;
+  color: #50545c;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+#youtube-connection .mock-settings-stack {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+#youtube-connection .mock-setting-row {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+}
+#youtube-connection .mock-setting-row > span {
+  color: #50545c;
+  font-size: 12px;
+  font-weight: 800;
+}
+#youtube-connection .mock-setting-row > div { min-width: 0; }
+#youtube-connection .mock-setting-row strong,
+#youtube-connection .mock-setting-row b,
+#youtube-connection .mock-setting-row small,
+#youtube-connection .mock-setting-row code { display: block; }
+#youtube-connection .mock-setting-row strong { color: #868b94; font-size: 11px; font-weight: 600; }
+#youtube-connection .mock-setting-row b { margin-top: 4px; color: #212124; font-size: 13px; }
+#youtube-connection .mock-setting-row small { margin-top: 5px; color: #737881; font-size: 11px; line-height: 1.4; }
+#youtube-connection .mock-setting-row code {
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+  color: #50545c;
+  font-size: 11px;
+}
+
+#youtube-connection .mock-client-panel {
+  padding: 24px;
+}
+#youtube-connection .mock-client-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--hairline);
+}
+#youtube-connection .mock-client-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #212124;
+  font-size: 15px;
+  font-weight: 800;
+}
+#youtube-connection .mock-client-heading small { color: #868b94; font-size: 11px; line-height: 1.45; }
+#youtube-connection .mock-client-panel label {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #f0f1f3;
+}
+#youtube-connection .mock-client-panel label > span { color: #656a73; font-size: 12px; font-weight: 700; }
+#youtube-connection .mock-client-panel label > b {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 12px;
+  border: 1px solid #d9dce1;
+  border-radius: 8px;
+  color: #34373d;
+  font-size: 12px;
+  font-weight: 700;
+}
+#youtube-connection .mock-client-panel .mock-uri-field > b {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+#youtube-connection .mock-client-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 16px;
+}
+#youtube-connection .mock-client-footer span,
+#youtube-connection .mock-client-footer strong {
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+#youtube-connection .mock-client-footer span { color: #656a73; background: #f2f3f6; }
+#youtube-connection .mock-client-footer strong { color: #9a4d17; background: #fff2e9; }
+
+#youtube-connection .connection-flow-visual {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 24px;
+  border: 1px solid #d9dce1;
+  border-radius: var(--radius-md);
+  background: var(--canvas);
+}
+#youtube-connection .connection-flow-visual > div {
+  min-width: 0;
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+}
+#youtube-connection .connection-flow-visual > div > span {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--brand-tint);
+  color: #9a4d17;
+  font-size: 11px;
+  font-weight: 800;
+}
+#youtube-connection .connection-flow-visual strong { margin-top: 8px; color: #212124; font-size: 13px; line-height: 1.4; }
+#youtube-connection .connection-flow-visual small { margin-top: 4px; color: #868b94; font-size: 11px; line-height: 1.45; }
+#youtube-connection .connection-flow-visual > b { color: #aeb3ba; font-size: 18px; font-weight: 500; }
+
+#youtube-connection .wizard-callout {
+  padding: 16px 20px;
+  border-left: 4px solid #ffd5ba;
+  border-radius: 0 10px 10px 0;
+  background: #fffaf7;
+}
+#youtube-connection .wizard-callout strong { color: #7d461f; font-size: 14px; }
+#youtube-connection .wizard-callout p { margin: 5px 0 0; color: #656a73; font-size: 14px; line-height: 1.65; }
+#youtube-connection .wizard-callout b { color: #34373d; }
+
+@media (max-width: 760px) {
+  #youtube-connection .wizard-guide-grid { grid-template-columns: 1fr; gap: 8px; }
+  #youtube-connection .wizard-guide-grid article { padding: 14px; }
+  #youtube-connection .wizard-guide-grid p { font-size: 13px; }
+  #youtube-connection .reconstructed-frame { padding: 16px; }
+  #youtube-connection .reconstructed-frame figcaption { align-items: flex-start; flex-direction: column; gap: 8px; }
+  #youtube-connection .mock-topbar { align-items: flex-start; flex-direction: column; }
+  #youtube-connection .mock-project { width: 100%; justify-content: space-between; }
+  #youtube-connection .mock-console-layout { grid-template-columns: 1fr; }
+  #youtube-connection .mock-sidebar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-right: 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  #youtube-connection .mock-sidebar span,
+  #youtube-connection .mock-sidebar strong { padding: 9px; font-size: 11px; }
+  #youtube-connection .mock-sidebar .mock-subactive { padding-left: 9px; }
+  #youtube-connection .mock-console-main { padding: 16px; }
+  #youtube-connection .mock-api-card { align-items: flex-start; flex-direction: column; padding: 16px; }
+  #youtube-connection .mock-outline-action { align-self: stretch; justify-content: center; }
+  #youtube-connection .mock-setting-row { grid-template-columns: 1fr; gap: 8px; padding: 14px; }
+  #youtube-connection .mock-client-panel { padding: 16px; }
+  #youtube-connection .mock-client-heading { flex-direction: column; gap: 8px; }
+  #youtube-connection .mock-client-panel label { grid-template-columns: 1fr; gap: 6px; }
+  #youtube-connection .connection-flow-visual { grid-template-columns: 1fr; padding: 16px; }
+  #youtube-connection .connection-flow-visual > div { min-height: 96px; }
+  #youtube-connection .connection-flow-visual > b { transform: rotate(90deg); justify-self: center; }
+  #youtube-connection .wizard-callout { padding: 14px 16px; }
+}
