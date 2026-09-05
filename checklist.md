@@ -1,4 +1,4 @@
-# Subtitle Localizer v1.6.1 — Checklist
+# Subtitle Localizer v1.6.2 — Checklist
 
 ## Documentation first
 - [x] context-notes.md created/updated before implementation
@@ -41,7 +41,7 @@
 ## QA
 - [x] Existing SRT/BYOK/BYOC/YouTube tests pass
 - [x] Architecture tests cover `/connections`
-- [x] Automated tests: 47/47
+- [x] Automated tests: 49/49
 - [x] TS/TSX syntax transpile: 29 files / 0 diagnostics
 - [x] CSS brace validation
 - [x] Runtime hardcoded `sk-*`: none
@@ -58,6 +58,16 @@
 - [x] Reproduce Vercel error: `TS1501` on architecture test RegExp dotAll flag
 - [x] Remove ES2018-only `/s` flag without changing runtime code
 - [x] Verify replacement RegExp compiles with TypeScript target ES2017
-- [x] Run full Node test suite: 47/47 passed
+- [x] Run full Node test suite: 49/49 passed
 - [x] Remove duplicate `User%20manual.md` artifact
 - [ ] Confirm Vercel production build after uploading v1.6.1
+
+## v1.6.2 readability QA
+- [x] Wizard body copy is at least 15px on desktop and mobile.
+- [x] Checklist / confirmation copy is readable without zooming.
+- [x] Google Console schematic is materially larger and visually useful.
+- [x] Disabled navigation buttons are neutral, not orange.
+- [x] Current step and active primary action remain the only dominant orange elements.
+- [x] Content is allowed to scroll naturally; no viewport-fitting hacks.
+- [x] 320px mobile layout has no page-level horizontal overflow.
+- [x] `prefers-reduced-motion` remains supported.

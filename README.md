@@ -1,8 +1,8 @@
-# Subtitle Localizer v1.6.1
+# Subtitle Localizer v1.6.2
 
 Subtitle localization workspace with user-owned paid API credentials.
 
-## What changed in v1.6.1
+## What changed in v1.6.2
 - `/` is now a focused subtitle workspace. Persistent API setup blocks were removed from the main task flow.
 - `/connections` manages OpenAI BYOK and Google/YouTube BYOC.
 - The workspace header only shows compact `OpenAI ✓/○`, `YouTube ✓/○`, and `연결 관리` status/actions.
@@ -44,8 +44,8 @@ The `/connections` page guides each user through:
 Cloud configuration and Google OAuth consent are deliberately separate. After step 4, the user selects `Google로 YouTube 연결` to approve access to the actual YouTube account.
 
 ## Verification performed for this package
-- Node domain/architecture tests: 47/47 passed.
-- TypeScript/TSX syntax transpile check: 29 source files, 0 syntax diagnostics.
+- Node domain/architecture tests: 49/49 passed.
+- TypeScript/TSX ES2017 syntax transpile check: 29 source files (excluding generated .d.ts), 0 syntax diagnostics.
 - CSS brace structure check: passed.
 - Runtime hardcoded `sk-*`: none found.
 - Runtime localStorage/sessionStorage secret storage: none found.
@@ -59,8 +59,14 @@ npm run check
 ```
 
 
-## v1.6.1 patch
+## v1.6.2 patch
 - Fixed Vercel/TypeScript production build failure `TS1501` in `tests/architecture.test.ts`.
 - Replaced the ES2018-only RegExp dotAll (`s`) flag with an ES2017-compatible `[\s\S]*` pattern.
 - Runtime subtitle translation/OAuth behavior is unchanged.
 - Removed the duplicate URL-encoded `User%20manual.md` artifact; `User manual.md` is the canonical manual.
+
+## v1.6.2 UI patch
+- Larger, higher-contrast YouTube setup instructions.
+- Enlarged Google Console schematic examples.
+- Neutral disabled wizard navigation; Primary orange is reserved for active/current actions.
+- Natural page scrolling is preferred over forcing the setup into a single viewport.

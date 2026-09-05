@@ -1,4 +1,4 @@
-# Subtitle Localizer v1.6.1 — Context Notes
+# Subtitle Localizer v1.6.2 — Context Notes
 
 ## Goal
 Separate credential onboarding from subtitle work. Returning users should land on a task-oriented workspace, not an API configuration dashboard.
@@ -34,8 +34,8 @@ Then a separate `Google로 YouTube 연결` action handles Google login/consent.
 - Vercel usage → deployment operator.
 
 ## QA results
-- 47/47 automated tests passed.
-- 29 TS/TSX source files passed syntax transpilation.
+- 49/49 automated tests passed.
+- 29 TS/TSX source files (excluding generated .d.ts) passed ES2017 syntax transpilation.
 - CSS brace validation passed.
 - No runtime hardcoded OpenAI `sk-*`, localStorage/sessionStorage secret persistence, or operator OpenAI/Google paid credentials found.
 - Full production build remains to be verified where npm registry access is available.
@@ -50,4 +50,21 @@ Then a separate `Google로 YouTube 연결` action handles Google login/consent.
 ## v1.6.1 build hotfix
 - Vercel production typecheck exposed `TS1501` because an architecture test used the RegExp `s` flag while `tsconfig.json` targets ES2017.
 - Fixed only the test matcher using `[\s\S]*`; production compiler target was intentionally left unchanged.
-- 47/47 Node tests pass after the patch.
+- 49/49 Node tests pass after the patch.
+
+## v1.6.2 UI polish focus
+- YouTube BYOC wizard readability is the sole product change in this patch.
+- Do not compress the four-step setup to fit one viewport; allow natural document scroll.
+- Increase instructional copy to 15–16px with comfortable line-height and stronger text contrast.
+- Enlarge Google Console schematic examples so they function as visual guidance, not decorative thumbnails.
+- Keep one-step-at-a-time wizard structure; current step and active CTA are the primary orange moments.
+- Disabled Previous/Next actions must use neutral disabled treatment instead of orange tint.
+- Preserve system typography, 4px rhythm, restrained shadows, and reduced-motion support.
+
+
+## v1.6.2 validation
+- 49/49 automated tests pass, including wizard readability/disabled-state architecture checks.
+- 29 TS/TSX files (excluding generated declaration files) transpile with ES2017 syntax diagnostics = 0.
+- CSS delimiter validation passes.
+- Static mobile review confirms the wizard reflows at 760px and keeps controls within a 320px viewport without fixed page-width assumptions.
+- Live visual QA remains the next step after Vercel deployment.

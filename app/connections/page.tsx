@@ -194,7 +194,7 @@ export default function ConnectionsPage() {
         <div className="topbar-inner">
           <a className="brand" href="/" aria-label="Subtitle Localizer 작업공간으로 이동">
             <span className="brand-symbol" aria-hidden="true">S</span>
-            <span><strong>Subtitle Localizer</strong><small>v1.6.1</small></span>
+            <span><strong>Subtitle Localizer</strong><small>v1.6.2</small></span>
           </a>
           <div className="topbar-actions connection-status-strip">
             <span className={`status-pill ${openAiConfigured ? "is-ready" : ""}`}>OpenAI {openAiConfigured ? "✓" : "○"}</span>
@@ -279,6 +279,7 @@ export default function ConnectionsPage() {
             </div>
 
             {wizardStep === 1 && <div className="single-step-body">
+              <p className="wizard-lead">먼저 이 자막 도구가 사용할 Google Cloud 프로젝트를 준비하고, 그 프로젝트에서 YouTube Data API v3를 활성화합니다.</p>
               <div className="console-example"><div className="console-example-title"><span>Google Cloud Console</span><strong>화면 예시</strong></div><div className="console-mini-screen"><div className="console-mini-bar">API Library</div><div className="console-mini-content"><span>YouTube Data API v3</span><b>Enable</b></div></div><small>API Library → YouTube Data API v3 → Enable</small></div>
               <ul className="wizard-checklist"><li>새 프로젝트를 만들거나 사용할 프로젝트를 선택합니다.</li><li>API Library에서 <strong>YouTube Data API v3</strong>를 활성화합니다.</li></ul>
               <div className="wizard-link-row"><a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noreferrer">프로젝트 만들기 ↗</a><a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noreferrer">YouTube Data API 열기 ↗</a></div>
@@ -286,6 +287,7 @@ export default function ConnectionsPage() {
             </div>}
 
             {wizardStep === 2 && <div className="single-step-body">
+              <p className="wizard-lead">다음으로 Google Auth Platform에서 사용자에게 표시될 앱 정보, 테스트 대상, YouTube 접근 범위를 확인합니다.</p>
               <div className="console-example"><div className="console-example-title"><span>Google Auth Platform</span><strong>화면 예시</strong></div><div className="console-mini-screen auth-mini"><div className="console-mini-bar">Google Auth Platform</div><div className="console-mini-tabs"><span>Branding</span><span>Audience</span><span>Data Access</span></div></div></div>
               <ul className="wizard-checklist"><li><strong>Branding</strong>에서 앱 이름과 기본 정보를 설정합니다.</li><li><strong>Audience</strong>에서 테스트/게시 상태를 확인합니다.</li><li><strong>Data Access</strong>에서 OAuth 범위를 확인합니다.</li></ul>
               <div className="scope-box"><span>Subtitle Localizer 요청 scope</span><code>https://www.googleapis.com/auth/youtube.force-ssl</code></div>
@@ -295,6 +297,7 @@ export default function ConnectionsPage() {
             </div>}
 
             {wizardStep === 3 && <div className="single-step-body">
+              <p className="wizard-lead">이제 Web application 유형의 OAuth Client를 만들고, Subtitle Localizer가 보여주는 Redirect URI를 정확히 등록합니다.</p>
               <div className="console-example"><div className="console-example-title"><span>Google Auth Platform → Clients</span><strong>화면 예시</strong></div><div className="console-mini-screen"><div className="console-mini-bar">Create Client</div><div className="console-mini-form"><span>Application type</span><b>Web application</b><span>Authorized redirect URIs</span><b>https://…/callback</b></div></div></div>
               <ul className="wizard-checklist"><li>Application type은 <strong>Web application</strong>을 선택합니다.</li><li>아래 Redirect URI를 Authorized redirect URIs에 정확히 등록합니다.</li></ul>
               {youtubeRedirectUri ? <div className="redirect-box wizard-redirect"><span>Authorized redirect URI</span><code>{youtubeRedirectUri}</code><button type="button" onClick={() => void navigator.clipboard?.writeText(youtubeRedirectUri)}>복사</button></div> : <p className="wizard-inline-note">Redirect URI를 확인하고 있습니다.</p>}
@@ -303,6 +306,7 @@ export default function ConnectionsPage() {
             </div>}
 
             {wizardStep === 4 && <div className="single-step-body google-config-form">
+              <p className="wizard-lead">발급받은 Client ID와 Client Secret을 저장합니다. 이 단계는 Cloud Client 설정만 저장하며, 실제 YouTube 계정 승인은 다음 화면에서 별도로 진행됩니다.</p>
               <div className="field-block compact"><div className="field-row"><label htmlFor="google-client-id">Google OAuth Client ID</label><span>사용자 프로젝트</span></div><input id="google-client-id" className="text-input" value={googleClientId} onChange={(event) => setGoogleClientId(event.target.value)} autoComplete="off" spellCheck={false} placeholder="...apps.googleusercontent.com" /></div>
               <div className="field-block compact"><div className="field-row"><label htmlFor="google-client-secret">Google OAuth Client Secret</label><span>JS에 재노출 안 함</span></div><div className="secret-input-row"><input id="google-client-secret" className="text-input" type={showGoogleSecret ? "text" : "password"} value={googleClientSecret} onChange={(event) => setGoogleClientSecret(event.target.value)} autoComplete="off" spellCheck={false} placeholder="Google Client Secret" /><button type="button" className="input-action" onClick={() => setShowGoogleSecret((value) => !value)}>{showGoogleSecret ? "숨기기" : "보기"}</button></div></div>
               <label className="remember-row"><input type="checkbox" checked={rememberGoogle} onChange={(event) => setRememberGoogle(event.target.checked)} /><span><strong>이 브라우저에서 Google 연결 유지</strong><small>Client 설정과 OAuth 토큰을 암호화된 HttpOnly 쿠키로 유지합니다.</small></span></label>

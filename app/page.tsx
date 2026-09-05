@@ -540,7 +540,7 @@ export default function Home() {
         <div className="topbar-inner">
           <a className="brand" href="#top" aria-label="Subtitle Localizer 홈">
             <span className="brand-symbol" aria-hidden="true">S</span>
-            <span><strong>Subtitle Localizer</strong><small>v1.6.1</small></span>
+            <span><strong>Subtitle Localizer</strong><small>v1.6.2</small></span>
           </a>
           <div className="topbar-actions connection-status-strip">
             <span className="privacy-label">파일을 서버에 저장하지 않습니다</span>
@@ -913,7 +913,7 @@ export default function Home() {
         </aside>
       </div>
 
-      <footer className="footer">Subtitle Localizer v1.6.1 · 사용자 API 비용 분리형 다국어 자막 작업 도구</footer>
+      <footer className="footer">Subtitle Localizer v1.6.2 · 사용자 API 비용 분리형 다국어 자막 작업 도구</footer>
     </main>
   );
 }

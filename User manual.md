@@ -1,4 +1,4 @@
-# Subtitle Localizer v1.6.1 — User Manual
+# Subtitle Localizer v1.6.2 — User Manual
 
 ## 1. Workspace first
 Open `/` and start with subtitles immediately. API setup is no longer permanently displayed above the workspace.
@@ -59,3 +59,6 @@ Once connections are configured, the home page remains focused on subtitle work.
 - OpenAI translation cost: your OpenAI account.
 - YouTube API quota: your Google Cloud project.
 - Vercel hosting/function cost: app deployer.
+
+## YouTube 설정 화면 읽기
+v1.6.2부터 YouTube 연결 마법사의 설명, 체크리스트, Google Console 화면 예시가 더 크게 표시됩니다. 한 화면에 모든 단계를 맞추지 않고 현재 단계 하나를 충분한 크기로 보여주므로, 필요한 경우 아래로 스크롤하면서 진행하면 됩니다.

@@ -85,3 +85,18 @@ test("보안 헤더와 비밀 상태 응답의 no-store 정책을 유지한다",
   assert.match(youtubeStatus, /Cache-Control/);
   assert.match(youtubeStatus, /no-store/);
 });
+
+test("v1.6.2 YouTube wizard는 읽기 쉬운 본문과 큰 시각 예시를 유지한다", () => {
+  const connections = read("app/connections/page.tsx");
+  const css = read("app/globals.css");
+  assert.match(connections, /className="wizard-lead"/);
+  assert.match(css, /#youtube-connection \.wizard-lead[\s\S]*font-size: 16px/);
+  assert.match(css, /#youtube-connection \.wizard-checklist[\s\S]*font-size: 16px/);
+  assert.match(css, /#youtube-connection \.console-mini-screen[\s\S]*min-height: 164px/);
+});
+
+test("v1.6.2 wizard 비활성 CTA는 neutral이고 활성 CTA만 primary를 사용한다", () => {
+  const css = read("app/globals.css");
+  assert.match(css, /#youtube-connection \.wizard-nav \.primary-button:disabled[\s\S]*background: #f2f3f6/);
+  assert.match(css, /\.primary-button \{ background: var\(--primary\)/);
+});
