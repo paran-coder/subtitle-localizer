@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import WorkspaceChannelBar from "@/components/workspace-channel-bar";
 import "./globals.css";
+import "./v17.css";
 
 export const metadata: Metadata = {
   title: "Subtitle Localizer",
@@ -10,7 +12,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <body><WorkspaceChannelBar />{children}</body>
     </html>
   );
 }
