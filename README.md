@@ -1,17 +1,104 @@
-# Subtitle Localizer v1.6.4
+# Subtitle Localizer v1.7.0
 
-사용자가 자신의 OpenAI API Key와 Google Cloud OAuth Client를 연결해 SRT를 다국어로 현지화하고 YouTube 자막으로 다시 업로드할 수 있는 BYOK/BYOC 웹앱입니다.
+사용자가 자신의 OpenAI API Key와 자신의 Google Cloud OAuth Client를 연결해 SRT를 다국어로 현지화하고 여러 YouTube 계정/채널의 자막을 가져오고 다시 업로드할 수 있는 BYOK/BYOC 웹앱입니다.
 
-## v1.6.4
-이번 패치는 Google Cloud / YouTube 연결 Wizard의 **설명-시각화-CTA 매핑**을 정리합니다. 기능 로직과 비용 구조는 v1.6.3과 동일합니다.
+## v1.7.0
+이번 버전은 초보자를 위한 Google 연결 경험과 다중 YouTube 채널 운영 구조를 함께 개선합니다.
 
-- 1/4~4/4 단계 내부 번호 체계를 하나로 통일
-- 각 행동 번호가 시각화의 같은 번호와 1:1로 대응
-- 각 행동에 `어디를 클릭 → 무엇이 보여야 함 → 완료 기준`을 묶어서 표시
-- 주 CTA는 행동당 하나만 두고 보조 이동은 텍스트 링크로 낮춤
-- 단계 하단의 분리된 버튼 모음을 제거해 설명과 실제 행동의 연결을 명확화
-- Google Cloud 화면 예시는 `안내용 재구성 화면`으로 유지
-- 충분한 시각 크기와 자연스러운 세로 스크롤 유지
+핵심 목표는 다음과 같습니다.
+- Google Cloud는 **처음 한 번만 설정**
+- 이후에는 Subtitle Localizer 안에서 `+ 계정 또는 채널 추가`
+- 여러 Google 계정과 여러 YouTube 채널을 독립적으로 연결
+- 작업공간에서 활성 채널을 선택하고 그 채널 기준으로 영상/자막 작업
+- 운영자 소유 Google OAuth Client/Google Cloud 프로젝트/quota는 사용하지 않음
+
+## 연결 원칙
+Subtitle Localizer는 여전히 사용자 소유 BYOC 구조를 유지합니다.
+
+```text
+사용자 Google Cloud 프로젝트
+└─ 사용자 OAuth Web Client
+   ├─ YouTube 채널 A
+   ├─ YouTube 채널 B
+   └─ YouTube 채널 C
+```
+
+운영자는 사용자의 Google Cloud 프로젝트, Google OAuth Client, YouTube quota를 대신 소유하지 않습니다.
+
+## 초보자용 Google 연결 마법사
+기존 4단계 Wizard를 실제 Google Cloud 작업 순서에 가까운 8단계 흐름으로 재구성합니다.
+
+1. Google Cloud 프로젝트 준비
+2. YouTube Data API v3 활성화
+3. Google Auth Platform 기본 설정
+4. Publishing 상태 정리 — `In Production` 권장
+5. YouTube 권한(scope) 추가
+6. OAuth Web Client 생성
+7. Client ID / Secret 저장
+8. 첫 YouTube 채널 연결 및 API 검증
+
+사용자가 판단할 내용을 최소화하기 위해 앱 이름, OAuth Client 이름, scope, redirect URI 등 고정 가능한 값은 앱이 직접 제시하고 복사 기능을 제공합니다.
+
+특히 OAuth Client 생성 시 다음을 강하게 구분합니다.
+- `Authorized JavaScript origins`: 비워둠
+- `Authorized redirect URIs`: Subtitle Localizer callback URI만 입력
+
+## 한 번 설정 후 추가 연결
+초기 Cloud 설정이 끝나면 정상적인 계정/채널 추가를 위해 Google Cloud Console로 다시 돌아갈 필요가 없도록 설계합니다.
+
+```text
++ 계정 또는 채널 추가
+→ Google 계정 선택
+→ YouTube 권한 승인
+→ 실제 채널 확인
+→ 연결 목록에 추가
+```
+
+브라우저 저장 데이터 삭제, Google 권한 직접 취소, OAuth Client 삭제/Secret 교체, Cloud 프로젝트/API 삭제 같은 복구 상황은 예외입니다.
+
+## 다중 채널
+Cloud config와 YouTube 채널 세션을 분리합니다.
+
+각 연결은 다음 정보를 독립적으로 가집니다.
+- connectionId
+- channelId
+- channelTitle
+- channelThumbnail
+- accessToken / refreshToken
+- expiresAt
+- connectedAt
+
+같은 channelId를 다시 연결하면 중복 추가하지 않고 기존 연결을 갱신합니다.
+
+작업공간에서는 현재 작업 채널을 하나 선택합니다.
+
+```text
+현재 작업 채널
+[ 채널 A ▾ ]
+
+채널 A
+채널 B
+채널 C
+────────────
++ 계정 또는 채널 추가
+연결 관리
+```
+
+영상 조회, 기존 자막 가져오기, 번역 자막 업로드는 모두 선택된 활성 채널을 사용합니다.
+
+## 빈 채널 UX
+연결된 채널에 업로드 영상이 없으면 단순히 `0개`만 표시하지 않습니다.
+
+예시:
+
+```text
+이 채널에는 업로드된 영상이 없습니다.
+YouTube에 영상을 올린 뒤 다시 불러오세요.
+
+[YouTube Studio 열기] [다시 불러오기]
+```
+
+YouTube 채널 자체가 없는 계정도 영상 0개 상태와 구분해 안내합니다.
 
 ## 비용 소유
 - OpenAI 사용료: 최종 사용자의 OpenAI API Key 계정
@@ -28,27 +115,29 @@ OPENAI_TRANSLATION_MODEL=gpt-5.6-luna
 운영자 소유 `OPENAI_API_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`은 필요하지 않습니다.
 
 ## Secret 처리
-사용자 OpenAI API Key, Google OAuth Client Secret, access/refresh token은 서버에서 AES-256-GCM으로 암호화한 HttpOnly cookie로 보관합니다. `localStorage` / `sessionStorage` / DB / Git 저장소에 비밀정보를 저장하지 않습니다.
+사용자 OpenAI API Key, Google OAuth Client Secret, YouTube access/refresh token은 서버에서 암호화한 HttpOnly cookie로 보관합니다.
 
-## Google 연결 흐름
-1. Google Cloud 프로젝트를 선택/생성하고 YouTube Data API v3를 활성화합니다.
-2. Google Auth Platform에서 Branding, Audience, Data Access를 준비합니다.
-3. Clients에서 Web application OAuth Client를 만들고 Authorized redirect URI를 등록합니다.
-4. Client ID / Secret을 Subtitle Localizer에 저장한 뒤 `Google로 YouTube 연결`에서 OAuth 승인을 완료합니다.
+다음 위치에는 비밀정보를 저장하지 않습니다.
+- localStorage
+- sessionStorage
+- Git 저장소
 
-각 단계는 행동 번호와 시각화 번호를 동일하게 사용해 사용자가 설명과 화면 예시를 바로 매칭할 수 있도록 설계합니다.
-
-## 로컬 검증
+## 검증
 ```bash
 npm install
 npm run check
 ```
 
-## v1.6.4 검증 결과
-- 자동 테스트 **53/53 통과**
-- 행동/시각화/CTA 매핑 architecture 테스트 추가
-- TS/TSX **28개 파일 ES2017 구문 진단 0**
-- CSS 구조 검사 통과
-- OpenAI/YouTube API 및 `lib` 로직은 v1.6.3과 동일
-- 하드코딩 API Key 없음
-- 브라우저 평문 비밀 저장소 사용 없음
+`npm run check`는 테스트, TypeScript typecheck, production build를 순서대로 실행합니다.
+
+## v1.7.0 완료 기준
+- 초보자용 8단계 Google 연결 마법사 동작
+- 첫 설정 이후 Cloud 재설정 없이 추가 계정/채널 연결 가능
+- 여러 채널 동시 보유 및 활성 채널 전환 가능
+- 채널별 영상/자막 동작 분리
+- 기존 OpenAI BYOK 및 SRT 번역 회귀 없음
+- 비밀정보 HttpOnly 암호화 저장 유지
+- 전체 자동 테스트/typecheck/build 통과
+- Vercel Production READY
+- 관련 Runtime Errors 없음
+- 실제 다중 채널 E2E 통과
