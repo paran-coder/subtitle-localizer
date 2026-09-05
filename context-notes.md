@@ -1,4 +1,4 @@
-# Subtitle Localizer v1.6.0 — Context Notes
+# Subtitle Localizer v1.6.1 — Context Notes
 
 ## Goal
 Separate credential onboarding from subtitle work. Returning users should land on a task-oriented workspace, not an API configuration dashboard.
@@ -45,3 +45,9 @@ Then a separate `Google로 YouTube 연결` action handles Google login/consent.
 - Stage 2 workspace-connections split: 9.7/10
 - Stage 3 UX/security cleanup: 9.8/10
 - Final package: 9.8/10 pending live Vercel/browser OAuth E2E.
+
+
+## v1.6.1 build hotfix
+- Vercel production typecheck exposed `TS1501` because an architecture test used the RegExp `s` flag while `tsconfig.json` targets ES2017.
+- Fixed only the test matcher using `[\s\S]*`; production compiler target was intentionally left unchanged.
+- 47/47 Node tests pass after the patch.

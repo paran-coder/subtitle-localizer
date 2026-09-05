@@ -1,8 +1,8 @@
-# Subtitle Localizer v1.6.0
+# Subtitle Localizer v1.6.1
 
 Subtitle localization workspace with user-owned paid API credentials.
 
-## What changed in v1.6.0
+## What changed in v1.6.1
 - `/` is now a focused subtitle workspace. Persistent API setup blocks were removed from the main task flow.
 - `/connections` manages OpenAI BYOK and Google/YouTube BYOC.
 - The workspace header only shows compact `OpenAI ✓/○`, `YouTube ✓/○`, and `연결 관리` status/actions.
@@ -57,3 +57,10 @@ Cloud configuration and Google OAuth consent are deliberately separate. After st
 npm install
 npm run check
 ```
+
+
+## v1.6.1 patch
+- Fixed Vercel/TypeScript production build failure `TS1501` in `tests/architecture.test.ts`.
+- Replaced the ES2018-only RegExp dotAll (`s`) flag with an ES2017-compatible `[\s\S]*` pattern.
+- Runtime subtitle translation/OAuth behavior is unchanged.
+- Removed the duplicate URL-encoded `User%20manual.md` artifact; `User manual.md` is the canonical manual.

@@ -1,4 +1,4 @@
-# Subtitle Localizer v1.6.0 — Checklist
+# Subtitle Localizer v1.6.1 — Checklist
 
 ## Documentation first
 - [x] context-notes.md created/updated before implementation
@@ -52,3 +52,12 @@
 - [ ] Next production build (npm registry unavailable in this environment)
 - [ ] Live Vercel browser QA after deployment
 - [ ] Real Google OAuth → videos → captions import/upload E2E after deployment
+
+
+## v1.6.1 hotfix verification
+- [x] Reproduce Vercel error: `TS1501` on architecture test RegExp dotAll flag
+- [x] Remove ES2018-only `/s` flag without changing runtime code
+- [x] Verify replacement RegExp compiles with TypeScript target ES2017
+- [x] Run full Node test suite: 47/47 passed
+- [x] Remove duplicate `User%20manual.md` artifact
+- [ ] Confirm Vercel production build after uploading v1.6.1

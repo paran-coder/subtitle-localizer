@@ -1,4 +1,4 @@
-# Subtitle Localizer v1.6.0 — User Manual
+# Subtitle Localizer v1.6.1 — User Manual
 
 ## 1. Workspace first
 Open `/` and start with subtitles immediately. API setup is no longer permanently displayed above the workspace.

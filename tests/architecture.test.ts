@@ -70,7 +70,7 @@ test("타임코드 수치 검증과 전체 시작-종료 표시는 workspace에 
   assert.match(workspace, /타임코드<\/strong>.*timingMatches/);
   assert.match(workspace, /Cue ID<\/strong>.*cueIdMatches/);
   assert.match(workspace, /누락<\/strong>/);
-  assert.match(workspace, /source\.start.*source\.end/s);
+  assert.match(workspace, /source\.start[\s\S]*source\.end/);
 });
 
 test("보안 헤더와 비밀 상태 응답의 no-store 정책을 유지한다", () => {

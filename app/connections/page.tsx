@@ -194,7 +194,7 @@ export default function ConnectionsPage() {
         <div className="topbar-inner">
           <a className="brand" href="/" aria-label="Subtitle Localizer 작업공간으로 이동">
             <span className="brand-symbol" aria-hidden="true">S</span>
-            <span><strong>Subtitle Localizer</strong><small>v1.6.0</small></span>
+            <span><strong>Subtitle Localizer</strong><small>v1.6.1</small></span>
           </a>
           <div className="topbar-actions connection-status-strip">
             <span className={`status-pill ${openAiConfigured ? "is-ready" : ""}`}>OpenAI {openAiConfigured ? "✓" : "○"}</span>
