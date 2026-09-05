@@ -197,12 +197,64 @@ export function analyzeLocalizedCueQuality(cue: SubtitleCue, languageCode?: stri
   return { id: cue.id, cps, maxLineLength, warnings };
 }
 
-export function hasPreservedTiming(original: SubtitleCue[], translated: SubtitleCue[]): boolean {
-  return (
+export type SubtitleStructureValidation = {
+  sourceCount: number;
+  targetCount: number;
+  cueIdMatches: number;
+  timingMatches: number;
+  missingCueIds: number[];
+  unexpectedCueIds: number[];
+  timingMismatchIds: number[];
+  orderMismatchCount: number;
+  preserved: boolean;
+};
+
+export function validateSubtitleStructure(
+  original: SubtitleCue[],
+  translated: SubtitleCue[]
+): SubtitleStructureValidation {
+  const sourceById = new Map(original.map((cue) => [cue.id, cue]));
+  const targetById = new Map(translated.map((cue) => [cue.id, cue]));
+  const missingCueIds = original.filter((cue) => !targetById.has(cue.id)).map((cue) => cue.id);
+  const unexpectedCueIds = translated.filter((cue) => !sourceById.has(cue.id)).map((cue) => cue.id);
+  const timingMismatchIds: number[] = [];
+  let cueIdMatches = 0;
+  let timingMatches = 0;
+
+  for (const cue of original) {
+    const target = targetById.get(cue.id);
+    if (!target) continue;
+    cueIdMatches += 1;
+    if (target.start === cue.start && target.end === cue.end) timingMatches += 1;
+    else timingMismatchIds.push(cue.id);
+  }
+
+  const comparableLength = Math.min(original.length, translated.length);
+  let orderMismatchCount = Math.abs(original.length - translated.length);
+  for (let index = 0; index < comparableLength; index += 1) {
+    if (original[index]?.id !== translated[index]?.id) orderMismatchCount += 1;
+  }
+
+  const preserved =
     original.length === translated.length &&
-    original.every((cue, index) => {
-      const target = translated[index];
-      return target?.id === cue.id && target.start === cue.start && target.end === cue.end;
-    })
-  );
+    cueIdMatches === original.length &&
+    timingMatches === original.length &&
+    unexpectedCueIds.length === 0 &&
+    orderMismatchCount === 0;
+
+  return {
+    sourceCount: original.length,
+    targetCount: translated.length,
+    cueIdMatches,
+    timingMatches,
+    missingCueIds,
+    unexpectedCueIds,
+    timingMismatchIds,
+    orderMismatchCount,
+    preserved
+  };
+}
+
+export function hasPreservedTiming(original: SubtitleCue[], translated: SubtitleCue[]): boolean {
+  return validateSubtitleStructure(original, translated).preserved;
 }

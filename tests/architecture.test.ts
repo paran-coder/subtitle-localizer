@@ -49,3 +49,15 @@ test("보안 헤더와 비밀 상태 응답의 no-store 정책을 유지한다",
   assert.match(youtubeStatus, /Cache-Control/);
   assert.match(youtubeStatus, /no-store/);
 });
+
+
+test("v1.5 UI는 타임코드 수치 검증과 Google OAuth 분리 흐름을 노출한다", () => {
+  const page = read("app/page.tsx");
+  assert.match(page, /타임코드<\/strong>.*timingMatches/);
+  assert.match(page, /Cue ID<\/strong>.*cueIdMatches/);
+  assert.match(page, /누락<\/strong>/);
+  assert.match(page, /Google Cloud 설정 저장/);
+  assert.match(page, /Google로 YouTube 연결/);
+  assert.match(page, /Google Auth Platform/);
+  assert.match(page, /YouTube Data API v3/);
+});

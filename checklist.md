@@ -1,61 +1,57 @@
-# Subtitle Localizer v1.4.0 — Checklist
+# Subtitle Localizer v1.5.0 — Checklist
 
 ## Phase 0 — Required docs
-- [x] context-notes.md created before implementation
-- [x] checklist.md created before implementation
-- [x] README.md created before implementation
-- [x] User manual.md created before implementation
+- [x] context-notes.md created/updated before implementation
+- [x] checklist.md created/updated before implementation
+- [x] README.md created/updated before implementation
+- [x] User manual.md created/updated before implementation
 
-## Phase 1 — OpenAI BYOK
-- [x] Remove operator `OPENAI_API_KEY` dependency
-- [x] Remove `SUBTITLE_APP_ACCESS_KEY`
-- [x] Add user API-key input UI
-- [x] Default to session-only credential retention
-- [x] Add optional “이 브라우저에 기억하기” behavior
-- [x] Store remembered key only as AES-256-GCM encrypted HttpOnly cookie
-- [x] Ensure server never writes/logs the key to DB/files/repository/responses
-- [x] Improve invalid key / account-limit / permission messages
-- [x] Clarify that key validity is confirmed on the first translation request
+## Phase 1 — Timing review QA
+- [x] Add reusable timing/cue validation summary function
+- [x] Add tests for perfect match, missing cue, unexpected cue, ID mismatch, timing mismatch
+- [x] Display start → end timecode for source and translation
+- [x] Display `타임코드 n/n 일치`
+- [x] Display `Cue ID n/n 일치`
+- [x] Display missing/unexpected cue count
+- [x] Preserve download serialization exactly as source timing
 
-## Phase 2 — Google/YouTube BYOC
-- [x] Remove operator Google OAuth client dependency
-- [x] Add user Google Client ID + Client Secret setup UI
-- [x] Keep Client Secret out of JavaScript storage
-- [x] Encrypt BYOC credentials server-side in HttpOnly cookies
-- [x] OAuth start/callback uses the user's OAuth client
-- [x] Refresh token uses the user's OAuth client
-- [x] Video/caption list/download/upload uses the user's project/session
-- [x] Add disconnect and complete Google-setting removal behavior
-- [x] Show/copy the exact Authorized redirect URI
+## Phase 2 — Google BYOC wizard
+- [x] Split Cloud-client configuration from account OAuth authorization
+- [x] Add 4-step Google Cloud setup wizard
+- [x] Step 1: project + YouTube Data API v3 instructions
+- [x] Step 2: Google Auth Platform instructions
+- [x] Step 3: Web application client + exact redirect URI instructions
+- [x] Step 4: Client ID/Secret + remember setting
+- [x] Rename OAuth CTA to `Google로 YouTube 연결`
+- [x] Add explicit checklist controls for steps the app cannot verify automatically
+- [x] Add concise current-console labels and external console links
+- [x] Preserve encrypted HttpOnly credential storage
 
-## Phase 3 — UI/UX
-- [x] One clear connection/settings module
-- [x] Clearly identify external API cost ownership
-- [x] Browser remember controls are explicit
-- [x] Sensitive-field visibility toggle/accessibility
-- [x] Reduced-motion preserved
-- [x] Karrot/SEED-inspired token discipline preserved
-- [x] Avoid claiming the operator has zero Vercel platform cost
+## Phase 3 — UI polish
+- [x] Keep primary orange scarce and action-oriented
+- [x] Preserve Karrot/SEED neutral surfaces and 4px rhythm
+- [x] Responsive wizard layout
+- [x] Keyboard focus states
+- [x] `prefers-reduced-motion` support
+- [x] Avoid decorative animation/shadow overload
 
-## Phase 4 — Security / tests
-- [x] OpenAI BYOK architecture tests
-- [x] AES credential-storage behavior tests
-- [x] YouTube BYOC session/config tests
-- [x] Existing SRT tests pass
-- [x] Existing translation validation tests pass
-- [x] Existing YouTube API tests pass
+## Phase 4 — Repository/deployment hygiene
+- [x] Include `.env.example`
+- [x] Include `.gitignore`
+- [x] Bump package/app version to 1.5.0
+- [x] Update README deployment instructions
+- [x] Update User manual
+
+## Phase 5 — Verification
+- [x] Existing tests pass
+- [x] New v1.5.0 tests pass
 - [x] TS/TSX syntax transpile check
-- [x] CSS delimiter check
-- [x] No operator paid-API credentials in `.env.example`
+- [x] CSS delimiter/syntax sanity check
+- [x] No hardcoded OpenAI API key
 - [x] No localStorage/sessionStorage secret persistence
-- [x] No hardcoded OpenAI `sk-*` key
-- [x] Security headers: nosniff / frame deny / no-referrer / permissions policy
-- [x] Credential/status responses use `Cache-Control: no-store`
-- [ ] Dependency-aware `tsc --noEmit` and Next production build (requires npm registry access in execution environment)
+- [ ] Dependency-aware `tsc --noEmit` and production build when npm registry is available
 
-## Phase 5 — Packaging
-- [x] README updated
-- [x] User manual updated
-- [x] Context notes updated
-- [x] Checklist final state updated
+## Phase 6 — Packaging
+- [x] Final context notes updated
+- [x] Final checklist state updated
 - [x] Final ZIP created

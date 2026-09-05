@@ -10,8 +10,8 @@ import {
   cueDurationMs,
   durationMs,
   formatDuration,
-  hasPreservedTiming,
   MAX_TRANSLATABLE_CUE_CHARS,
+  validateSubtitleStructure,
   parseSrt,
   replaceCueTexts,
   serializeSrt
@@ -166,6 +166,8 @@ export default function Home() {
   const [uploadLanguages, setUploadLanguages] = useState<string[]>([]);
   const [uploadState, setUploadState] = useState<Record<string, UploadState>>({});
   const [uploadRunning, setUploadRunning] = useState(false);
+  const [googleWizardStep, setGoogleWizardStep] = useState(1);
+  const [googleSetupChecks, setGoogleSetupChecks] = useState({ projectApi: false, authPlatform: false, oauthClient: false });
 
   const chunks = useMemo(() => chunkSubtitleCues(cues), [cues]);
   const stats = useMemo(() => {
@@ -183,15 +185,18 @@ export default function Home() {
   const expectedRequests = (stats?.chunks ?? 0) * selectedLanguages.length;
   const activeLanguage = activePreview === "source" ? null : getLanguage(activePreview);
   const previewCues = activePreview === "source" ? cues : results[activePreview] ?? [];
-  const activeTimingPreserved = activeLanguage && results[activePreview]
-    ? hasPreservedTiming(cues, results[activePreview])
-    : false;
+  const activeStructure = activeLanguage && results[activePreview]
+    ? validateSubtitleStructure(cues, results[activePreview])
+    : null;
   const activeWarnings = useMemo(() => {
     if (!activeLanguage || !results[activeLanguage.code]) return 0;
     return results[activeLanguage.code]
       .map((cue) => analyzeLocalizedCueQuality(cue, activeLanguage.code))
       .reduce((sum, item) => sum + item.warnings.length, 0);
   }, [activeLanguage, results]);
+
+  const previewTargetById = useMemo(() => new Map(previewCues.map((cue) => [cue.id, cue])), [previewCues]);
+  const comparisonRows = useMemo(() => cues.map((source) => ({ source, target: previewTargetById.get(source.id) })), [cues, previewTargetById]);
 
   useEffect(() => {
     let cancelled = false;
@@ -242,6 +247,13 @@ export default function Home() {
     if (query) window.history.replaceState({}, "", window.location.pathname);
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (youtubeStatus === "connected" || youtubeStatus === "disconnected") {
+      setGoogleSetupChecks({ projectApi: true, authPlatform: true, oauthClient: true });
+      setGoogleWizardStep(4);
+    }
+  }, [youtubeStatus]);
 
   useEffect(() => {
     if (youtubeStatus !== "connected") return;
@@ -459,7 +471,7 @@ export default function Home() {
     setOpenAiMessage("저장된 OpenAI 키를 지웠습니다.");
   }
 
-  async function saveGoogleConfig(connectAfter = true) {
+  async function saveGoogleConfig() {
     const clientId = googleClientId.trim();
     const clientSecret = googleClientSecret.trim();
     if (!clientId || !clientSecret || googleConfigSaving) {
@@ -481,7 +493,6 @@ export default function Home() {
       setGoogleClientSecret("");
       setYoutubeStatus("disconnected");
       setYoutubeMessage("사용자 Google Cloud 프로젝트 설정을 저장했습니다.");
-      if (connectAfter) window.location.assign("/api/youtube/oauth/start");
     } catch (error) {
       setYoutubeMessage(error instanceof Error ? error.message : "Google OAuth 설정을 저장하지 못했습니다.");
     } finally {
@@ -502,6 +513,8 @@ export default function Home() {
     setCaptionTracks([]);
     setSelectedCaptionId("");
     setSourceMode("file");
+    setGoogleSetupChecks({ projectApi: false, authPlatform: false, oauthClient: false });
+    setGoogleWizardStep(1);
     setYoutubeMessage("저장된 Google OAuth 설정과 YouTube 연결을 지웠습니다.");
   }
 
@@ -690,7 +703,7 @@ export default function Home() {
         <div className="topbar-inner">
           <a className="brand" href="#top" aria-label="Subtitle Localizer 홈">
             <span className="brand-symbol" aria-hidden="true">S</span>
-            <span><strong>Subtitle Localizer</strong><small>v1.4.0</small></span>
+            <span><strong>Subtitle Localizer</strong><small>v1.5.0</small></span>
           </a>
           <div className="topbar-actions">
             <span className="privacy-label">파일을 서버에 저장하지 않습니다</span>
@@ -764,58 +777,184 @@ export default function Home() {
             {openAiMessage && <p className="connection-message">{openAiMessage}</p>}
           </article>
 
-          <article className={`connection-card ${youtubeStatus === "connected" || youtubeStatus === "disconnected" ? "is-ready" : ""}`}>
+          <article className={`connection-card google-connection-card ${youtubeStatus === "connected" || youtubeStatus === "disconnected" ? "is-ready" : ""}`}>
             <div className="connection-card-head">
               <div><span className="service-kicker">GOOGLE CLOUD · BYOC</span><h3>내 YouTube API 프로젝트</h3></div>
-              <span className="connection-status">{youtubeStatus === "checking" ? "확인 중" : youtubeStatus === "connected" ? "YouTube 연결됨" : youtubeStatus === "disconnected" ? "OAuth 준비됨" : "설정 필요"}</span>
+              <span className="connection-status">{youtubeStatus === "checking" ? "확인 중" : youtubeStatus === "connected" ? "YouTube 연결됨" : youtubeStatus === "disconnected" ? "Cloud 설정됨" : "설정 필요"}</span>
             </div>
-            <p className="connection-description">본인이 만든 Google Cloud OAuth Client를 사용합니다. YouTube Data API quota도 그 프로젝트에서 차감됩니다.</p>
+            <p className="connection-description">내 Google Cloud 프로젝트를 먼저 설정한 뒤, 별도의 Google OAuth 승인으로 YouTube 계정을 연결합니다. YouTube Data API quota는 내 프로젝트에서 사용됩니다.</p>
 
             {youtubeStatus === "checking" ? (
               <div className="setup-notice"><strong>연결 상태 확인 중</strong><span>저장된 사용자 Google 프로젝트와 YouTube 연결 상태를 확인하고 있습니다.</span></div>
             ) : youtubeStatus === "server-unavailable" ? (
               <div className="setup-notice"><strong>배포 설정 1개가 필요합니다</strong><span>운영자는 과금 키가 아닌 세션 암호화용 <code>APP_SESSION_SECRET</code>만 Vercel에 설정하면 됩니다.</span></div>
             ) : youtubeStatus === "connected" ? (
-              <div className="connected-summary">
+              <div className="connected-summary oauth-connected-summary">
+                <span className="summary-kicker">GOOGLE OAUTH · CONNECTED</span>
                 <strong>{youtubeChannel?.title || "내 YouTube 계정이 연결되었습니다"}</strong>
-                <span>Google Client Secret과 OAuth 토큰은 암호화된 HttpOnly 세션으로 보호됩니다.</span>
+                <span>Google Cloud 자격 증명과 OAuth 토큰은 암호화된 HttpOnly 세션으로 보호됩니다.</span>
                 <div className="connection-actions">
                   <button className="dark-button" type="button" onClick={() => void disconnectYouTube()}>YouTube 연결 해제</button>
                   <button className="text-button" type="button" onClick={() => void forgetGoogleConfig()}>Google 설정 지우기</button>
                 </div>
               </div>
             ) : youtubeStatus === "disconnected" ? (
-              <div className="connected-summary">
-                <strong>내 Google Cloud OAuth Client가 준비되었습니다.</strong>
-                <span>아래 버튼으로 내 YouTube 계정을 승인하면 됩니다.</span>
+              <div className="oauth-ready-panel">
+                <span className="summary-kicker">STEP 4 · GOOGLE OAUTH</span>
+                <strong>Google Cloud 설정이 저장되었습니다.</strong>
+                <p>이제 Google 로그인·동의 화면에서 실제 YouTube 계정을 승인합니다. Cloud Client 설정과 계정 승인은 서로 다른 단계입니다.</p>
+                <div className="oauth-separation" aria-label="Google 연결 단계">
+                  <span className="done">1. Cloud Client 저장 ✓</span>
+                  <span>2. Google OAuth 승인</span>
+                  <span>3. YouTube 채널 연결</span>
+                </div>
                 <div className="connection-actions">
-                  <a className="primary-button inline-primary" href="/api/youtube/oauth/start">YouTube 연결</a>
+                  <a className="primary-button inline-primary" href="/api/youtube/oauth/start">Google로 YouTube 연결</a>
                   <button className="text-button" type="button" onClick={() => void forgetGoogleConfig()}>다른 Google 프로젝트 사용</button>
                 </div>
               </div>
             ) : (
-              <div className="google-config-form">
-                <div className="field-block compact">
-                  <div className="field-row"><label htmlFor="google-client-id">Google OAuth Client ID</label><span>사용자 프로젝트</span></div>
-                  <input id="google-client-id" className="text-input" value={googleClientId} onChange={(event) => setGoogleClientId(event.target.value)} autoComplete="off" spellCheck={false} placeholder="...apps.googleusercontent.com" />
+              <div className="setup-wizard" aria-label="Google Cloud 설정 4단계">
+                <div className="wizard-progress" aria-label={`Google Cloud 설정 ${googleWizardStep}/4 단계`}>
+                  {[1, 2, 3, 4].map((step) => (
+                    <span key={step} className={`${googleWizardStep === step ? "active" : ""} ${googleWizardStep > step ? "complete" : ""}`}>{step}</span>
+                  ))}
                 </div>
-                <div className="field-block compact">
-                  <div className="field-row"><label htmlFor="google-client-secret">Google OAuth Client Secret</label><span>JS 저장 안 함</span></div>
-                  <div className="secret-input-row">
-                    <input id="google-client-secret" className="text-input" type={showGoogleSecret ? "text" : "password"} value={googleClientSecret} onChange={(event) => setGoogleClientSecret(event.target.value)} autoComplete="off" spellCheck={false} placeholder="Google Client Secret" />
-                    <button type="button" className="input-action" onClick={() => setShowGoogleSecret((value) => !value)}>{showGoogleSecret ? "숨기기" : "보기"}</button>
-                  </div>
-                </div>
-                <label className="remember-row">
-                  <input type="checkbox" checked={rememberGoogle} onChange={(event) => setRememberGoogle(event.target.checked)} />
-                  <span><strong>이 브라우저에서 Google 연결 유지</strong><small>Client ID·Secret·토큰을 암호화된 HttpOnly 쿠키로 유지합니다. JavaScript에서는 다시 읽을 수 없습니다.</small></span>
-                </label>
-                {youtubeRedirectUri && (
-                  <div className="redirect-box"><span>Google Cloud Authorized redirect URI</span><code>{youtubeRedirectUri}</code><button type="button" onClick={() => void navigator.clipboard?.writeText(youtubeRedirectUri)}>복사</button></div>
-                )}
-                <button className="primary-button full-width" type="button" disabled={googleConfigSaving || !googleClientId.trim() || !googleClientSecret.trim()} onClick={() => void saveGoogleConfig(true)}>
-                  {googleConfigSaving ? "설정 저장 중…" : "저장하고 YouTube 연결"}
-                </button>
+
+                <section className={`wizard-step ${googleSetupChecks.projectApi ? "is-complete" : ""} ${googleWizardStep === 1 ? "is-active" : ""}`}>
+                  <button className="wizard-step-trigger" type="button" onClick={() => setGoogleWizardStep(1)} aria-expanded={googleWizardStep === 1}>
+                    <span className="wizard-step-number">1</span>
+                    <span><strong>프로젝트 + YouTube API</strong><small>Google Cloud 프로젝트에서 YouTube Data API v3를 활성화합니다.</small></span>
+                  </button>
+                  {googleWizardStep === 1 && (
+                    <div className="wizard-step-body">
+                      <div className="console-example">
+                        <div className="console-example-title"><span>Google Cloud Console</span><strong>찾아야 할 화면 예시</strong></div>
+                        <div className="console-mini-screen"><div className="console-mini-bar">API Library</div><div className="console-mini-content"><span>YouTube Data API v3</span><b>Enable</b></div></div>
+                        <small>API Library → YouTube Data API v3 → Enable</small>
+                      </div>
+                      <ul className="wizard-checklist">
+                        <li>새 프로젝트를 만들거나 사용할 프로젝트를 선택합니다.</li>
+                        <li>API Library에서 <strong>YouTube Data API v3</strong>를 찾아 활성화합니다.</li>
+                      </ul>
+                      <div className="wizard-link-row">
+                        <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noreferrer">프로젝트 만들기 ↗</a>
+                        <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noreferrer">YouTube Data API 열기 ↗</a>
+                      </div>
+                      <label className="wizard-confirm">
+                        <input type="checkbox" checked={googleSetupChecks.projectApi} onChange={(event) => {
+                          const checked = event.target.checked;
+                          setGoogleSetupChecks((current) => checked
+                            ? { ...current, projectApi: true }
+                            : { projectApi: false, authPlatform: false, oauthClient: false });
+                          setGoogleWizardStep(checked ? 2 : 1);
+                        }} />
+                        <span><strong>YouTube Data API v3를 활성화했습니다</strong><small>앱에서 이 작업을 자동 확인할 수 없어 직접 체크합니다.</small></span>
+                      </label>
+                    </div>
+                  )}
+                </section>
+
+                <section className={`wizard-step ${googleSetupChecks.authPlatform ? "is-complete" : ""} ${googleWizardStep === 2 ? "is-active" : ""}`}>
+                  <button className="wizard-step-trigger" type="button" disabled={!googleSetupChecks.projectApi} onClick={() => setGoogleWizardStep(2)} aria-expanded={googleWizardStep === 2}>
+                    <span className="wizard-step-number">2</span>
+                    <span><strong>Google Auth Platform</strong><small>Branding · Audience · Data Access를 설정합니다.</small></span>
+                  </button>
+                  {googleWizardStep === 2 && (
+                    <div className="wizard-step-body">
+                      <div className="console-example">
+                        <div className="console-example-title"><span>Google Auth Platform</span><strong>찾아야 할 화면 예시</strong></div>
+                        <div className="console-mini-screen auth-mini"><div className="console-mini-bar">Google Auth Platform</div><div className="console-mini-tabs"><span>Branding</span><span>Audience</span><span>Data Access</span></div></div>
+                        <small>Get Started → Branding / Audience / Data Access</small>
+                      </div>
+                      <ul className="wizard-checklist">
+                        <li>처음이면 <strong>Get Started</strong>로 앱 이름과 연락처를 등록합니다.</li>
+                        <li><strong>Audience</strong>가 Testing이면 실제 연결할 Google 계정을 테스트 사용자로 추가해야 할 수 있습니다.</li>
+                        <li><strong>Data Access</strong>에서 앱이 요청할 YouTube 권한을 확인합니다.</li>
+                      </ul>
+                      <div className="scope-box"><span>Subtitle Localizer 요청 scope</span><code>https://www.googleapis.com/auth/youtube.force-ssl</code></div>
+                      <p className="wizard-warning">External + Testing 상태에서는 이 범위처럼 기본 프로필 이외의 OAuth 권한을 사용할 때 refresh token이 7일 후 만료될 수 있습니다. 개인 테스트는 다시 승인하면 되고, 장기 운영은 Google의 게시·검증 정책을 확인해야 합니다.</p>
+                      <div className="wizard-link-row">
+                        <a href="https://console.cloud.google.com/auth/overview" target="_blank" rel="noreferrer">Google Auth Platform 열기 ↗</a>
+                      </div>
+                      <label className="wizard-confirm">
+                        <input type="checkbox" checked={googleSetupChecks.authPlatform} onChange={(event) => {
+                          const checked = event.target.checked;
+                          setGoogleSetupChecks((current) => checked
+                            ? { ...current, authPlatform: true }
+                            : { ...current, authPlatform: false, oauthClient: false });
+                          setGoogleWizardStep(checked ? 3 : 2);
+                        }} />
+                        <span><strong>Auth Platform 설정을 확인했습니다</strong><small>Branding/Audience/Data Access를 확인한 뒤 진행합니다.</small></span>
+                      </label>
+                    </div>
+                  )}
+                </section>
+
+                <section className={`wizard-step ${googleSetupChecks.oauthClient ? "is-complete" : ""} ${googleWizardStep === 3 ? "is-active" : ""}`}>
+                  <button className="wizard-step-trigger" type="button" disabled={!googleSetupChecks.authPlatform} onClick={() => setGoogleWizardStep(3)} aria-expanded={googleWizardStep === 3}>
+                    <span className="wizard-step-number">3</span>
+                    <span><strong>OAuth Web Client 만들기</strong><small>Clients에서 Web application을 만들고 redirect URI를 등록합니다.</small></span>
+                  </button>
+                  {googleWizardStep === 3 && (
+                    <div className="wizard-step-body">
+                      <div className="console-example">
+                        <div className="console-example-title"><span>Google Auth Platform → Clients</span><strong>찾아야 할 화면 예시</strong></div>
+                        <div className="console-mini-screen"><div className="console-mini-bar">Create Client</div><div className="console-mini-form"><span>Application type</span><b>Web application</b><span>Authorized redirect URIs</span><b>https://…/callback</b></div></div>
+                        <small>Clients → Create Client → Web application</small>
+                      </div>
+                      <ul className="wizard-checklist">
+                        <li>Application type은 <strong>Web application</strong>을 선택합니다.</li>
+                        <li>아래 주소를 <strong>Authorized redirect URIs</strong>에 그대로 추가합니다.</li>
+                        <li>프로토콜·도메인·경로·마지막 슬래시까지 정확히 일치해야 합니다.</li>
+                      </ul>
+                      {youtubeRedirectUri ? (
+                        <div className="redirect-box wizard-redirect"><span>Authorized redirect URI</span><code>{youtubeRedirectUri}</code><button type="button" onClick={() => void navigator.clipboard?.writeText(youtubeRedirectUri)}>복사</button></div>
+                      ) : <p className="wizard-inline-note">Redirect URI를 확인하고 있습니다.</p>}
+                      <div className="wizard-link-row">
+                        <a href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noreferrer">OAuth Clients 열기 ↗</a>
+                      </div>
+                      <label className="wizard-confirm">
+                        <input type="checkbox" checked={googleSetupChecks.oauthClient} onChange={(event) => {
+                          const checked = event.target.checked;
+                          setGoogleSetupChecks((current) => ({ ...current, oauthClient: checked }));
+                          setGoogleWizardStep(checked ? 4 : 3);
+                        }} />
+                        <span><strong>Web application Client를 만들었습니다</strong><small>발급된 Client ID와 Client Secret을 다음 단계에서 입력합니다.</small></span>
+                      </label>
+                    </div>
+                  )}
+                </section>
+
+                <section className={`wizard-step ${googleWizardStep === 4 ? "is-active" : ""}`}>
+                  <button className="wizard-step-trigger" type="button" disabled={!googleSetupChecks.oauthClient} onClick={() => setGoogleWizardStep(4)} aria-expanded={googleWizardStep === 4}>
+                    <span className="wizard-step-number">4</span>
+                    <span><strong>Google Cloud 설정 저장</strong><small>Client ID/Secret을 저장한 뒤 별도로 Google OAuth 승인을 진행합니다.</small></span>
+                  </button>
+                  {googleWizardStep === 4 && googleSetupChecks.oauthClient && (
+                    <div className="wizard-step-body google-config-form">
+                      <div className="field-block compact">
+                        <div className="field-row"><label htmlFor="google-client-id">Google OAuth Client ID</label><span>사용자 프로젝트</span></div>
+                        <input id="google-client-id" className="text-input" value={googleClientId} onChange={(event) => setGoogleClientId(event.target.value)} autoComplete="off" spellCheck={false} placeholder="...apps.googleusercontent.com" />
+                      </div>
+                      <div className="field-block compact">
+                        <div className="field-row"><label htmlFor="google-client-secret">Google OAuth Client Secret</label><span>브라우저 JS에 재노출 안 함</span></div>
+                        <div className="secret-input-row">
+                          <input id="google-client-secret" className="text-input" type={showGoogleSecret ? "text" : "password"} value={googleClientSecret} onChange={(event) => setGoogleClientSecret(event.target.value)} autoComplete="off" spellCheck={false} placeholder="Google Client Secret" />
+                          <button type="button" className="input-action" onClick={() => setShowGoogleSecret((value) => !value)}>{showGoogleSecret ? "숨기기" : "보기"}</button>
+                        </div>
+                      </div>
+                      <label className="remember-row">
+                        <input type="checkbox" checked={rememberGoogle} onChange={(event) => setRememberGoogle(event.target.checked)} />
+                        <span><strong>이 브라우저에서 Google 연결 유지</strong><small>Client ID·Secret·토큰을 암호화된 HttpOnly 쿠키로 유지합니다. Google 프로젝트가 Testing이면 Google 정책에 따라 OAuth 갱신 토큰이 더 일찍 만료되어 재승인이 필요할 수 있습니다.</small></span>
+                      </label>
+                      <div className="cloud-vs-oauth-note"><strong>이 버튼은 Cloud 설정만 저장합니다.</strong><span>저장 후 별도의 `Google로 YouTube 연결` 버튼이 나타나며, 그때 Google 로그인·동의를 진행합니다.</span></div>
+                      <button className="primary-button full-width" type="button" disabled={googleConfigSaving || !googleClientId.trim() || !googleClientSecret.trim()} onClick={() => void saveGoogleConfig()}>
+                        {googleConfigSaving ? "설정 저장 중…" : "Google Cloud 설정 저장"}
+                      </button>
+                    </div>
+                  )}
+                </section>
               </div>
             )}
             {youtubeMessage && <p className="connection-message">{youtubeMessage}</p>}
@@ -879,7 +1018,7 @@ export default function Home() {
                 {youtubeStatus === "server-unavailable" && <p className="source-empty">배포 서버에 세션 암호화용 APP_SESSION_SECRET 설정이 필요합니다.</p>}
                 {youtubeStatus === "unconfigured" && <div className="source-empty"><strong>본인의 Google Cloud OAuth Client를 먼저 설정해 주세요.</strong><a className="primary-button source-connect" href="#api-connections">API 연결 설정</a></div>}
                 {youtubeStatus === "disconnected" && (
-                  <div className="source-empty"><strong>YouTube 채널을 먼저 연결해 주세요.</strong><a className="primary-button source-connect" href="/api/youtube/oauth/start">YouTube 연결</a></div>
+                  <div className="source-empty"><strong>YouTube 채널을 먼저 연결해 주세요.</strong><a className="primary-button source-connect" href="/api/youtube/oauth/start">Google로 YouTube 연결</a></div>
                 )}
                 {youtubeStatus === "connected" && (
                   <div className="youtube-source-grid">
@@ -1036,20 +1175,57 @@ export default function Home() {
                 })}
               </div>
 
-              {activeLanguage && (
-                <div className="quality-strip">
-                  <span className={activeTimingPreserved ? "ok" : "bad"}>{activeTimingPreserved ? "타임코드·ID 보존 확인" : "구조 확인 필요"}</span>
-                  <span>읽기 길이 참고 {activeWarnings}개</span>
-                  <button type="button" onClick={() => downloadSrt(activeLanguage.code)}>{activeLanguage.nativeLabel} SRT 다운로드</button>
+              {activeLanguage && activeStructure && (
+                <div className={`quality-panel ${activeStructure.preserved ? "is-pass" : "is-fail"}`}>
+                  <div className="quality-panel-head">
+                    <div>
+                      <span className={`structure-status ${activeStructure.preserved ? "ok" : "bad"}`}>{activeStructure.preserved ? "구조 검증 통과" : "구조 확인 필요"}</span>
+                      <p>원본과 번역본의 cue ID와 시작·종료 타임코드를 직접 비교한 결과입니다.</p>
+                    </div>
+                    <button type="button" onClick={() => downloadSrt(activeLanguage.code)}>{activeLanguage.nativeLabel} SRT 다운로드</button>
+                  </div>
+                  <div className="structure-metrics" aria-label="자막 구조 검증 결과">
+                    <span className={activeStructure.timingMatches === activeStructure.sourceCount ? "ok" : "bad"}><strong>타임코드</strong> {activeStructure.timingMatches}/{activeStructure.sourceCount} 일치</span>
+                    <span className={activeStructure.cueIdMatches === activeStructure.sourceCount ? "ok" : "bad"}><strong>Cue ID</strong> {activeStructure.cueIdMatches}/{activeStructure.sourceCount} 일치</span>
+                    <span className={activeStructure.missingCueIds.length === 0 ? "ok" : "bad"}><strong>누락</strong> {activeStructure.missingCueIds.length}</span>
+                    <span className={activeStructure.unexpectedCueIds.length === 0 ? "ok" : "bad"}><strong>추가</strong> {activeStructure.unexpectedCueIds.length}</span>
+                    <span><strong>읽기 길이 참고</strong> {activeWarnings}</span>
+                  </div>
+                  {!activeStructure.preserved && (
+                    <p className="structure-detail">
+                      {activeStructure.timingMismatchIds.length > 0 && `타임코드 불일치: ${activeStructure.timingMismatchIds.slice(0, 8).join(", ")}${activeStructure.timingMismatchIds.length > 8 ? "…" : ""} · `}
+                      {activeStructure.missingCueIds.length > 0 && `누락 cue: ${activeStructure.missingCueIds.slice(0, 8).join(", ")}${activeStructure.missingCueIds.length > 8 ? "…" : ""} · `}
+                      {activeStructure.unexpectedCueIds.length > 0 && `추가 cue: ${activeStructure.unexpectedCueIds.slice(0, 8).join(", ")}${activeStructure.unexpectedCueIds.length > 8 ? "…" : ""} · `}
+                      {activeStructure.orderMismatchCount > 0 && `순서 불일치 ${activeStructure.orderMismatchCount}개`}
+                    </p>
+                  )}
                 </div>
               )}
 
               <div className="comparison-table">
                 <div className="comparison-head"><span>원문</span><span>{activeLanguage ? activeLanguage.nativeLabel : "원문"}</span></div>
-                {previewCues.slice(0, 80).map((cue, index) => (
-                  <div className="cue-row" key={`${activePreview}-${cue.id}`}>
-                    <div className="cue-cell"><small>#{cues[index]?.id} · {cues[index]?.start}</small><p>{cues[index]?.text}</p></div>
-                    <div className="cue-cell target"><small>#{cue.id} · {cue.start}</small><p>{cue.text}</p></div>
+                {comparisonRows.slice(0, 80).map(({ source, target }) => (
+                  <div className="cue-row" key={`${activePreview}-${source.id}`}>
+                    <div className="cue-cell">
+                      <small>#{source.id}</small>
+                      <span className="cue-time-range">{source.start} → {source.end}</span>
+                      <p>{source.text}</p>
+                    </div>
+                    <div className={`cue-cell target ${target ? "" : "is-missing"}`}>
+                      {target ? (
+                        <>
+                          <small>#{target.id}</small>
+                          <span className="cue-time-range">{target.start} → {target.end}</span>
+                          <p>{target.text}</p>
+                        </>
+                      ) : (
+                        <>
+                          <small>#{source.id}</small>
+                          <span className="cue-time-range missing">번역 cue 없음</span>
+                          <p className="cue-missing-copy">이 cue가 번역 결과에서 누락되었습니다.</p>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ))}
                 {cues.length > 80 && <p className="preview-limit">화면에서는 앞 80개 cue만 보여줍니다. 다운로드 파일에는 전체 자막이 포함됩니다.</p>}
@@ -1075,7 +1251,7 @@ export default function Home() {
               <div className="side-empty"><strong>내 Google 프로젝트 연결</strong><p>YouTube quota가 본인 프로젝트에서 사용되도록 Client ID/Secret을 설정합니다.</p><a className="dark-button full" href="#api-connections">Google 설정하기</a></div>
             )}
             {youtubeStatus === "disconnected" && (
-              <div className="side-empty"><strong>내 채널과 연결</strong><p>영상 목록을 불러오고 자막을 올릴 때만 YouTube 권한을 사용합니다.</p><a className="dark-button full" href="/api/youtube/oauth/start">YouTube 연결</a></div>
+              <div className="side-empty"><strong>내 채널과 연결</strong><p>영상 목록을 불러오고 자막을 올릴 때만 YouTube 권한을 사용합니다.</p><a className="dark-button full" href="/api/youtube/oauth/start">Google로 YouTube 연결</a></div>
             )}
 
             {youtubeStatus === "connected" && (
@@ -1140,7 +1316,7 @@ export default function Home() {
         </aside>
       </div>
 
-      <footer className="footer">Subtitle Localizer v1.4.0 · 사용자 API 비용 분리형 다국어 자막 작업 도구</footer>
+      <footer className="footer">Subtitle Localizer v1.5.0 · 사용자 API 비용 분리형 다국어 자막 작업 도구</footer>
     </main>
   );
 }

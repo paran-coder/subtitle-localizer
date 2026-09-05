@@ -8,7 +8,8 @@ import {
   parseSrt,
   replaceCueTexts,
   serializeSrt,
-  timecodeToMs
+  timecodeToMs,
+  validateSubtitleStructure
 } from "../lib/srt.ts";
 
 const sample = `\uFEFF1\r\n00:00:01,200 --> 00:00:04,500\r\nWelcome back\r\n\r\n2\r\n00:00:04,800 --> 00:00:08,100\r\nToday we're going\r\nto talk about AI.\r\n`;
@@ -94,6 +95,64 @@ test("번역 결과의 id/start/end 보존 여부를 검증한다", () => {
   ]);
   assert.equal(hasPreservedTiming(original, translated), true);
   assert.equal(hasPreservedTiming(original, [{ ...translated[0], start: "00:00:00,000" }, translated[1]]), false);
+});
+
+
+
+test("구조 검증은 완전 일치 상태를 수치로 반환한다", () => {
+  const original = parseSrt(sample);
+  const translated = replaceCueTexts(original, [
+    { id: 1, text: "환영합니다" },
+    { id: 2, text: "AI를 이야기합니다" }
+  ]);
+  const result = validateSubtitleStructure(original, translated);
+  assert.equal(result.preserved, true);
+  assert.equal(result.cueIdMatches, 2);
+  assert.equal(result.timingMatches, 2);
+  assert.deepEqual(result.missingCueIds, []);
+  assert.deepEqual(result.unexpectedCueIds, []);
+});
+
+test("구조 검증은 누락 cue를 찾는다", () => {
+  const original = parseSrt(sample);
+  const translated = [{ ...original[0], text: "환영합니다" }];
+  const result = validateSubtitleStructure(original, translated);
+  assert.equal(result.preserved, false);
+  assert.equal(result.cueIdMatches, 1);
+  assert.deepEqual(result.missingCueIds, [2]);
+});
+
+test("구조 검증은 예상하지 않은 cue를 찾는다", () => {
+  const original = parseSrt(sample);
+  const translated = [
+    ...original.map((cue) => ({ ...cue, text: "번역" })),
+    { id: 99, start: "00:00:09,000", end: "00:00:10,000", text: "추가" }
+  ];
+  const result = validateSubtitleStructure(original, translated);
+  assert.equal(result.preserved, false);
+  assert.deepEqual(result.unexpectedCueIds, [99]);
+});
+
+test("구조 검증은 ID 순서 불일치를 찾는다", () => {
+  const original = parseSrt(sample);
+  const translated = [
+    { ...original[1], text: "두 번째" },
+    { ...original[0], text: "첫 번째" }
+  ];
+  const result = validateSubtitleStructure(original, translated);
+  assert.equal(result.cueIdMatches, 2);
+  assert.equal(result.orderMismatchCount, 2);
+  assert.equal(result.preserved, false);
+});
+
+test("구조 검증은 타임코드 불일치 cue를 찾는다", () => {
+  const original = parseSrt(sample);
+  const translated = original.map((cue) => ({ ...cue, text: "번역" }));
+  translated[1] = { ...translated[1], end: "00:00:08,200" };
+  const result = validateSubtitleStructure(original, translated);
+  assert.equal(result.timingMatches, 1);
+  assert.deepEqual(result.timingMismatchIds, [2]);
+  assert.equal(result.preserved, false);
 });
 
 test("5,000 cue 장문 SRT를 파싱하고 제한된 청크로 분할한다", () => {
