@@ -54,14 +54,18 @@ test("연결 완료 화면은 Publishing 확인과 여러 채널 누적 관리�
   assert.match(page, /Audience \/ 게시 상태 확인/);
 });
 
-test("공개 개인정보처리방침과 서비스 약관을 홈페이지에서 찾을 수 있다", () => {
+test("공개 가이드·개인정보처리방침·서비스 약관을 사이트에서 찾을 수 있다", () => {
   const layout = read("app/layout.tsx");
   const footer = read("components/site-policy-footer.tsx");
+  const guideEntry = read("components/first-use-guide-link.tsx");
   const privacy = read("app/privacy/page.tsx");
   const terms = read("app/terms/page.tsx");
+  assert.match(layout, /FirstUseGuideLink/);
   assert.match(layout, /SitePolicyFooter/);
+  assert.match(footer, /href="\/guide"/);
   assert.match(footer, /href="\/privacy"/);
   assert.match(footer, /href="\/terms"/);
+  assert.match(guideEntry, /처음 사용 가이드/);
   assert.match(privacy, /개인정보처리방침/);
   assert.match(privacy, /HttpOnly cookie/);
   assert.match(privacy, /OpenAI/);
@@ -70,6 +74,23 @@ test("공개 개인정보처리방침과 서비스 약관을 홈페이지에서 
   assert.match(terms, /BYOK\/BYOC/);
   assert.match(terms, /OpenAI API 사용료/);
   assert.match(terms, /YouTube Data API quota/);
+});
+
+test("첫 사용자 가이드는 OpenAI와 YouTube 연결을 실제 값 기준으로 안내한다", () => {
+  const guide = read("app/guide/page.tsx");
+  assert.match(guide, /OpenAI API Keys 열기/);
+  assert.match(guide, /ChatGPT 구독과 OpenAI API 결제는 별도/);
+  assert.match(guide, /Create new secret key/);
+  assert.match(guide, /HttpOnly cookie/);
+  assert.match(guide, /YouTube Data API v3/);
+  assert.match(guide, /Subtitle Localizer Web/);
+  assert.match(guide, /youtube\.force-ssl/);
+  assert.match(guide, /Authorized JavaScript origins/);
+  assert.match(guide, /Authorized redirect URIs/);
+  assert.match(guide, /api\/youtube\/oauth\/callback/);
+  assert.match(guide, /403 access_denied/);
+  assert.match(guide, /In Production/);
+  assert.match(guide, /확인되지 않은 앱/);
 });
 
 test("workspace 채널 바는 썸네일·채널 선택·빈 영상 행동을 제공한다", () => {
@@ -84,9 +105,11 @@ test("workspace 채널 바는 썸네일·채널 선택·빈 영상 행동을 제
   assert.match(bar, /v1\.7\.0/);
 });
 
-test("v1.7 UI와 공개 정책 페이지는 모바일 재배치와 focus-visible/reduced-motion을 유지한다", () => {
+test("v1.7 UI·가이드·공개 정책 페이지는 모바일 재배치와 focus-visible/reduced-motion을 유지한다", () => {
   const css = read("app/v17.css");
   const legalCss = read("app/legal.css");
+  const guideCss = read("app/guide.css");
+  const guideEntryCss = read("app/first-use-guide.css");
   assert.match(css, /grid-template-columns:repeat\(8/);
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /\.v17-do-dont\{grid-template-columns:1fr\}/);
@@ -95,4 +118,9 @@ test("v1.7 UI와 공개 정책 페이지는 모바일 재배치와 focus-visible
   assert.match(legalCss, /@media\(max-width:760px\)/);
   assert.match(legalCss, /focus-visible/);
   assert.match(legalCss, /prefers-reduced-motion/);
+  assert.match(guideCss, /@media\(max-width:760px\)/);
+  assert.match(guideCss, /focus-visible/);
+  assert.match(guideCss, /prefers-reduced-motion/);
+  assert.match(guideEntryCss, /@media\(max-width:760px\)/);
+  assert.match(guideEntryCss, /focus-visible/);
 });
