@@ -12,7 +12,7 @@ import "./guide.css";
 import "./first-use-guide.css";
 
 const SITE_URL = new URL("https://subtitle-localizer.vercel.app");
-const OG_IMAGE_URL = "/og/subtitle-localizer";
+const OG_IMAGE_URL = "/og.png";
 const OG_TITLE = "Subtitle Localizer | 타임코드는 그대로. 자막은 현지 언어처럼.";
 const DESCRIPTION = "SRT 자막 번역부터 YouTube 업로드까지, 타임코드를 유지하는 다국어 자막 현지화 도구";
 
