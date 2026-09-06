@@ -84,6 +84,25 @@ test("주요 화면은 초기 설정·연결 관리·작업하기 탭으로 구�
   assert.match(terms, /YouTube Data API quota/);
 });
 
+test("공통 상단 계층은 타이틀바·탭·작업 채널 순서를 유지한다", () => {
+  const layout = read("app/layout.tsx");
+  const nav = read("components/first-use-guide-link.tsx");
+  const css = read("app/first-use-guide.css");
+  const primaryIndex = layout.indexOf("<PrimarySectionNav />");
+  const channelIndex = layout.indexOf("<WorkspaceChannelBar />");
+  assert.ok(primaryIndex >= 0 && channelIndex > primaryIndex);
+  assert.match(nav, /primary-titlebar/);
+  assert.match(nav, /Subtitle Localizer/);
+  assert.match(nav, /OpenAI/);
+  assert.match(nav, /YouTube/);
+  assert.match(nav, /primary-section-nav/);
+  assert.match(css, /\.primary-titlebar/);
+  assert.match(css, /\.app-shell>\.topbar/);
+  assert.match(css, /\.v17-connections-shell>\.v17-topbar/);
+  assert.match(css, /\.guide-shell>\.guide-topbar/);
+  assert.match(css, /margin:18px auto 0/);
+});
+
 test("초기 설정 화면은 OpenAI와 YouTube 연결을 실제 값 기준으로 안내한다", () => {
   const guide = read("app/guide/page.tsx");
   assert.match(guide, /OpenAI API Keys 열기/);
