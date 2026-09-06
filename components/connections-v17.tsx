@@ -179,65 +179,54 @@ export default function ConnectionsV17() {
     finally { setOpenAiSaving(false); }
   }
 
-  async function removeOpenAi() {
-    setOpenAiSaving(true); setOpenAiMessage("");
-    try {
-      const response = await fetch("/api/openai/credential", { method: "DELETE", cache: "no-store" });
-      if (!response.ok) throw new Error("저장된 OpenAI 키를 지우지 못했습니다.");
-      setOpenAiConfigured(false); setOpenAiMessage("저장된 OpenAI 키를 지웠습니다.");
-    } catch (error) { setOpenAiMessage(error instanceof Error ? error.message : "저장된 OpenAI 키를 지우지 못했습니다."); }
-    finally { setOpenAiSaving(false); }
+  async function forgetOpenAi() {
+    await fetch("/api/openai/credential", { method: "DELETE" });
+    setOpenAiConfigured(false); setRememberOpenAi(false); setOpenAiKey(""); setOpenAiMessage("저장된 OpenAI 키를 지웠습니다.");
   }
 
-  async function saveGoogleClient() {
-    if (!googleClientId.trim() || !googleClientSecret.trim() || googleSaving) return;
+  async function saveGoogleConfig() {
+    const clientId = googleClientId.trim(); const clientSecret = googleClientSecret.trim();
+    if (!clientId || !clientSecret || googleSaving) return;
     setGoogleSaving(true); setYoutubeMessage("");
     try {
-      const response = await fetch("/api/youtube/client-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clientId: googleClientId.trim(), clientSecret: googleClientSecret.trim(), remember: rememberGoogle }), cache: "no-store" });
-      const data = await response.json() as { error?: string; remember?: boolean };
-      if (!response.ok) throw new Error(data.error || "Google Cloud Client를 저장하지 못했습니다.");
-      setRememberGoogle(Boolean(data.remember)); setGoogleClientId(""); setGoogleClientSecret(""); setShowFinalWizardStep(true); setWizardStep(8); setConfirmed((current) => ({ ...current, 7: true }));
-      setYoutubeMessage("Cloud Client를 저장했습니다. 이제 YouTube 채널을 연결하세요."); await loadYouTube();
-    } catch (error) { setYoutubeMessage(error instanceof Error ? error.message : "Google Cloud Client를 저장하지 못했습니다."); }
+      const response = await fetch("/api/youtube/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clientId, clientSecret, remember: rememberGoogle }), cache: "no-store" });
+      const data = await response.json() as { error?: string; redirectUri?: string };
+      if (!response.ok) throw new Error(data.error || "Google Cloud 설정을 저장하지 못했습니다.");
+      setRedirectUri(data.redirectUri || redirectUri); setGoogleClientSecret(""); setConnections([]); setActiveConnectionId(""); setYoutubeStatus("disconnected"); setWizardStep(8); setShowFinalWizardStep(true); setYoutubeMessage("Cloud Client를 저장했습니다. 마지막으로 첫 YouTube 채널을 연결하세요.");
+    } catch (error) { setYoutubeMessage(error instanceof Error ? error.message : "Google Cloud 설정을 저장하지 못했습니다."); }
     finally { setGoogleSaving(false); }
   }
 
-  async function setActiveChannel(connectionId: string) {
-    if (!connectionId || channelBusy) return;
-    setChannelBusy(connectionId); setYoutubeMessage("");
+  async function forgetGoogle() {
+    await fetch("/api/youtube/config", { method: "DELETE" });
+    setYoutubeStatus("unconfigured"); setConnections([]); setActiveConnectionId(""); setGoogleClientId(""); setGoogleClientSecret(""); setRememberGoogle(false); setWizardStep(1); setConfirmed({}); setShowFinalWizardStep(false); setYoutubeMessage("Google Cloud Client 설정과 모든 YouTube 채널 연결을 지웠습니다.");
+  }
+
+  async function selectChannel(connectionId: string) {
+    if (channelBusy || connectionId === activeConnectionId) return;
+    setChannelBusy(connectionId);
     try {
-      const response = await fetch("/api/youtube/connections/active", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ connectionId }), cache: "no-store" });
-      const data = await response.json() as { error?: string };
-      if (!response.ok) throw new Error(data.error || "작업 채널을 바꾸지 못했습니다.");
-      await loadYouTube();
-      setYoutubeMessage("현재 작업 채널을 바꿨습니다.");
-    } catch (error) { setYoutubeMessage(error instanceof Error ? error.message : "작업 채널을 바꾸지 못했습니다."); }
+      const response = await fetch("/api/youtube/channels", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ connectionId }), cache: "no-store" });
+      const data = await response.json() as { error?: string; activeConnectionId?: string; connections?: YouTubeConnection[] };
+      if (!response.ok) throw new Error(data.error || "채널을 전환하지 못했습니다.");
+      setActiveConnectionId(data.activeConnectionId || connectionId); setConnections(data.connections ?? connections); setYoutubeMessage("현재 작업 채널을 변경했습니다.");
+    } catch (error) { setYoutubeMessage(error instanceof Error ? error.message : "채널을 전환하지 못했습니다."); }
     finally { setChannelBusy(""); }
   }
 
   async function disconnectChannel(connectionId: string) {
-    if (!connectionId || channelBusy) return;
-    setChannelBusy(connectionId); setYoutubeMessage("");
+    if (channelBusy) return;
+    setChannelBusy(connectionId);
     try {
-      const response = await fetch(`/api/youtube/connections/${encodeURIComponent(connectionId)}`, { method: "DELETE", cache: "no-store" });
-      const data = await response.json() as { error?: string };
-      if (!response.ok) throw new Error(data.error || "YouTube 채널 연결을 해제하지 못했습니다.");
-      await loadYouTube(); setYoutubeMessage("선택한 YouTube 채널 연결을 해제했습니다.");
-    } catch (error) { setYoutubeMessage(error instanceof Error ? error.message : "YouTube 채널 연결을 해제하지 못했습니다."); }
+      const response = await fetch(`/api/youtube/channels?connectionId=${encodeURIComponent(connectionId)}`, { method: "DELETE", cache: "no-store" });
+      const data = await response.json() as { error?: string; activeConnectionId?: string; connections?: YouTubeConnection[] };
+      if (!response.ok) throw new Error(data.error || "채널 연결을 해제하지 못했습니다.");
+      const next = data.connections ?? []; setConnections(next); setActiveConnectionId(data.activeConnectionId ?? ""); setYoutubeStatus(next.length ? "connected" : "disconnected"); setYoutubeMessage(next.length ? "선택한 채널 연결만 해제했습니다." : "YouTube 채널 연결을 모두 해제했습니다. Cloud Client 설정은 유지됩니다.");
+    } catch (error) { setYoutubeMessage(error instanceof Error ? error.message : "채널 연결을 해제하지 못했습니다."); }
     finally { setChannelBusy(""); }
   }
 
-  async function removeGoogleClient() {
-    if (googleSaving) return;
-    setGoogleSaving(true); setYoutubeMessage("");
-    try {
-      const response = await fetch("/api/youtube/client-config", { method: "DELETE", cache: "no-store" });
-      if (!response.ok) throw new Error("Google Cloud Client를 지우지 못했습니다.");
-      setConnections([]); setActiveConnectionId(""); setYoutubeStatus("unconfigured"); setWizardStep(1); setConfirmed({}); setShowFinalWizardStep(false); setYoutubeMessage("Google Cloud Client와 연결된 YouTube 채널 정보를 지웠습니다.");
-    } catch (error) { setYoutubeMessage(error instanceof Error ? error.message : "Google Cloud Client를 지우지 못했습니다."); }
-    finally { setGoogleSaving(false); }
-  }
-
+  const wizardVisible = youtubeStatus === "unconfigured" || (youtubeStatus === "disconnected" && showFinalWizardStep);
   const currentStatic = STATIC_STEPS[wizardStep];
 
   return <main className="v17-connections-shell">
@@ -250,29 +239,39 @@ export default function ConnectionsV17() {
       {!openAiServerConfigured && <p className="v17-message">배포 서버에 APP_SESSION_SECRET 설정이 필요합니다.</p>}
       <div className="v17-secret-row"><input aria-label="OpenAI API Key" type={showOpenAi ? "text" : "password"} value={openAiKey} onChange={(event) => setOpenAiKey(event.target.value)} autoComplete="off" spellCheck={false} placeholder={openAiConfigured ? "새 키로 바꾸려면 입력" : "OpenAI API Key"} disabled={!openAiServerConfigured} /><button type="button" onClick={() => setShowOpenAi((value) => !value)}>{showOpenAi ? "숨기기" : "보기"}</button></div>
       <label className="v17-remember"><input type="checkbox" checked={rememberOpenAi} onChange={(event) => setRememberOpenAi(event.target.checked)} /><span><strong>이 브라우저에 기억하기</strong><small>암호화된 HttpOnly 쿠키로 저장합니다.</small></span></label>
-      <div className="v17-actions"><button type="button" className="v17-primary" disabled={!openAiKey.trim() || openAiSaving || !openAiServerConfigured} onClick={saveOpenAi}>{openAiConfigured ? "키 교체" : "키 저장"}</button>{openAiConfigured && <button type="button" className="v17-text-danger" onClick={removeOpenAi} disabled={openAiSaving}>저장된 키 지우기</button>}</div>
+      <div className="v17-actions"><button className="v17-primary" type="button" onClick={() => void saveOpenAi()} disabled={!openAiServerConfigured || !openAiKey.trim() || openAiSaving}>{openAiSaving ? "저장 중…" : openAiConfigured ? "키 교체" : "키 연결"}</button>{openAiConfigured && <button className="v17-text-danger" type="button" onClick={() => void forgetOpenAi()}>저장된 키 지우기</button>}</div>
       {openAiMessage && <p className="v17-message">{openAiMessage}</p>}
     </section>
 
     <section className="v17-card" id="youtube-connection">
-      <div className="v17-card-head"><div><span>GOOGLE CLOUD · USER BYOC</span><h2>YouTube 연결</h2><p>Cloud Client는 최초 1회만 저장합니다. 이후에는 이 화면에서 여러 계정·채널을 추가하고 전환합니다.</p></div><b className={youtubeStatus === "connected" ? "ready" : ""}>{connections.length ? `${connections.length}개 채널` : youtubeStatus === "checking" ? "확인 중" : "설정 필요"}</b></div>
+      <div className="v17-card-head"><div><span>GOOGLE CLOUD · USER BYOC</span><h2>YouTube 연결</h2><p>Cloud Client는 최초 1회만 저장합니다. 이후에는 이 화면에서 여러 계정·채널을 추가하고 전환합니다.</p></div><b className={youtubeStatus === "connected" ? "ready" : ""}>{youtubeStatus === "checking" ? "확인 중" : youtubeStatus === "connected" ? `${connections.length}개 채널` : youtubeStatus === "disconnected" ? "Client 저장됨" : "설정 필요"}</b></div>
       {youtubeMessage && <p className="v17-message">{youtubeMessage}</p>}
+      {youtubeStatus === "server-unavailable" && <p className="v17-message">배포 서버에 APP_SESSION_SECRET 설정이 필요합니다.</p>}
+      {youtubeStatus === "checking" && <div className="v17-loading">저장된 연결 상태를 확인하고 있습니다.</div>}
 
-      {youtubeStatus === "checking" ? <p className="v17-loading">저장된 Cloud 설정과 YouTube 채널을 확인하고 있습니다.</p> : youtubeStatus === "server-unavailable" ? <p className="v17-message">배포 서버에 APP_SESSION_SECRET 설정이 필요합니다.</p> : youtubeStatus === "unconfigured" ? <div className="v17-wizard">
-        <Progress step={wizardStep} />
-        <div className="v17-current-step">
-          <div className="v17-current-head"><div><span>{currentStatic?.eyebrow ?? "CLIENT"}</span><h3>{wizardStep === 7 ? STEP_TITLES[6] : wizardStep === 8 ? STEP_TITLES[7] : currentStatic?.title}</h3><p>{wizardStep === 7 ? "Google이 발급한 Client ID와 Secret만 앱으로 가져옵니다." : wizardStep === 8 ? "앞으로는 같은 Cloud Client로 계정과 채널만 추가하면 됩니다." : currentStatic?.summary}</p></div><b>{wizardStep}/8</b></div>
-          {wizardStep <= 6 && currentStatic && <div className="v17-step-body"><div className="v17-instructions">{currentStatic.instructions}</div>{wizardStep === 6 && <CopyRow label="승인된 리디렉션 URI" value={redirectUri} />}<a className="v17-primary" href={currentStatic.href} target="_blank" rel="noreferrer">{currentStatic.cta}</a><label className="v17-confirm"><input type="checkbox" checked={Boolean(confirmed[wizardStep])} onChange={(event) => setConfirmed((current) => ({ ...current, [wizardStep]: event.target.checked }))} /><span><strong>이 단계에서 안내한 작업을 완료했습니다.</strong><small>완료한 뒤 다음으로 넘어가면 같은 설정을 반복하지 않습니다.</small></span></label></div>}
-          {wizardStep === 7 && <div className="v17-step-body"><div className="v17-field"><span>OAuth Client ID</span><input value={googleClientId} onChange={(event) => setGoogleClientId(event.target.value)} placeholder="...apps.googleusercontent.com" autoComplete="off" spellCheck={false} /></div><div className="v17-field"><span>OAuth Client Secret</span><div className="v17-secret-row"><input type={showGoogleSecret ? "text" : "password"} value={googleClientSecret} onChange={(event) => setGoogleClientSecret(event.target.value)} placeholder="GOCSPX-..." autoComplete="off" spellCheck={false} /><button type="button" onClick={() => setShowGoogleSecret((value) => !value)}>{showGoogleSecret ? "숨기기" : "보기"}</button></div></div><label className="v17-remember"><input type="checkbox" checked={rememberGoogle} onChange={(event) => setRememberGoogle(event.target.checked)} /><span><strong>이 브라우저에 기억하기</strong><small>Cloud Client와 연결 토큰을 암호화된 HttpOnly 쿠키로 저장합니다.</small></span></label><button className="v17-primary" type="button" onClick={saveGoogleClient} disabled={!googleClientId.trim() || !googleClientSecret.trim() || googleSaving}>Cloud Client 저장</button></div>}
-          {wizardStep === 8 && <div className="v17-step-body v17-final-step"><strong>Google Cloud 설정은 여기까지입니다.</strong><p>Branding과 In Production까지 완료했다면 이후 정상적인 계정·채널 추가 때문에 Cloud Console로 돌아갈 필요가 없습니다.</p><div className="v17-final-checks"><span>Cloud Client 저장</span><span>여러 채널 준비</span><span>활성 채널 전환</span></div><a className="v17-primary" href={`/api/youtube/oauth/start?return=${encodeURIComponent(returnPath)}`}>Google로 YouTube 연결</a><small>Google 계정 선택 → 권한 승인 → 채널 연결 순서로 진행됩니다.</small></div>}
-          <div className="v17-wizard-nav"><button className="v17-secondary" type="button" disabled={wizardStep === 1} onClick={() => setWizardStep((value) => Math.max(1, value - 1))}>이전</button>{wizardStep < 7 && <button className="v17-primary" type="button" disabled={!confirmed[wizardStep]} onClick={() => setWizardStep((value) => Math.min(7, value + 1))}>완료했어요 · 다음</button>}{wizardStep === 8 && <button className="v17-secondary" type="button" onClick={() => setWizardStep(7)}>Client 정보 수정</button>}</div>
-        </div>
-      </div> : <div className="v17-channel-manager">
-        <div className="v17-channel-manager-hero"><div><span>YOUTUBE CHANNELS · CONNECTED</span><strong>Cloud Client와 YouTube 채널이 연결되어 있습니다.</strong><p>Branding과 In Production까지 완료했다면 이후 정상적인 계정·채널 추가 때 Cloud Console을 다시 설정할 필요가 없습니다.</p></div><a className="v17-primary" href={`/api/youtube/oauth/start?return=${encodeURIComponent(returnPath)}`}>+ 계정 또는 채널 추가</a></div>
+      {youtubeStatus === "connected" && <div className="v17-channel-manager">
+        <div className="v17-channel-manager-hero"><div><span>YOUTUBE CHANNELS · CONNECTED</span><strong>Cloud Client와 YouTube 채널이 연결되어 있습니다.</strong><p>Branding과 In Production까지 완료했다면 이후 정상적인 계정·채널 추가 때 Cloud Console을 다시 설정할 필요가 없습니다.</p></div><a className="v17-primary" href="/api/youtube/oauth/start">+ 계정 또는 채널 추가</a></div>
         <PublishingGuide />
-        <div className="v17-channel-list">{connections.map((connection) => <article key={connection.connectionId} className={connection.connectionId === activeConnectionId ? "active" : ""}><ChannelAvatar connection={connection} /><div><small>{connection.connectionId === activeConnectionId ? "현재 작업 채널" : "연결된 채널"}</small><strong>{connection.channelTitle}</strong><span>{connection.connectionId === activeConnectionId ? "영상 가져오기와 자막 업로드가 이 채널을 사용합니다." : "필요할 때 작업 채널로 전환하세요."}</span></div><div className="v17-channel-actions">{connection.connectionId === activeConnectionId ? <b>선택됨 ✓</b> : <button type="button" disabled={Boolean(channelBusy)} onClick={() => setActiveChannel(connection.connectionId)}>이 채널 사용</button>}<button type="button" className="v17-text-danger" disabled={Boolean(channelBusy)} onClick={() => disconnectChannel(connection.connectionId)}>연결 해제</button></div></article>)}</div>
-        {activeConnection && <div className="v17-active-summary"><span>현재 작업 채널</span><strong>{activeConnection.channelTitle}</strong></div>}
-        <details className="v17-cloud-details"><summary>Google Cloud Client · 저장됨</summary><p>Client ID/Secret은 브라우저에서 다시 표시하지 않습니다. Secret을 교체하거나 다른 Cloud 프로젝트로 옮길 때만 아래 설정을 사용하세요.</p><div className="v17-actions"><button type="button" className="v17-secondary" onClick={() => { setYoutubeStatus("unconfigured"); setShowFinalWizardStep(true); setWizardStep(7); }}>Client 정보 교체</button><button type="button" className="v17-text-danger" onClick={removeGoogleClient} disabled={googleSaving}>Cloud Client와 모든 채널 연결 지우기</button></div></details>
+        <div className="v17-channel-list">{connections.map((connection) => { const active = connection.connectionId === activeConnectionId; return <article className={active ? "active" : ""} key={connection.connectionId}><ChannelAvatar connection={connection} /><div><small>{active ? "현재 작업 채널" : "연결된 채널"}</small><strong>{connection.channelTitle}</strong><span>{active ? "영상 가져오기와 자막 업로드가 이 채널을 사용합니다." : "필요할 때 작업 채널로 전환하세요."}</span></div><div className="v17-channel-actions">{active ? <b>선택됨 ✓</b> : <button type="button" disabled={Boolean(channelBusy)} onClick={() => void selectChannel(connection.connectionId)}>{channelBusy === connection.connectionId ? "전환 중…" : "이 채널 사용"}</button>}<button type="button" className="v17-text-danger" disabled={Boolean(channelBusy)} onClick={() => void disconnectChannel(connection.connectionId)}>연결 해제</button></div></article>; })}</div>
+        <div className="v17-active-summary"><span>현재 작업 채널</span><strong>{activeConnection?.channelTitle || "선택된 채널 없음"}</strong></div>
+        <details className="v17-cloud-details"><summary>Google Cloud Client · 저장됨</summary><p>OAuth Client 자체를 삭제하거나 Client Secret을 교체한 경우처럼 저장한 Client가 더 이상 유효하지 않을 때만 다시 설정하세요. Publishing 상태는 위 안내에서 별도로 확인할 수 있습니다.</p><div className="v17-actions"><a className="v17-secondary" target="_blank" rel="noreferrer" href="https://console.cloud.google.com/auth/clients">Clients 열기 ↗</a><button className="v17-text-danger" type="button" onClick={() => void forgetGoogle()}>Cloud Client와 모든 채널 지우기</button></div></details>
+      </div>}
+
+      {youtubeStatus === "disconnected" && !showFinalWizardStep && <div className="v17-cloud-ready"><span>CLOUD CLIENT · SAVED</span><strong>Cloud Client는 저장되어 있습니다.</strong><p>Client ID/Secret을 다시 만들 필요는 없습니다. 첫 채널 또는 추가 계정을 연결하기 전에 Branding과 Publishing 상태만 확인하세요.</p><PublishingGuide /><a className="v17-primary" href="/api/youtube/oauth/start">+ 계정 또는 채널 연결</a><details className="v17-cloud-details"><summary>Cloud Client를 바꿔야 하는 경우</summary><p>OAuth Client를 삭제했거나 Client Secret을 바꾼 경우에만 기존 설정을 지우고 다시 진행합니다.</p><button className="v17-text-danger" type="button" onClick={() => void forgetGoogle()}>기존 Cloud Client 지우기</button></details></div>}
+
+      {wizardVisible && <div className="v17-wizard">
+        <Progress step={wizardStep} />
+        <section className="v17-current-step">
+          <div className="v17-current-head"><div><span>{wizardStep}/8 · {currentStatic?.eyebrow || (wizardStep === 7 ? "CREDENTIALS" : "FIRST CHANNEL")}</span><h3>{currentStatic?.title || STEP_TITLES[wizardStep - 1]}</h3><p>{currentStatic?.summary || (wizardStep === 7 ? "발급받은 두 값만 저장합니다." : "Google 계정을 승인해 실제 YouTube 채널 연결을 확인합니다.")}</p></div><b>{wizardStep}</b></div>
+
+          {wizardStep <= 6 && currentStatic && <div className="v17-step-body"><a className="v17-primary" target="_blank" rel="noreferrer" href={currentStatic.href}>{currentStatic.cta}</a><div className="v17-instructions">{currentStatic.instructions}</div>{wizardStep === 1 && <CopyRow label="프로젝트 이름" value={PROJECT_NAME} />}{wizardStep === 6 && <><CopyRow label="Client 이름" value={CLIENT_NAME} /><CopyRow label="Authorized redirect URI" value={redirectUri} /></>}<label className="v17-confirm"><input type="checkbox" checked={Boolean(confirmed[wizardStep])} onChange={(event) => setConfirmed((current) => ({ ...current, [wizardStep]: event.target.checked }))} /><span><strong>이 단계의 작업을 완료했습니다</strong><small>확인한 뒤 다음 단계로 이동하세요.</small></span></label></div>}
+
+          {wizardStep === 7 && <div className="v17-step-body"><div className="v17-important"><strong>이 단계에서만 직접 값을 입력합니다.</strong><span>Client Secret은 다른 곳에 보내지 말고 아래 입력란에만 넣으세요.</span></div><label className="v17-field"><span>Google OAuth Client ID · 필수</span><input value={googleClientId} onChange={(event) => setGoogleClientId(event.target.value)} autoComplete="off" spellCheck={false} placeholder="...apps.googleusercontent.com" /></label><label className="v17-field"><span>Google OAuth Client Secret · 필수</span><div className="v17-secret-row"><input type={showGoogleSecret ? "text" : "password"} value={googleClientSecret} onChange={(event) => setGoogleClientSecret(event.target.value)} autoComplete="off" spellCheck={false} placeholder="Google Client Secret" /><button type="button" onClick={() => setShowGoogleSecret((value) => !value)}>{showGoogleSecret ? "숨기기" : "보기"}</button></div></label><label className="v17-remember"><input type="checkbox" checked={rememberGoogle} onChange={(event) => setRememberGoogle(event.target.checked)} /><span><strong>이 브라우저에서 Google 연결 유지</strong><small>Client 설정과 OAuth 토큰을 암호화된 HttpOnly 쿠키로 유지합니다.</small></span></label><button className="v17-primary wide" type="button" disabled={googleSaving || !googleClientId.trim() || !googleClientSecret.trim()} onClick={() => void saveGoogleConfig()}>{googleSaving ? "저장 중…" : "Client 정보 저장하고 마지막 단계로"}</button></div>}
+
+          {wizardStep === 8 && <div className="v17-step-body v17-final-step"><div className="v17-final-checks"><span>프로젝트 ✓</span><span>YouTube API ✓</span><span>Branding 직접 확인 ✓</span><span>Publishing 직접 확인 ✓</span><span>OAuth Client ✓</span><span>Client 저장 ✓</span></div><strong>이제 실제 YouTube 채널 연결을 확인하세요.</strong><p>Branding과 Publishing까지 완료했다면 앞으로 정상적인 계정이나 채널 추가 때문에 1~7단계를 다시 할 필요가 없습니다.</p><a className="v17-primary wide" href="/api/youtube/oauth/start">Google로 첫 YouTube 채널 연결</a><small>새 계정이 403 access_denied로 차단되면 3단계 Branding과 4단계 Audience 상태부터 확인하세요.</small></div>}
+
+          <div className="v17-wizard-nav">{wizardStep > 1 && wizardStep < 8 && <button type="button" className="v17-secondary" onClick={() => setWizardStep((current) => Math.max(1, current - 1))}>이전</button>}{wizardStep <= 6 && <button type="button" className="v17-primary" disabled={!confirmed[wizardStep]} onClick={() => setWizardStep((current) => Math.min(8, current + 1))}>완료했어요 → 다음</button>}{wizardStep === 8 && <button type="button" className="v17-secondary" onClick={() => setShowFinalWizardStep(false)}>나중에 연결하기</button>}</div>
+        </section>
       </div>}
     </section>
   </main>;
