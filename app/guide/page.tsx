@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 export const metadata = {
   title: "처음 사용 가이드 · Subtitle Localizer",
   description: "OpenAI API Key와 YouTube 연결을 처음부터 끝까지 안내합니다."
@@ -9,7 +11,7 @@ const TERMS_URL = "https://subtitle-localizer.vercel.app/terms";
 const REDIRECT_URI = "https://subtitle-localizer.vercel.app/api/youtube/oauth/callback";
 const YOUTUBE_SCOPE = "https://www.googleapis.com/auth/youtube.force-ssl";
 
-function Step({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
+function Step({ number, title, children }: { number: number; title: string; children: ReactNode }) {
   return <article className="guide-step"><span className="guide-step-number">{number}</span><div><h3>{title}</h3>{children}</div></article>;
 }
 
