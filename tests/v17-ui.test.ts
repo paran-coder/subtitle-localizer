@@ -130,17 +130,23 @@ test("초기 설정 화면은 OpenAI와 YouTube 연결을 실제 값 기준으�
   assert.equal(guide.includes("연결 관리 7단계로 이동 →"), false);
 });
 
-test("작업 화면은 새 업로드 대상마다 자막 트랙 이름을 비운다", () => {
+test("작업 화면은 SRT 파일명 기반 트랙 이름·YouTube quota·단일 페이지 스크롤을 유지한다", () => {
   const page = read("app/page.tsx");
   const polish = read("app/ui-polish-v17.css");
-  assert.match(page, /const \[trackName, setTrackName\] = useState\(""\)/);
-  assert.match(page, /setTrackName\(""\);\s*}\s*, \[selectedVideoId\]\);/);
-  assert.match(page, /placeholder="비워두면 Subtitle Localizer"/);
-  assert.match(page, /trackName: trackName\.trim\(\) \|\| "Subtitle Localizer"/);
+  assert.match(page, /function defaultTrackName\(filename: string\)/);
+  assert.match(page, /setTrackName\(defaultTrackName\(filename\)\)/);
+  assert.match(page, /setTrackName\(sourceFileName \? defaultTrackName\(sourceFileName\) : ""\)/);
+  assert.match(page, /placeholder="SRT 파일을 불러오면 파일명이 자동으로 입력됩니다"/);
+  assert.match(page, /기본 quota · 10,000 units \/ 일/);
+  assert.match(page, /PT 자정에 초기화/);
+  assert.match(page, /quota 확장 심사/);
+  assert.match(page, /trackName: trackName\.trim\(\) \|\| defaultTrackName\(sourceFileName\) \|\| "Subtitle Localizer"/);
   assert.match(polish, /\.guide-static-code/);
   assert.match(polish, /text-decoration: none/);
   assert.match(polish, /\.v17-connections-hero > span/);
   assert.match(polish, /color: var\(--primary, #ff6f0f\)/);
+  assert.match(polish, /\.side-column \{[\s\S]*position: static;[\s\S]*max-height: none;[\s\S]*overflow: visible;/);
+  assert.equal(/overflow-y:\s*auto/.test(polish), false);
 });
 
 test("workspace 채널 바는 썸네일·채널 선택·빈 영상 행동을 제공한다", () => {

@@ -1,4 +1,4 @@
-/* v1.7.0 production UI polish — line wrapping, vertical rhythm, sticky overlap */
+/* v1.7.0 production UI polish — line wrapping, vertical rhythm, single-page scroll */
 
 .v17-connections-hero {
   padding-bottom: 32px;
@@ -55,16 +55,31 @@
   text-wrap: pretty;
 }
 
+.quota-note {
+  display: grid;
+  gap: 5px;
+  line-height: 1.5;
+}
+
+.quota-note strong,
+.quota-note span {
+  display: block;
+}
+
+.quota-note strong {
+  color: #6f3f21;
+  font-size: 11px;
+}
+
 @media (min-width: 1021px) {
   .side-column {
-    position: sticky;
-    top: 80px;
+    position: static;
+    top: auto;
     align-self: start;
-    max-height: calc(100svh - 96px);
-    overflow-x: hidden;
-    overflow-y: auto;
-    padding-right: 4px;
-    scrollbar-gutter: stable;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+    scrollbar-gutter: auto;
   }
 
   .side-column > .sticky-card {

@@ -68,6 +68,12 @@ function stripExtension(filename: string) {
   return filename.replace(/\.srt$/i, "") || "subtitles";
 }
 
+function defaultTrackName(filename: string) {
+  const trimmed = filename.trim();
+  if (!trimmed) return "";
+  return trimmed.replace(/\.srt$/i, "").slice(0, 150);
+}
+
 function mapToItems(cache: Map<number, string>): TranslationItem[] {
   return Array.from(cache.entries()).map(([id, text]) => ({ id, text }));
 }
@@ -329,8 +335,8 @@ export default function Home() {
   }, [completedCodes, running]);
 
   useEffect(() => {
-    setTrackName("");
-  }, [selectedVideoId]);
+    setTrackName(sourceFileName ? defaultTrackName(sourceFileName) : "");
+  }, [selectedVideoId, sourceFileName]);
 
   function clearOutputs() {
     setResults({});
@@ -348,6 +354,7 @@ export default function Home() {
     if (oversizedCue) throw new Error(`${oversizedCue.id}번 자막이 너무 깁니다. 원본 cue를 더 짧게 나눠 주세요.`);
     setCues(parsed);
     setSourceFileName(filename);
+    setTrackName(defaultTrackName(filename));
     setImportReceipt(null);
     clearOutputs();
     return parsed;
@@ -364,6 +371,7 @@ export default function Home() {
     } catch (error) {
       setCues([]);
       setSourceFileName("");
+      setTrackName("");
       setImportReceipt(null);
       clearOutputs();
       setFileError(error instanceof Error ? error.message : "SRT 파일을 읽지 못했습니다.");
@@ -568,7 +576,7 @@ export default function Home() {
           body: JSON.stringify({
             videoId: selectedVideoId,
             languageCode: code,
-            trackName: trackName.trim() || "Subtitle Localizer",
+            trackName: trackName.trim() || defaultTrackName(sourceFileName) || "Subtitle Localizer",
             srt: serializeSrt(translated)
           }),
           signal: AbortSignal.timeout(65_000)
@@ -956,8 +964,8 @@ export default function Home() {
 
                 <div className="field-block compact">
                   <div className="field-row"><label htmlFor="track-name">자막 트랙 이름</label><span>최대 150자</span></div>
-                  <input id="track-name" className="text-input" maxLength={150} value={trackName} onChange={(event) => setTrackName(event.target.value)} placeholder="비워두면 Subtitle Localizer" />
-                  <small className="field-help">새 업로드 영상을 선택하면 이전에 입력한 이름은 비워집니다.</small>
+                  <input id="track-name" className="text-input" maxLength={150} value={trackName} onChange={(event) => setTrackName(event.target.value)} placeholder="SRT 파일을 불러오면 파일명이 자동으로 입력됩니다" />
+                  <small className="field-help">새 SRT를 불러오거나 업로드 영상을 바꾸면 현재 SRT 파일명 기준으로 다시 맞춥니다.</small>
                 </div>
 
                 <div className="field-block compact">
@@ -979,7 +987,11 @@ export default function Home() {
                   )}
                 </div>
 
-                <div className="quota-note">자막 목록 조회 50 units · 원본 자막 다운로드 200 units · 자막 업로드는 언어 1개당 400 units를 사용합니다.</div>
+                <div className="quota-note">
+                  <strong>기본 quota · 10,000 units / 일</strong>
+                  <span>자막 목록 조회 50 · 원본 자막 다운로드 200 · 자막 업로드 400 units/언어</span>
+                  <span>PT 자정에 초기화됩니다. 모두 사용하면 카드 결제가 아니라 다음 초기화를 기다리거나 YouTube quota 확장 심사를 요청합니다.</span>
+                </div>
                 <button className="dark-button full" type="button" disabled={uploadRunning || !selectedVideoId || !uploadLanguages.length} onClick={() => void uploadToYouTube()}>
                   {uploadRunning ? "YouTube에 올리는 중…" : `${uploadLanguages.length || 0}개 자막 YouTube에 올리기`}
                 </button>
