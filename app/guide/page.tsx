@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
 export const metadata = {
-  title: "처음 사용 가이드 · Subtitle Localizer",
-  description: "OpenAI API Key와 YouTube 연결을 처음부터 끝까지 안내합니다."
+  title: "초기 설정 · Subtitle Localizer",
+  description: "OpenAI API Key와 YouTube 최초 연결을 처음부터 끝까지 안내합니다."
 };
 
 const APP_URL = "https://subtitle-localizer.vercel.app/";
@@ -19,7 +19,7 @@ function ValueBox({ label, value }: { label: string; value: string }) {
   return <div className="guide-value"><span>{label}</span><code>{value}</code></div>;
 }
 
-export default function GuidePage() {
+export default function InitialSetupPage() {
   return <main className="guide-shell">
     <header className="guide-topbar">
       <a className="guide-brand" href="/"><span>S</span><strong>Subtitle Localizer <small>v1.7.0</small></strong></a>
@@ -46,7 +46,7 @@ export default function GuidePage() {
     </section>
 
     <div className="guide-layout">
-      <nav className="guide-toc" aria-label="처음 사용 가이드 목차">
+      <nav className="guide-toc" aria-label="초기 설정 목차">
         <span>이 페이지에서</span>
         <a href="#overview">전체 흐름</a>
         <a href="#openai">1. OpenAI API Key</a>
