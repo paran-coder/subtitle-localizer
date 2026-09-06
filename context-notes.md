@@ -162,5 +162,19 @@ Cloud config 하나를 여러 채널 연결이 재사용합니다. 채널별 `co
 - 좁은 모바일 화면에서는 가로 넘침을 만들지 않고 자연스럽게 줄바꿈합니다.
 - 기존 채널 전환/채널 추가/연결/번역 로직은 변경하지 않습니다.
 
+## 2026-09-06 초기 설정 값·결제 안내 보완
+초기 설정 화면에서 URL처럼 보이는 설정값과 실제 이동 링크를 명확히 구분하고, 결제 조건을 서비스별로 정확하게 안내합니다.
+
+변경 기준:
+- `https://subtitle-localizer.vercel.app/api/youtube/oauth/callback`은 Google OAuth의 `Authorized redirect URIs`에 복사해 넣는 내부 callback 값이며 페이지 이동용 하이퍼링크로 표현하지 않습니다.
+- `https://www.googleapis.com/auth/youtube.force-ssl`은 OAuth scope 식별자이며 페이지 이동용 하이퍼링크로 표현하지 않습니다.
+- 위 두 값은 선택/복사 가능한 코드형 텍스트로 보이되 링크 밑줄·클릭 커서 등 이동 affordance를 제거합니다.
+- 작업하기의 `자막 트랙 이름`은 페이지 진입 시 빈 값으로 시작하고 업로드 대상 영상이 바뀌면 다시 비웁니다. 사용자가 비워 둔 경우 업로드 시 기존 기본 이름 정책을 사용할 수 있음을 UI에서 숨기지 않습니다.
+- 초기 설정 hero의 `FIRST-TIME SETUP`에는 버전을 반복 표시하지 않습니다. 제품 버전은 공통 타이틀바 한 곳에서 확인합니다.
+- 연결 관리 hero의 `CONNECTIONS` 라벨은 초기 설정 등 다른 주요 섹션 라벨과 같은 오렌지 계열 강조색을 사용합니다.
+- OpenAI는 ChatGPT 구독과 별개로 API Billing이 필요합니다. 유료 API 사용을 시작하려면 OpenAI API Billing에서 결제 수단을 추가하거나 선불 크레딧을 설정하는 절차를 초기 설정에 포함합니다.
+- Google/YouTube는 YouTube Data API의 기본 quota를 사용하는 흐름에 카드 등록을 필수 단계로 추가하지 않습니다. 기본 quota를 초과해 추가 quota가 필요하면 YouTube의 별도 quota 확장/심사 절차를 안내합니다.
+- 기존 OAuth Client, 채널 연결, 번역, 자막 업로드 핵심 로직은 변경하지 않습니다.
+
 ## 버전 표시 메모
 `app/page.tsx`에는 과거 `v1.6.4` 문자열이 레거시 마크업으로 남아 있지만, `app/v17-version.css`가 홈 브랜드와 내부 푸터의 사용자 표시를 `v1.7.0`으로 명시 교체합니다. 실제 제품 버전과 package.json은 `1.7.0`이며 이번 작업에서도 버전을 올리지 않습니다.
