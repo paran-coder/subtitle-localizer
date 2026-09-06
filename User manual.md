@@ -4,7 +4,7 @@
 Subtitle Localizer의 주요 화면은 세 가지입니다.
 
 1. **초기 설정** — `/guide`
-   - OpenAI API Key를 처음 만들고 연결하는 방법
+   - OpenAI API Billing과 API Key를 처음 설정하는 방법
    - Google Cloud와 YouTube를 최초 1회 설정하는 방법
    - 최초 설정 중 발생하는 대표 오류와 복구 방법
 2. **연결 관리** — `/connections`
@@ -16,9 +16,7 @@ Subtitle Localizer의 주요 화면은 세 가지입니다.
    - SRT 업로드 또는 YouTube 자막 가져오기
    - 번역, 구조 검증, 다운로드, YouTube 업로드
 
-화면 상단에는 `초기 설정 / 연결 관리 / 작업하기` 탭이 공통으로 표시되며 현재 화면에 해당하는 탭이 강조됩니다. 사용자가 주소를 직접 열었을 때의 기본 페이지는 `/`이며 `작업하기`가 기본 화면입니다.
-
-기존의 `처음 사용하시나요?`, `설정이 낯설다면`, `처음 사용 가이드`, `설정 가이드 보기`와 같은 큰 상단 안내 배너는 사용자의 현재 위치를 헷갈리게 할 수 있어 사용하지 않습니다. 대신 위 세 탭이 화면 역할을 직접 설명합니다.
+화면 상단에는 `초기 설정 / 연결 관리 / 작업하기` 탭이 공통으로 표시되며 현재 화면에 해당하는 탭이 강조됩니다. 기본 페이지는 `/`이며 `작업하기`가 기본 화면입니다.
 
 Subtitle Localizer를 처음 사용할 때 필요한 연결은 두 가지입니다.
 
@@ -27,22 +25,35 @@ Subtitle Localizer를 처음 사용할 때 필요한 연결은 두 가지입니�
 
 SRT 파일만 번역하고 YouTube 기능을 사용하지 않는다면 OpenAI 연결만 먼저 완료해도 됩니다. YouTube 자막 가져오기/업로드까지 사용하려면 Google Cloud와 YouTube 연결까지 완료합니다.
 
-`초기 설정` 탭의 `/guide` 페이지가 아래 OpenAI와 Google/YouTube 최초 연결 절차를 상세하게 안내합니다.
-
 ---
 
 ## 1. 내 OpenAI API Key 연결하기
 
 ### 1-1. 왜 필요한가요?
-Subtitle Localizer는 번역 요청을 사용자의 OpenAI 계정으로 보냅니다. 따라서 앱 운영자의 공용 API Key를 사용하는 구조가 아니라, 각 사용자가 자신의 API Key를 연결하는 BYOK 방식입니다.
+Subtitle Localizer는 번역 요청을 사용자의 OpenAI 계정으로 보냅니다. 앱 운영자의 공용 API Key를 사용하는 구조가 아니라 각 사용자가 자신의 API Key를 연결하는 BYOK 방식입니다.
 
-- 번역 사용료: 사용자의 OpenAI 계정에 직접 청구
+- 번역 사용료: 사용자의 OpenAI API 계정에 직접 청구
 - API Key 소유자: 사용자
 - 앱 저장 방식: 서버에서 암호화 후 HttpOnly cookie
 - localStorage/sessionStorage: 비밀정보 저장 안 함
 - GitHub/Vercel 환경 변수: 사용자 개인 API Key를 넣지 않음
 
-### 1-2. OpenAI에서 API Key 만들기
+### 1-2. OpenAI API 결제 설정하기
+ChatGPT 구독과 OpenAI API 사용료는 별도입니다. ChatGPT Plus/Pro 등을 구독하고 있어도 API 사용료가 자동으로 포함되는 구조가 아닙니다.
+
+유료 API 사용을 시작하려면 OpenAI Platform의 API Billing에서 본인의 결제 정보를 설정합니다.
+
+1. OpenAI Platform의 Billing 화면을 엽니다.
+2. 사용할 API 조직이 맞는지 확인합니다.
+3. 결제 수단을 추가합니다.
+4. 계정이 선불 결제 방식이면 필요한 API 크레딧을 구매합니다.
+5. 필요하면 자동 충전 한도와 사용 한도를 확인합니다.
+
+새 API 계정은 선불 결제 방식이 기본일 수 있습니다. 무료 크레딧이 남아 있는 계정은 해당 크레딧이 먼저 사용될 수 있으므로 실제 Billing 화면의 잔액과 결제 상태를 기준으로 확인합니다.
+
+중요: Subtitle Localizer가 사용자의 카드 정보나 OpenAI 결제 정보를 받는 것이 아닙니다. 결제 설정은 OpenAI Platform에서 사용자가 직접 관리합니다.
+
+### 1-3. OpenAI에서 API Key 만들기
 1. OpenAI Platform의 API Keys 페이지를 엽니다.
 2. OpenAI 계정으로 로그인합니다.
 3. 새 secret key를 만드는 버튼을 누릅니다.
@@ -52,7 +63,7 @@ Subtitle Localizer는 번역 요청을 사용자의 OpenAI 계정으로 보냅�
 
 중요: 전체 secret key는 생성 직후에만 확인할 수 있는 경우가 있습니다. 나중에 전체 값을 다시 볼 수 없다면 기존 값을 복구하려 하지 말고 새 키를 만든 뒤 기존 키를 폐기하는 방식으로 처리합니다.
 
-### 1-3. Subtitle Localizer에 저장하기
+### 1-4. Subtitle Localizer에 저장하기
 1. 상단 `연결 관리` 탭을 엽니다.
 2. `내 OpenAI API Key` 카드로 이동합니다.
 3. 복사한 API Key를 입력합니다.
@@ -62,20 +73,21 @@ Subtitle Localizer는 번역 요청을 사용자의 OpenAI 계정으로 보냅�
 
 `보기` 버튼은 현재 입력 중인 값의 가시성만 전환합니다. 이미 저장된 secret의 전체 값을 다시 꺼내 보여주는 기능으로 사용하지 않습니다.
 
-### 1-4. 키를 바꾸거나 지우기
+### 1-5. 키를 바꾸거나 지우기
 - 새 키로 바꾸려면 새 API Key를 입력하고 `키 교체`를 누릅니다.
 - 저장된 키를 더 이상 쓰지 않으려면 `저장된 키 지우기`를 누릅니다.
 - OpenAI 측에서도 폐기해야 하는 키라면 OpenAI Platform에서 해당 키를 revoke/delete 합니다.
 
-### 1-5. 자주 생기는 문제
+### 1-6. 자주 생기는 문제
 **`연결 필요`가 계속 보일 때**
 - 입력값 앞뒤에 불필요한 공백이 없는지 확인합니다.
 - 생성한 키가 이미 폐기된 키가 아닌지 확인합니다.
+- OpenAI API Billing에 사용할 수 있는 결제 수단/크레딧이 있는지 확인합니다.
 - 필요하면 새 키를 발급해 교체합니다.
 
-**번역 중 API Key 오류가 날 때**
-- 저장된 키가 유효하지 않으면 앱은 다시 연결이 필요하다고 표시할 수 있습니다.
-- 새 키를 발급해 `연결 관리`에서 교체합니다.
+**번역 중 quota/billing 관련 오류가 날 때**
+- ChatGPT 구독 여부가 아니라 OpenAI Platform의 API Billing 상태를 확인합니다.
+- API 크레딧/결제 수단/사용 한도를 확인한 뒤 다시 시도합니다.
 
 ---
 
@@ -95,6 +107,13 @@ YouTube 연결은 한 번에 한 버튼으로 끝나는 구조가 아닙니다. 
 
 이 설정은 **최초 1회**를 목표로 합니다. 정상적인 추가 Google 계정/YouTube 채널 연결 때문에 Google Cloud를 처음부터 반복하지 않습니다.
 
+### 카드 등록이 필요한가요?
+Subtitle Localizer가 사용하는 YouTube Data API는 Google Cloud 프로젝트의 API quota를 사용합니다. 기본 YouTube Data API quota를 사용하는 초기 연결 절차에는 카드 등록을 필수 단계로 넣지 않습니다.
+
+기본 quota보다 더 많은 사용량이 필요한 경우에는 단순 카드 결제로 자동 확장되는 구조가 아니라 YouTube의 별도 quota 확장/심사 절차를 확인합니다.
+
+따라서 OpenAI와 Google/YouTube를 같은 방식으로 `카드 등록 필수`라고 안내하면 안 됩니다.
+
 ---
 
 ## 3. Google Cloud 8단계 상세 설정
@@ -105,8 +124,6 @@ YouTube 연결은 한 번에 한 버튼으로 끝나는 구조가 아닙니다. 
 3. 생성이 끝난 뒤 상단 프로젝트 선택기에서 방금 만든 프로젝트를 다시 선택합니다.
 
 완료 기준: 화면 상단의 현재 프로젝트가 `Subtitle Localizer`인지 확인합니다.
-
-왜 전용 프로젝트를 권장하나요? 기존 업무용/개인 프로젝트의 API와 OAuth 설정을 건드리지 않고 Subtitle Localizer용 quota와 설정을 분리하기 쉽기 때문입니다.
 
 ### 3-2. YouTube Data API v3 사용 설정
 1. API Library에서 `YouTube Data API v3`를 엽니다.
@@ -127,36 +144,30 @@ YouTube 연결은 한 번에 한 버튼으로 끝나는 구조가 아닙니다. 
 - 개인정보처리방침: `https://subtitle-localizer.vercel.app/privacy`
 - 서비스 약관: `https://subtitle-localizer.vercel.app/terms`
 
-완료 기준: Branding 화면에서 위 정보가 저장되어 있습니다.
-
 ### 3-4. Audience / Publishing 상태
 여러 Google 계정이나 YouTube 채널을 계속 추가할 계획이면 `In Production` 상태를 권장합니다.
 
-Testing 상태에서는 Test users로 등록되지 않은 Google 계정이 `403 access_denied`로 차단될 수 있습니다. 실제 E2E에서도 이 동작을 확인했습니다.
+Testing 상태에서는 Test users로 등록되지 않은 Google 계정이 `403 access_denied`로 차단될 수 있습니다.
 
-`앱 게시`가 활성화되지 않으면 먼저 Branding의 필수 정보와 공개 URL이 저장되어 있는지 확인합니다.
-
-검증되지 않은 OAuth 앱을 Production으로 사용하면 Google의 `확인되지 않은 앱` 경고가 나타날 수 있습니다. 이 경고와 `403 access_denied`는 같은 문제가 아닙니다. 하나는 앱 검증 상태와 관련된 경고이고, 다른 하나는 Testing/Test user 조건 때문에 승인이 막히는 경우가 대표적입니다.
+검증되지 않은 OAuth 앱을 Production으로 사용하면 Google의 `확인되지 않은 앱` 경고가 나타날 수 있습니다. 이 경고와 `403 access_denied`는 같은 문제가 아닙니다.
 
 ### 3-5. YouTube 권한(scope) 추가
 Data Access / Scopes에서 다음 권한을 추가합니다.
 
 `https://www.googleapis.com/auth/youtube.force-ssl`
 
+이 문자열은 웹페이지로 이동하는 하이퍼링크가 아니라 Google OAuth에 등록할 **scope 식별자**입니다. 그대로 복사해 범위 선택 화면에서 사용합니다.
+
 1. `범위 추가 또는 삭제`를 누릅니다.
 2. 위 scope를 입력해 선택합니다.
 3. `업데이트`를 누릅니다.
 4. Data Access 화면으로 돌아와 `저장`까지 완료합니다.
-
-완료 기준: 해당 scope가 저장되어 있고 변경 대기 상태가 남아 있지 않습니다.
 
 ### 3-6. OAuth Client 만들기
 1. Google Auth Platform의 Clients 화면을 엽니다.
 2. `+ 클라이언트 만들기`를 누릅니다.
 3. 유형은 `Web application`을 선택합니다.
 4. 권장 이름은 `Subtitle Localizer Web`입니다.
-
-가장 중요한 두 칸:
 
 **Authorized JavaScript origins / 승인된 JavaScript 원본**
 - 비워 둡니다.
@@ -165,6 +176,8 @@ Data Access / Scopes에서 다음 권한을 추가합니다.
 **Authorized redirect URIs / 승인된 리디렉션 URI**
 - 아래 주소만 추가합니다.
 - `https://subtitle-localizer.vercel.app/api/youtube/oauth/callback`
+
+이 callback 주소도 사용자가 방문하는 내부 링크가 아니라 Google이 OAuth 승인 후 Subtitle Localizer로 돌아올 때 사용하는 **리디렉션 설정값**입니다. Google Cloud에 복사해서 등록하면 됩니다.
 
 완료 기준: callback 주소가 정확히 redirect URI 목록에 있고 JavaScript origins는 비어 있습니다.
 
@@ -178,8 +191,6 @@ OAuth Client 생성 후 Google이 발급한 Client ID와 Client Secret을 Subtit
 5. 저장 버튼을 누릅니다.
 
 Client Secret은 실제 값을 문서, GitHub, 스크린샷에 남기지 않습니다.
-
-완료 기준: 앱이 `Cloud Client를 저장했습니다` 상태로 넘어갑니다.
 
 ### 3-8. 첫 YouTube 채널 연결
 1. 앱의 마지막 단계에서 `Google로 YouTube 연결`을 누릅니다.
@@ -228,14 +239,6 @@ Client Secret은 실제 값을 문서, GitHub, 스크린샷에 남기지 않습�
 - callback URI가 정확히 Authorized redirect URIs에 있는지 확인합니다.
 - Client를 삭제했거나 Secret을 교체했다면 앱의 기존 Cloud Client 설정도 교체합니다.
 
-### Google Cloud를 처음부터 다시 해야 하는 경우
-일반적인 채널 추가가 아니라 아래와 같은 예외에서만 고려합니다.
-- OAuth Client 자체를 삭제함
-- Client Secret을 교체함
-- Google Cloud 프로젝트를 삭제함
-- YouTube Data API v3를 비활성화함
-- 저장된 브라우저 데이터를 직접 삭제함
-
 ---
 
 ## 6. SRT 파일 번역하기
@@ -268,12 +271,13 @@ OpenAI 연결이 없는 상태에서 번역을 시작하면 앱은 연결 관리
 ## 8. 번역 자막을 YouTube에 올리기
 1. 번역 완료 후 오른쪽 `YouTube에 올리기`를 확인합니다.
 2. 업로드할 영상을 선택합니다.
-3. 자막 트랙 이름을 확인합니다.
-4. 업로드할 언어를 선택합니다.
-5. `자막 YouTube에 올리기`를 누릅니다.
-6. 각 언어에 `업로드 완료`가 표시되면 성공입니다.
+3. `자막 트랙 이름`은 새 화면/새 업로드 대상을 시작할 때 빈 값으로 표시됩니다.
+4. 원하는 트랙 이름이 있으면 직접 입력합니다. 비워 두면 앱의 기본 트랙 이름 정책을 사용합니다.
+5. 업로드할 언어를 선택합니다.
+6. `자막 YouTube에 올리기`를 누릅니다.
+7. 각 언어에 `업로드 완료`가 표시되면 성공입니다.
 
-업로드 대상 영상이 현재 YouTube 원본 영상과 같다면 앱이 기존 자막 트랙 목록을 즉시 다시 불러옵니다.
+업로드할 영상을 다른 영상으로 변경하면 이전에 입력한 트랙 이름을 그대로 재사용하지 않고 다시 비웁니다.
 
 ---
 
@@ -297,21 +301,24 @@ OpenAI 연결이 없는 상태에서 번역을 시작하면 앱은 연결 관리
 ---
 
 ## 10. 화면 레이아웃 상태
-v1.7.0에서는 아래 UI 보완이 Production까지 반영됐거나 이번 내비게이션 정리 범위에 포함됩니다.
+v1.7.0의 주요 UI 기준:
 - 연결 관리 제목과 설명의 문장 경계를 JSX 명시적 줄바꿈으로 고정
 - 작업공간 상단 현재 YouTube 작업 채널 바의 위·아래 간격 확보
 - 데스크톱 오른쪽 YouTube 업로드 영역과 현재 작업 요약이 스크롤 중 겹치지 않도록 우측 열 전체를 sticky + 내부 스크롤 구조로 구성
 - 주요 화면 이동을 `초기 설정 / 연결 관리 / 작업하기` 공통 상단 탭으로 구분
-- 현재 화면의 탭을 강조
-- 큰 `처음 사용 가이드` 안내 배너는 사용하지 않음
+- 제품 버전은 공통 타이틀바 한 곳에서만 표시
+- 초기 설정의 callback URI와 YouTube scope는 클릭 링크가 아니라 설정값으로 표시
+- `CONNECTIONS`와 초기 설정 섹션 라벨은 동일한 오렌지 계열 강조 규칙 사용
 
 ---
 
 ## 11. 보안과 비용 요약
 - OpenAI API Key는 사용자가 직접 소유합니다.
+- ChatGPT 구독과 OpenAI API Billing은 별도입니다.
+- OpenAI 유료 API 사용을 위한 결제 수단/크레딧은 사용자가 OpenAI Platform에서 직접 관리합니다.
 - Google OAuth Client와 YouTube quota도 사용자가 직접 소유합니다.
+- 기본 YouTube Data API quota 사용 절차에 카드 등록을 필수 단계로 안내하지 않습니다.
 - 비밀정보는 암호화한 HttpOnly cookie에 저장합니다.
 - localStorage/sessionStorage에는 비밀정보를 저장하지 않습니다.
 - SRT 파일은 서버 영구 저장소에 보관하지 않습니다.
-- OpenAI 비용과 Google API quota는 각 사용자 계정에 귀속됩니다.
 - 실제 secret은 문서, GitHub, 로그, 스크린샷에 남기지 않습니다.
