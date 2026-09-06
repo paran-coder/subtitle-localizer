@@ -10,6 +10,7 @@
 - [x] 빈 채널 UX
 - [x] 공개 `/privacy` / `/terms`
 - [x] Branding / In Production 안내
+- [x] 실제 자막 업로드/재가져오기 E2E
 
 ## 실제 OAuth / 다중 채널 E2E
 - [x] Testing 상태 새 계정 `403 access_denied` 재현
@@ -32,66 +33,89 @@
 - [x] Subtitle Localizer에서 한국어 자막 YouTube 업로드 성공
 - [x] YouTube에서 `ko · Subtitle Localizer` 트랙 조회 성공
 - [x] YouTube 자막 SRT 다운로드 및 30 cue 가져오기 성공
+- [x] 업로드 직후 동일 영상 자막 목록 자동 갱신
+- [x] YouTube 자막 가져오기 완료 패널
+- [x] 가져온 원본 언어와 동일한 번역 대상 자동 해제
 
-## 2026-09-06 E2E UX 버그 보완
-### 업로드 후 자막 목록 자동 갱신
-- [x] 문제 재현: 같은 영상에 자막 업로드 후 `기존 자막 0개`가 그대로 남음
-- [x] 우회 확인: 다른 영상 선택 후 돌아오면 새 트랙 노출
-- [x] 업로드 성공 시 같은 `sourceVideoId`의 자막 목록 자동 재조회 구현
-- [x] 자동 재조회 중 loading 상태 정상 표시
-- [x] 업로드 성공 후 새 트랙이 선택 가능한지 Production 재검증
+## UI 레이아웃 보완
+- [x] 연결 관리 제목을 JSX 명시적 줄바꿈으로 고정
+- [x] 연결 관리 설명 두 문장을 JSX 명시적 줄바꿈으로 고정
+- [x] 현재 작업 채널 바 상·하 간격 보완
+- [x] 데스크톱 우측 카드 스크롤 겹침 방지
+- [x] 실제 Production `/connections`에서 `<br/>` 반영 확인
+- [x] 버전 `v1.7.0` 유지
 
-### YouTube 자막 가져오기 성공 상태
-- [x] 기능 성공: 한국어 트랙 30 cue SRT 가져오기
-- [x] UX 문제 확인: 성공 메시지가 원본 영역이 아니라 오른쪽 공용 메시지에 나타나 불명확
-- [x] 원본 자막 영역에 `가져오기 완료` 성공 패널 표시
-- [x] 성공 패널에 언어 / cue 수 / 영상 제목 / 트랙 / 파일명 표시
-- [x] 가져온 원본 언어가 지원 대상 언어와 같으면 번역 대상에서 자동 해제
-- [x] 가져온 원본의 실제 파일명 표시를 명확화
+## 첫 사용자 가이드 `/guide`
+### 문서 선행
+- [x] `context-notes.md`에 범위/원칙/진입점 정의
+- [x] `checklist.md`에 구현/검증 항목 정의
+- [ ] `README.md`에 사용자 가이드와 진입점 설명
+- [ ] `User manual.md`를 OpenAI/YouTube 첫 연결 상세 절차로 확장
 
-## 회귀 검증
-- [x] 기존 SRT 파일 업로드 유지
-- [x] 번역 결과 구조 검증 유지
-- [x] SRT 개별 다운로드 / ZIP 유지
-- [x] YouTube 자막 업로드 유지
-- [x] YouTube 자막 가져오기 유지
-- [x] 다중 채널 전환 유지
-- [x] 빈 채널 UX 유지
-- [x] OpenAI BYOK 유지
-- [x] 비밀정보 HttpOnly 암호화 유지
-- [x] localStorage/sessionStorage 비밀정보 0건
-- [x] 자동 테스트 전체 통과 (77/77)
-- [x] TypeScript 통과 (Vercel Production build 기준)
-- [x] Next.js production build 통과 (Vercel Production READY)
+### OpenAI 가이드
+- [ ] OpenAI API Key의 용도와 사용자 비용 부담 설명
+- [ ] API Key 생성 페이지로 이동하는 명확한 버튼
+- [ ] 새 secret key 생성/즉시 복사/안전 보관 설명
+- [ ] 앱 `연결 관리`의 입력·기억하기·저장 절차 설명
+- [ ] API Key 전체 값이 다시 표시되지 않는 경우의 복구 안내
+- [ ] 실제 secret 예시를 문서/코드에 넣지 않음
 
-## 배포 / 패키징
-- [x] 최종 변경 GitHub `main` 반영
-- [x] 최신 GitHub commit SHA 기록
-- [x] Vercel Production READY 확인
-- [x] Vercel Runtime Error 없음 확인
-- [x] 전체 프로젝트 ZIP 생성
-- [x] ZIP은 GitHub에 커밋하지 않음
+### YouTube 가이드
+- [ ] 전체 구조를 먼저 설명: Project → YouTube API → Auth Platform → Scope → OAuth Client → Channel
+- [ ] 앱의 실제 8단계 마법사와 동일한 순서 사용
+- [ ] 프로젝트명 `Subtitle Localizer` 권장
+- [ ] YouTube Data API v3 사용 설정
+- [ ] Branding 공개 URL 3개 제공
+- [ ] Audience `In Production` 권장과 Testing 차이 설명
+- [ ] `youtube.force-ssl` scope 제공
+- [ ] OAuth Client `Web application` / `Subtitle Localizer Web` 권장
+- [ ] Authorized JavaScript origins는 비워두기
+- [ ] Authorized redirect URI는 callback만 넣기
+- [ ] Client ID/Secret 저장 후 첫 채널 연결
+- [ ] 추가 계정/채널은 Cloud 설정 반복 없이 연결
+- [ ] `403 access_denied`, 확인되지 않은 앱, 채널 없음 등 복구 설명
+
+### 페이지 UX
+- [ ] `/guide` 라우트 생성
+- [ ] 데스크톱 목차 + 본문, 모바일 단일 열
+- [ ] 각 섹션에서 `연결 관리`의 정확한 위치로 이동하는 CTA
+- [ ] 작업공간 상단 `처음 사용 가이드` 진입점
+- [ ] 연결 관리 상단 `설정 가이드` 진입점
+- [ ] 푸터 `처음 사용 가이드` 진입점
+- [ ] focus-visible / reduced-motion 유지
+- [ ] 기존 `v1.7.0` 시각 언어와 일관성 유지
+
+### 회귀 검증
+- [ ] `package.json` 1.7.0 유지
+- [ ] 홈페이지 표시 버전도 v1.7.0으로 통일
+- [ ] 기존 OpenAI 연결 API 동작 유지
+- [ ] 기존 Google Cloud 8단계 마법사 유지
+- [ ] 다중 YouTube 채널 추가/전환 코드 변경 없음 또는 회귀 없음
+- [ ] 기존 자막 번역/업로드/가져오기 코드 회귀 없음
+- [ ] 자동 테스트 전체 통과
+- [ ] TypeScript 통과
+- [ ] Next.js Production build 통과
+
+### 배포 검증
+- [ ] GitHub `main` 최종 반영
+- [ ] Vercel `subtitle-localizer` Production 자동 배포
+- [ ] Production `READY`
+- [ ] `/guide` HTTP 200
+- [ ] `/guide` 핵심 문구/링크 Production 반영
+- [ ] 기존 `/connections` 줄바꿈 유지 확인
+- [ ] 관련 Runtime Error 없음
+- [ ] 최종 GitHub commit SHA 기록
+- [ ] ZIP은 사용자에게만 제공하고 GitHub에는 넣지 않음
 
 ## 단계별 자체 점검
-### 문서 보완
+### 기존 v1.7.0 기능/E2E
 - 상태: 완료
-- 내용: 실제 E2E에서 확인된 자막 목록 갱신 누락과 가져오기 성공 상태 불명확 문제를 4개 문서에 반영
 - 자체 점수: 10/10
 
-### 구현
-- 상태: 완료
-- 결과: 업로드 직후 자동 자막 목록 갱신 + 명확한 가져오기 성공 패널 + 동일 언어 자동 해제
+### 기존 UI 3건
+- 상태: 코드 및 Production 반영 완료
 - 자체 점수: 10/10
 
-### 최종 E2E / 배포
-- 상태: 완료
-- 결과: 실제 Production E2E 재검증, 자동 테스트 77/77, Production READY, 관련 Runtime Error 없음, ZIP 패키징
-- 자체 점수: 10/10
-
-## 2026-09-06 UI 레이아웃 보완
-- [x] 연결 관리 제목/설명 줄바꿈 규칙 보완
-- [x] 현재 작업 채널 바 상하 간격 보완
-- [x] 데스크톱 우측 카드 스크롤 겹침 방지 구조 적용
-- [x] GitHub `main` 반영
-- [x] Vercel Production READY 확인
-- [x] Runtime Error 없음 확인
+### 첫 사용자 가이드
+- 상태: 문서 선행 진행 중
+- 다음 단계: README/User manual 정리 후 `/guide` 구현
