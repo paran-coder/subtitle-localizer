@@ -1,111 +1,48 @@
 # context-notes.md — Subtitle Localizer v1.7.0
 
-## 이번 버전의 목적
-v1.6.4의 Google Cloud / YouTube 연결 흐름은 사용자가 Google Cloud 구조를 이해해야 하고, Google OAuth Client 1개와 YouTube 세션 1개만 보유하는 구조라 초보자와 다중 채널 운영자에게 맞지 않는다.
+## 제품 목표
+Subtitle Localizer는 사용자가 자신의 OpenAI API Key(BYOK)와 자신의 Google Cloud OAuth Client(BYOC)를 연결해 SRT를 현지화하고, 여러 YouTube 계정/채널에서 자막을 가져오거나 번역 결과를 다시 업로드하는 웹앱입니다.
 
-v1.7.0은 다음 두 문제를 함께 해결한다.
-- 초보자가 생각하지 않고 그대로 따라갈 수 있는 **완결형 Google 연결 마법사**
-- Google Cloud 설정은 한 번만 하고 이후 앱 안에서 여러 Google 계정/YouTube 채널을 추가·전환하는 **다중 채널 연결 구조**
+v1.7.0의 핵심 목표는 두 가지입니다.
+1. Google Cloud 설정은 최초 1회만 하고 이후에는 앱 안에서 계정/채널을 추가·전환할 수 있게 한다.
+2. 초보자가 OAuth 구조를 이해하지 않아도 실제 Google 화면의 버튼 순서만 따라가면 설정을 끝낼 수 있게 한다.
 
 ## 제품 원칙
-- 운영자 소유 Google OAuth Client / Google Cloud 프로젝트 / YouTube quota를 사용하지 않는다.
-- 각 사용자는 자신의 Google Cloud 프로젝트와 OAuth Client를 계속 사용한다(BYOC).
-- 사용자는 Google Cloud를 이해할 필요가 없다. 한 화면에서 한 행동만 안내한다.
-- 사용자가 판단해야 하는 항목과 직접 입력해야 하는 항목을 최소화한다.
-- 앱 이름, OAuth Client 이름, YouTube scope, redirect URI처럼 고정 가능한 값은 앱이 제시하고 복사 버튼을 제공한다.
-- 초기 설정을 끝낸 뒤 정상적인 계정/채널 추가 때문에 Google Cloud Console에 다시 들어가게 하지 않는다.
-- 여러 Google 계정과 여러 YouTube 채널을 독립 연결로 보유할 수 있어야 한다.
-- 작업공간에서는 항상 하나의 활성 채널을 명확히 선택하고, 영상 조회/자막 다운로드/자막 업로드가 모두 그 활성 채널을 사용한다.
+- 운영자 소유 Google OAuth Client, Google Cloud 프로젝트, YouTube quota를 사용하지 않는다.
+- OpenAI 비용은 사용자 OpenAI 계정, YouTube quota는 사용자 Google Cloud 프로젝트에 귀속된다.
+- OpenAI API Key, Google Client Secret, YouTube access/refresh token은 서버에서 암호화한 HttpOnly cookie에 저장한다.
+- localStorage/sessionStorage에는 비밀정보를 저장하지 않는다.
+- 업로드한 SRT 파일을 서버의 영구 파일 저장소에 보관하지 않는다.
+- 작업공간에서는 하나의 활성 YouTube 채널을 명확히 선택하며 영상 조회/자막 조회/다운로드/업로드가 모두 같은 활성 채널을 사용해야 한다.
 
-## 실제 E2E에서 추가로 확인된 요구사항
-2026-09-06 실제 다중 계정 추가 E2E에서 기존 OAuth 앱이 `Testing` 상태라 새 Google 계정 연결이 `403 access_denied`로 차단되는 것을 확인했다.
+## Google Cloud 초기 설정
+초기 마법사는 현재 Google Auth Platform 흐름에 맞춰 다음을 안내한다.
+1. 전용 Google Cloud 프로젝트 생성/선택
+2. YouTube Data API v3 사용 설정
+3. Google Auth Platform 기본 정보 및 Branding
+4. 홈페이지 `https://subtitle-localizer.vercel.app/`
+5. 개인정보처리방침 `https://subtitle-localizer.vercel.app/privacy`
+6. 서비스 약관 `https://subtitle-localizer.vercel.app/terms`
+7. Audience를 `In Production`으로 전환하는 권장 경로
+8. `https://www.googleapis.com/auth/youtube.force-ssl` scope 추가
+9. Web application OAuth Client 생성
+10. Authorized JavaScript origins는 비워두고 Authorized redirect URIs에만 callback 등록
+11. Client ID/Secret 저장
+12. 첫 YouTube 채널 연결
 
-또한 Google Auth Platform의 `대상` 화면에서 OAuth 구성이 완료되지 않았다는 경고가 표시되었고, `앱 게시`가 비활성화되어 있었다. `브랜딩` 화면에는 앱 이름/지원 이메일/승인된 도메인/개발자 연락처가 이미 저장되어 있었지만 앱 도메인의 공개 링크가 비어 있었다.
+`Client 저장됨`과 `Google Publishing 완료`는 별개 상태다. 앱은 Google Console의 실제 Publishing 상태를 자동 판별하지 못하므로 Client 저장만으로 Cloud 설정 전체가 완료됐다고 단정하지 않는다.
 
-따라서 v1.7.0 초기 설정은 다음 공개 URL을 앱 자체에서 제공하고 Google Branding에 그대로 등록하도록 안내해야 한다.
-- 애플리케이션 홈페이지: `https://subtitle-localizer.vercel.app/`
-- 개인정보처리방침: `https://subtitle-localizer.vercel.app/privacy`
-- 서비스 약관: `https://subtitle-localizer.vercel.app/terms`
+## 실제 E2E에서 확인된 Google OAuth 동작
+2026-09-06 실제 E2E에서 다음을 확인했다.
+- Testing 상태에서는 새 Google 계정이 `403 access_denied`로 차단됨.
+- Branding의 앱 도메인 정보를 저장하고 Audience를 `In Production`으로 전환한 뒤 새 Google 계정 연결이 가능해짐.
+- 미검증 Production 앱은 Google의 확인되지 않은 앱 경고가 나타날 수 있음.
+- 고급 경고를 통과한 뒤 실제 YouTube 권한 동의와 OAuth callback이 정상 완료됨.
 
-`/privacy`와 `/terms`는 로그인 없이 공개 접근 가능해야 하며 메인 화면에서도 사용자가 찾을 수 있어야 한다.
+## 다중 YouTube 연결
+Cloud config 하나를 여러 채널 연결이 재사용한다.
 
-중요: 앱은 사용자 OAuth Client가 저장되었다는 사실은 알 수 있지만 Google Auth Platform의 실제 Publishing 상태를 직접 검증하지 않는다. 따라서 Client 저장만으로 `Google Cloud 설정은 끝났습니다`라고 단정하지 않는다. 연결 관리 UI에서는 `Cloud Client 저장됨`과 `추가 계정 연결을 위한 Publishing 준비`를 구분해 설명한다.
-
-## 초기 설정 마법사
-기존 4단계를 실제 Google Cloud 흐름 기준의 8단계 마법사로 재구성한다.
-
-1. **Google Cloud 프로젝트 준비**
-   - 기존 프로젝트를 실수로 수정하지 않도록 새 전용 프로젝트 생성 경로를 우선 안내한다.
-   - 프로젝트 이름 기본값: `Subtitle Localizer`
-   - 생성 후 새 프로젝트를 실제로 선택했는지 확인한다.
-
-2. **YouTube Data API v3 활성화**
-   - 정확한 Google Cloud 이동 링크를 제공한다.
-   - 사용자는 `사용 설정`만 누르면 되도록 안내한다.
-
-3. **Google Auth Platform 기본 설정 + Branding 완성**
-   - 앱 이름 기본값: `Subtitle Localizer`
-   - 사용자 유형: External
-   - 지원 이메일 / 개발자 연락처처럼 사용자에게 꼭 필요한 값만 입력하게 한다.
-   - 홈페이지 / 개인정보처리방침 / 서비스 약관 URL을 앱에서 복사해 Branding의 앱 도메인에 입력하도록 안내한다.
-
-4. **Publishing 상태 정리**
-   - Branding 저장을 완료한 뒤 Audience에서 `In Production` 전환을 권장 경로로 안내한다.
-   - 정상적인 추가 계정 연결 때마다 Test user를 다시 추가하지 않도록 한다.
-   - 개인용/소규모 미검증 앱은 Google의 미검증 경고와 사용자 제한이 남을 수 있음을 짧게 알린다.
-   - Google 검증 자체는 별도 운영 절차이며 일반 초기 설정의 필수 자동 완료 조건으로 취급하지 않는다.
-
-5. **YouTube 권한 추가**
-   - scope: `https://www.googleapis.com/auth/youtube.force-ssl`
-   - 복사 버튼 제공.
-   - 긴 OAuth 설명은 기본 화면에서 숨기고 `왜 필요한가요?`에서만 제공한다.
-
-6. **OAuth Web Client 생성**
-   - Application type: `Web application`
-   - Name: `Subtitle Localizer Web`
-   - `Authorized JavaScript origins`는 비워두도록 강하게 안내한다.
-   - `Authorized redirect URIs`에만 앱이 제공하는 callback URI를 붙여넣게 한다.
-
-7. **Client ID / Secret 저장**
-   - 사용자가 입력해야 할 Google 자격증명은 Client ID / Secret으로 제한한다.
-   - 저장은 서버 암호화 + HttpOnly cookie 방식을 유지한다.
-
-8. **첫 YouTube 채널 연결 및 검증**
-   - Google OAuth 승인 후 실제 channel ID/title을 조회한다.
-   - 실제 채널 API 호출이 성공해야 첫 채널 연결 완료로 본다.
-
-## 초기 설정 완료 기준
-`Client 저장됨`과 `추가 계정 연결 준비 완료`를 구분한다.
-
-앱이 직접 확인 가능한 항목:
-- Client ID / Secret 저장 성공
-- OAuth 승인 성공
-- 실제 YouTube 채널 식별 성공
-- 활성 채널 세션 저장 성공
-- 해당 채널의 기본 API 호출 성공
-
-사용자가 Google Console에서 완료해야 하는 항목:
-- Branding 필수 정보 저장
-- 홈페이지 / 개인정보처리방침 / 서비스 약관 URL 등록
-- 여러 Google 계정을 Test user 재등록 없이 연결하려는 경우 Audience에서 `In Production` 전환
-
-정상적인 추가 연결 외에 다음과 같은 복구 상황에서는 재설정이 필요할 수 있다.
-- 사용자가 브라우저 저장 데이터를 직접 삭제
-- Google 계정에서 앱 권한을 직접 취소
-- OAuth Client 삭제 또는 Secret 교체
-- Google Cloud 프로젝트/API 삭제 또는 비활성화
-
-## 다중 YouTube 연결 구조
-Google Cloud 설정과 YouTube 연결을 분리한다.
-
-### Cloud config
-하나의 사용자 소유 OAuth Client 설정을 재사용한다.
-- clientId
-- clientSecret
-- remember
-
-### Channel connection
-채널별 OAuth 세션을 독립 저장한다.
+채널별로 다음 정보를 독립 저장한다.
 - connectionId
 - channelId
 - channelTitle
@@ -116,97 +53,56 @@ Google Cloud 설정과 YouTube 연결을 분리한다.
 - scope
 - connectedAt
 
-같은 channelId를 다시 연결하면 중복 생성하지 않고 기존 연결을 갱신한다.
+같은 channelId를 다시 연결하면 중복 생성하지 않고 기존 연결을 갱신한다. 한 채널을 연결 해제해도 다른 연결은 유지한다.
 
-## 채널 선택 UX
-작업공간에 활성 채널 선택기를 둔다.
+## 채널 전환 E2E
+실제 두 Google 계정/채널을 연결해 다음을 확인했다.
+- 기존 채널을 유지한 채 새 채널 추가 성공
+- 작업공간 채널 전환 성공
+- 상단 현재 작업 채널과 오른쪽 YouTube 업로드 패널이 같은 채널로 동기화
+- 채널별 영상 목록 분리 확인(영상 27개 채널 ↔ 영상 0개 채널)
+- 빈 채널에서는 원인 설명과 YouTube Studio/다시 불러오기 행동 제공
 
-```text
-현재 작업 채널
-[ 채널 A ▾ ]
+전환 과정에서 연결 관리의 활성 채널과 작업공간 표시가 어긋나는 버그를 발견했고, 선택 대상의 OAuth 세션/channelId를 검증한 뒤 활성화하도록 보강했다.
 
-채널 A
-채널 B
-채널 C
-────────────
-+ 계정 또는 채널 추가
-연결 관리
-```
+## 자막 업로드/가져오기 실제 E2E
+테스트 파일명은 별칭 없이 실제 이름을 사용한다.
+- 영상: `subtitle-localizer-e2e-test.mp4`
+- 원본 영문 SRT: `localization-challenge-en.srt`
 
-- 채널을 바꾸면 기존 영상/자막 선택 상태를 초기화한다.
-- 원본 YouTube 자막 가져오기와 번역 자막 업로드가 항상 동일한 활성 채널을 사용한다.
-- 채널별 연결 해제가 다른 채널 세션을 삭제하지 않아야 한다.
+실제 E2E에서 다음이 성공했다.
+- `localization-challenge-en.srt` 30 cue 로드
+- 한국어 1개 언어 번역 완료
+- 타임코드 30/30, Cue ID 30/30, 누락 0, 추가 0 구조 검증 통과
+- 앱에서 `subtitle-localizer-e2e-test.mp4`가 업로드된 YouTube 영상 선택
+- Subtitle Localizer의 YouTube 업로드 기능으로 한국어 자막 업로드 성공
+- YouTube API에서 `ko · Subtitle Localizer` 트랙 확인
+- 같은 트랙을 SRT로 다시 다운로드해 30 cue 가져오기 성공
 
-## 빈 채널 / 채널 없음 상태
-- 업로드 영상 0개면 `0개`만 보여주지 않는다.
-- 원인과 다음 행동을 바로 안내한다.
-- 예: `이 채널에는 업로드된 영상이 없습니다.` + `YouTube Studio 열기` + `다시 불러오기`
-- 연결 계정에 YouTube 채널 자체가 없으면 영상 없음과 구분해 안내한다.
+## 2026-09-06 E2E에서 발견한 UX 보완
+기능은 성공했지만 다음 두 문제가 사용자 혼란을 만들었다.
 
-## 공개 정책 페이지
-### 개인정보처리방침
-다음 앱 동작을 사용자에게 공개한다.
-- 사용자가 직접 입력한 OpenAI API Key와 Google OAuth Client Secret은 서버에서 암호화한 HttpOnly cookie에 보관한다.
-- YouTube access/refresh token도 서버에서 암호화한 HttpOnly cookie에 보관한다.
-- 번역 시 자막 텍스트는 사용자가 연결한 OpenAI API를 통해 처리된다.
-- YouTube 연결/가져오기/업로드 시 필요한 데이터는 Google/YouTube API를 통해 처리된다.
-- 업로드한 SRT 파일을 앱의 영구 파일 저장소에 보관하도록 설계하지 않는다.
-- 사용자는 연결 관리에서 저장된 자격증명을 삭제할 수 있다.
+### 1. 업로드 직후 같은 영상의 자막 목록이 갱신되지 않음
+현재 자막 목록 조회 effect는 `sourceVideoId` 변경에만 반응한다. 같은 영상을 선택한 상태에서 앱이 새 자막을 업로드하면 `기존 자막 0개`가 그대로 남고, 다른 영상을 선택했다 돌아와야 새 트랙이 보인다.
 
-### 서비스 약관
-서비스의 BYOK/BYOC 구조, 사용자가 자신의 API 비용/quota를 부담한다는 점, 사용자가 업로드·번역·게시할 콘텐츠에 필요한 권한을 보유해야 한다는 점, 외부 API 제공자의 정책/가용성에 따라 일부 기능이 제한될 수 있다는 점을 명시한다.
+수정 원칙:
+- YouTube 자막 업로드 성공 후, 업로드 대상 영상이 현재 `원본 영상`과 같으면 자막 목록을 즉시 재조회한다.
+- 사용자가 다른 영상으로 갔다 돌아오는 수동 우회가 필요하지 않아야 한다.
 
-## 보안
-- OpenAI API Key, Google Client Secret, YouTube access/refresh token은 서버에서 암호화한다.
-- 비밀정보는 HttpOnly cookie에만 저장한다.
-- localStorage / sessionStorage에 비밀정보를 저장하지 않는다.
-- APP_SESSION_SECRET은 배포자 Vercel에만 존재한다.
-- 운영자 소유 Google OAuth 자격증명을 추가하지 않는다.
+### 2. YouTube 자막 가져오기 성공 표시가 불명확함
+현재 `SRT 가져오기` 성공 메시지가 오른쪽 YouTube 업로드 패널 쪽 공용 메시지로 보여 사용자가 실제 원본이 바뀌었는지 확신하기 어렵다.
 
-## 비용 구조
-- OpenAI: 최종 사용자의 OpenAI API Key(BYOK)
-- YouTube Data API: 최종 사용자의 Google Cloud 프로젝트 quota(BYOC)
-- Vercel hosting/functions: 배포자 계정
+수정 원칙:
+- `원본 자막` 영역 안에 명확한 성공 상태를 표시한다.
+- 최소 표시: `가져오기 완료`, 언어, cue 수, 영상 제목 또는 생성된 원본 파일명.
+- YouTube에서 가져온 원본 언어가 앱 지원 번역 언어와 일치하면 그 언어는 번역 대상 선택에서 자동 해제해 같은 언어→같은 언어 번역 혼란을 줄인다.
+- 성공 상태는 파일 SRT 로드 상태와 구분되어야 한다.
 
-## 버전 정책
-이번 변경은 연결 정보 구조와 다중 채널 동작이 바뀌는 기능 추가이므로 `v1.7.0` Minor 버전으로 관리한다.
-
-## 구현 단계
-1. 문서 4종을 v1.7.0 기준으로 갱신
-2. 연결 데이터 모델 및 암호화 cookie 구조 재설계
-3. OAuth callback을 채널별 연결 등록 구조로 변경
-4. 채널 목록 / 활성 채널 API 추가
-5. 영상·자막 API가 활성 채널 연결을 사용하도록 변경
-6. 초보자용 8단계 Google 연결 마법사 구현
-7. 작업공간 채널 선택기 + 빈 채널 UX 구현
-8. 공개 `/privacy` / `/terms` 페이지와 홈페이지 정책 링크 추가
-9. Publishing 안내를 실제 E2E 결과에 맞게 보정
-10. 회귀/보안/다중 연결 테스트
-11. 전체 ZIP 생성(배포 저장소에는 포함하지 않음)
-12. GitHub main 반영 → Vercel Production READY 및 Runtime Error 확인 → 실제 E2E
-
-## 테스트 핵심 케이스
-- 기존 OpenAI BYOK 동작 유지
-- 기존 Google BYOC 자격증명 암호화 유지
-- 연결 A 추가 후 연결 B 추가 시 A 유지
-- 동일 channelId 재연결 시 중복 없음
-- 활성 채널 변경
-- 채널별 영상 목록 분리
-- 채널별 자막 조회/다운로드/업로드
-- 한 채널 연결 해제 시 다른 채널 유지
-- Google Cloud 설정 삭제 시 모든 YouTube 연결 제거
-- 채널 없음 / 영상 0개 상태 구분
-- OAuth 오류 복구
-- refresh token 갱신
-- `/privacy`와 `/terms` 공개 접근
-- 메인/연결 화면에서 정책 페이지 접근 가능
-- Client 저장만으로 Google Publishing 완료를 단정하지 않음
-- localStorage/sessionStorage 비밀정보 0건
-- 모바일/키보드/focus-visible/reduced-motion 회귀 없음
-
-## 단계별 자체 점검
-각 주요 단계가 끝날 때 다음을 기록한다.
-- 완료 항목
-- 발견한 문제와 수정
-- 남은 작업
-- 자체 점수 /10
+## 이번 보완의 완료 기준
+- 업로드 성공 직후 동일 영상의 `기존 자막` 목록이 자동 갱신됨.
+- `SRT 가져오기` 직후 원본 영역에서 성공 여부를 즉시 이해할 수 있음.
+- 가져온 언어와 동일한 번역 대상은 자동 해제됨.
+- 기존 SRT 업로드/번역/다운로드/다중 채널 동작에 회귀 없음.
+- 자동 테스트, TypeScript, Next.js production build 통과.
+- Vercel Production READY 및 Runtime Error 없음 확인.
+- 전체 v1.7.0 ZIP은 사용자에게만 제공하고 GitHub에는 커밋하지 않음.
