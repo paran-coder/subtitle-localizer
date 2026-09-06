@@ -108,6 +108,8 @@ test("공통 상단 계층은 타이틀바·탭·작업 채널 순서를 유지�
 test("초기 설정 화면은 OpenAI와 YouTube 연결을 실제 값 기준으로 안내한다", () => {
   const guide = read("app/guide/page.tsx");
   assert.match(guide, /OpenAI API Keys 열기/);
+  assert.match(guide, /OpenAI API Billing/);
+  assert.match(guide, /결제 수단/);
   assert.match(guide, /ChatGPT 구독과 OpenAI API 결제는 별도/);
   assert.match(guide, /Create new secret key/);
   assert.match(guide, /HttpOnly cookie/);
@@ -120,8 +122,25 @@ test("초기 설정 화면은 OpenAI와 YouTube 연결을 실제 값 기준으�
   assert.match(guide, /403 access_denied/);
   assert.match(guide, /In Production/);
   assert.match(guide, /확인되지 않은 앱/);
+  assert.match(guide, /Google 카드 등록은 이 8단계의 필수 항목이 아닙니다/);
+  assert.match(guide, /guide-static-code/);
+  assert.match(guide, /FIRST-TIME SETUP/);
+  assert.equal(guide.includes("FIRST-TIME SETUP · v1.7.0"), false);
   assert.equal(guide.includes("앱의 8단계 마법사와 함께 진행 →"), false);
   assert.equal(guide.includes("연결 관리 7단계로 이동 →"), false);
+});
+
+test("작업 화면은 새 업로드 대상마다 자막 트랙 이름을 비운다", () => {
+  const page = read("app/page.tsx");
+  const polish = read("app/ui-polish-v17.css");
+  assert.match(page, /const \[trackName, setTrackName\] = useState\(""\)/);
+  assert.match(page, /setTrackName\(""\);\s*}\s*, \[selectedVideoId\]\);/);
+  assert.match(page, /placeholder="비워두면 Subtitle Localizer"/);
+  assert.match(page, /trackName: trackName\.trim\(\) \|\| "Subtitle Localizer"/);
+  assert.match(polish, /\.guide-static-code/);
+  assert.match(polish, /text-decoration: none/);
+  assert.match(polish, /\.v17-connections-hero > span/);
+  assert.match(polish, /color: var\(--primary, #ff6f0f\)/);
 });
 
 test("workspace 채널 바는 썸네일·채널 선택·빈 영상 행동을 제공한다", () => {

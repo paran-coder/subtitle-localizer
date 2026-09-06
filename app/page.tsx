@@ -203,7 +203,7 @@ export default function Home() {
   const [youtubeLoading, setYoutubeLoading] = useState(false);
   const [youtubeMessage, setYoutubeMessage] = useState("");
   const [selectedVideoId, setSelectedVideoId] = useState("");
-  const [trackName, setTrackName] = useState("Subtitle Localizer");
+  const [trackName, setTrackName] = useState("");
   const [uploadLanguages, setUploadLanguages] = useState<string[]>([]);
   const [uploadState, setUploadState] = useState<Record<string, UploadState>>({});
   const [uploadRunning, setUploadRunning] = useState(false);
@@ -327,6 +327,10 @@ export default function Home() {
   useEffect(() => {
     if (!running) setUploadLanguages(completedCodes);
   }, [completedCodes, running]);
+
+  useEffect(() => {
+    setTrackName("");
+  }, [selectedVideoId]);
 
   function clearOutputs() {
     setResults({});
@@ -952,7 +956,8 @@ export default function Home() {
 
                 <div className="field-block compact">
                   <div className="field-row"><label htmlFor="track-name">자막 트랙 이름</label><span>최대 150자</span></div>
-                  <input id="track-name" className="text-input" maxLength={150} value={trackName} onChange={(event) => setTrackName(event.target.value)} />
+                  <input id="track-name" className="text-input" maxLength={150} value={trackName} onChange={(event) => setTrackName(event.target.value)} placeholder="비워두면 Subtitle Localizer" />
+                  <small className="field-help">새 업로드 영상을 선택하면 이전에 입력한 이름은 비워집니다.</small>
                 </div>
 
                 <div className="field-block compact">

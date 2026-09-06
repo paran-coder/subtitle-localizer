@@ -16,7 +16,7 @@ function Step({ number, title, children }: { number: number; title: string; chil
 }
 
 function ValueBox({ label, value }: { label: string; value: string }) {
-  return <div className="guide-value"><span>{label}</span><code>{value}</code></div>;
+  return <div className="guide-value"><span>{label}</span><div className="guide-static-code">{value}</div></div>;
 }
 
 export default function InitialSetupPage() {
@@ -28,7 +28,7 @@ export default function InitialSetupPage() {
 
     <section className="guide-hero">
       <div className="guide-hero-copy">
-        <span className="guide-eyebrow">FIRST-TIME SETUP · v1.7.0</span>
+        <span className="guide-eyebrow">FIRST-TIME SETUP</span>
         <h1>처음 연결부터 실제 작업까지,<br />막히지 않게 순서대로 안내합니다.</h1>
         <p>Subtitle Localizer는 사용자의 OpenAI API Key와 Google Cloud OAuth Client를 대신 소유하지 않습니다. 처음 한 번만 정확히 연결하면 이후에는 자막 작업에 집중할 수 있습니다.</p>
         <div className="guide-hero-actions"><a className="guide-primary" href="#openai">OpenAI부터 시작</a><a className="guide-secondary" href="#youtube">YouTube 설정 보기</a></div>
@@ -65,19 +65,20 @@ export default function InitialSetupPage() {
             <div><b>03</b><strong>YouTube 채널</strong><span>영상·자막 가져오기와 업로드</span></div>
             <div><b>04</b><strong>Subtitle Localizer</strong><span>SRT 번역과 구조 검증</span></div>
           </div>
-          <div className="guide-callout"><strong>기억할 핵심</strong><p>ChatGPT 구독과 OpenAI API 결제는 별도입니다. Subtitle Localizer의 번역은 OpenAI API를 사용하므로 API Platform 쪽 결제 설정이 필요할 수 있습니다.</p><a href="https://help.openai.com/en/articles/9039756" target="_blank" rel="noreferrer">OpenAI API 결제 안내 보기 ↗</a></div>
+          <div className="guide-callout"><strong>기억할 핵심</strong><p>ChatGPT 구독과 OpenAI API 결제는 별도입니다. 유료 API를 사용하려면 OpenAI Platform의 API Billing에서 결제 수단 또는 선불 크레딧을 설정해야 합니다.</p><a href="https://help.openai.com/en/articles/9039756" target="_blank" rel="noreferrer">OpenAI API 결제 안내 보기 ↗</a></div>
         </section>
 
         <section id="openai" className="guide-section">
-          <div className="guide-section-head"><span>OPENAI · BYOK</span><h2>1. 내 OpenAI API Key 연결하기</h2><p>API Key는 번역할 때만 사용합니다. 앱 운영자의 공용 키가 아니라 사용자가 만든 키를 연결합니다.</p></div>
+          <div className="guide-section-head"><span>OPENAI · BYOK</span><h2>1. 내 OpenAI API Key 연결하기</h2><p>API Key는 번역할 때만 사용합니다. 앱 운영자의 공용 키가 아니라 사용자가 만든 키와 사용자 본인의 API Billing을 사용합니다.</p></div>
           <div className="guide-explainer-grid"><div><span>누가 소유하나요?</span><strong>사용자 본인</strong><p>키를 만들고 폐기하는 권한도 사용자에게 있습니다.</p></div><div><span>비용은 어디로 가나요?</span><strong>사용자 OpenAI API 계정</strong><p>ChatGPT 구독료와 API 사용료는 별도입니다.</p></div><div><span>앱은 어디에 저장하나요?</span><strong>암호화 + HttpOnly cookie</strong><p>localStorage/sessionStorage에는 비밀정보를 저장하지 않습니다.</p></div></div>
 
           <div className="guide-steps">
-            <Step number={1} title="OpenAI Platform의 API Keys 페이지를 엽니다."><p>OpenAI 계정으로 로그인한 뒤 API Keys 화면으로 이동합니다.</p><a className="guide-action-link" href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer">OpenAI API Keys 열기 ↗</a></Step>
-            <Step number={2} title="새 Secret Key를 만듭니다."><p>`Create new secret key`를 선택하고, 알아보기 쉬운 이름을 지정합니다. 예: <code>Subtitle Localizer</code>.</p><div className="guide-note"><strong>중요</strong><span>생성 직후 표시되는 전체 secret key를 바로 복사하세요. 나중에 전체 값을 다시 볼 수 없다면 새 키를 만든 뒤 기존 키를 폐기하는 방식이 안전합니다.</span></div></Step>
-            <Step number={3} title="Subtitle Localizer의 연결 관리에 붙여넣습니다."><p>`내 OpenAI API Key` 카드의 입력란에 복사한 키를 붙여넣습니다. 실제 키 값을 문서나 GitHub에 남기지 마세요.</p><a className="guide-action-link" href="/connections?setup=openai&return=/guide">OpenAI 연결 관리 열기 →</a></Step>
-            <Step number={4} title="필요하면 이 브라우저에 기억하기를 선택합니다."><p>체크하면 암호화된 HttpOnly cookie로 유지합니다. 브라우저 JavaScript가 secret 값을 직접 읽는 저장소에는 보관하지 않습니다.</p></Step>
-            <Step number={5} title="키 연결을 누르고 상태를 확인합니다."><p>카드 오른쪽 상태가 <strong>연결됨</strong>으로 바뀌면 완료입니다. 이후 SRT를 불러와 번역을 시작할 수 있습니다.</p></Step>
+            <Step number={1} title="OpenAI API Billing을 먼저 확인합니다."><p>ChatGPT 구독과 API 결제는 별도입니다. OpenAI Platform의 Billing에서 사용할 API 조직을 확인하고 결제 수단을 추가하거나 선불 크레딧을 설정합니다.</p><a className="guide-action-link" href="https://platform.openai.com/settings/organization/billing/overview" target="_blank" rel="noreferrer">OpenAI API Billing 열기 ↗</a><div className="guide-note"><strong>결제 정보는 어디에 저장되나요?</strong><span>카드 정보와 API 크레딧은 OpenAI Platform에서 사용자가 직접 관리합니다. Subtitle Localizer에는 카드 정보를 입력하지 않습니다.</span></div></Step>
+            <Step number={2} title="OpenAI Platform의 API Keys 페이지를 엽니다."><p>OpenAI 계정으로 로그인한 뒤 API Keys 화면으로 이동합니다.</p><a className="guide-action-link" href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer">OpenAI API Keys 열기 ↗</a></Step>
+            <Step number={3} title="새 Secret Key를 만듭니다."><p>`Create new secret key`를 선택하고, 알아보기 쉬운 이름을 지정합니다. 예: <code>Subtitle Localizer</code>.</p><div className="guide-note"><strong>중요</strong><span>생성 직후 표시되는 전체 secret key를 바로 복사하세요. 나중에 전체 값을 다시 볼 수 없다면 새 키를 만든 뒤 기존 키를 폐기하는 방식이 안전합니다.</span></div></Step>
+            <Step number={4} title="Subtitle Localizer의 연결 관리에 붙여넣습니다."><p>`내 OpenAI API Key` 카드의 입력란에 복사한 키를 붙여넣습니다. 실제 키 값을 문서나 GitHub에 남기지 마세요.</p><a className="guide-action-link" href="/connections?setup=openai&return=/guide">OpenAI 연결 관리 열기 →</a></Step>
+            <Step number={5} title="필요하면 이 브라우저에 기억하기를 선택합니다."><p>체크하면 암호화된 HttpOnly cookie로 유지합니다. 브라우저 JavaScript가 secret 값을 직접 읽는 저장소에는 보관하지 않습니다.</p></Step>
+            <Step number={6} title="키 연결을 누르고 상태를 확인합니다."><p>카드 오른쪽 상태가 <strong>연결됨</strong>으로 바뀌면 완료입니다. 이후 SRT를 불러와 번역을 시작할 수 있습니다.</p></Step>
           </div>
 
           <div className="guide-do-dont"><div><span>DO</span><strong>새 키는 생성 직후 복사</strong><p>비밀관리 앱처럼 본인만 접근할 수 있는 곳에 보관하세요.</p></div><div><span>DON'T</span><strong>실제 키를 공유하거나 커밋</strong><p>스크린샷, GitHub, 공개 문서, 채팅에 전체 값을 남기지 마세요.</p></div></div>
@@ -86,14 +87,15 @@ export default function InitialSetupPage() {
         <section id="youtube" className="guide-section">
           <div className="guide-section-head"><span>GOOGLE CLOUD · BYOC</span><h2>2. YouTube 연결하기</h2><p>Google Cloud는 사용자가 직접 소유합니다. 앱은 초보자가 판단할 일을 줄이고 꼭 필요한 클릭과 입력만 순서대로 안내합니다.</p></div>
           <div className="guide-callout is-orange"><strong>최초 1회 설정</strong><p>아래 8단계를 한 번 완료하면 정상적인 추가 Google 계정/YouTube 채널 연결 때문에 프로젝트·API·OAuth Client를 다시 만들 필요가 없습니다.</p></div>
+          <div className="guide-note"><strong>Google 카드 등록은 이 8단계의 필수 항목이 아닙니다.</strong><span>Subtitle Localizer는 YouTube Data API의 프로젝트 quota를 사용합니다. 기본 quota보다 더 많은 사용량이 필요할 때는 YouTube의 별도 quota 확장·심사 절차를 확인합니다.</span></div>
 
           <div className="guide-steps">
             <Step number={1} title="전용 Google Cloud 프로젝트를 만듭니다."><p>Google Cloud Console에서 새 프로젝트를 만들고 이름은 <code>Subtitle Localizer</code>를 권장합니다. 만든 뒤 상단 프로젝트 선택기에서 그 프로젝트가 실제로 선택되어 있는지 다시 확인하세요.</p><a className="guide-action-link" href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noreferrer">새 프로젝트 화면 열기 ↗</a></Step>
             <Step number={2} title="YouTube Data API v3를 사용 설정합니다."><p>현재 프로젝트가 <strong>Subtitle Localizer</strong>인지 확인한 뒤 `YouTube Data API v3`의 <strong>사용 설정</strong>을 누릅니다.</p><a className="guide-action-link" href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noreferrer">YouTube Data API v3 열기 ↗</a><p className="guide-complete">완료 기준 · `사용 설정됨` 또는 `Enabled`가 보입니다.</p></Step>
             <Step number={3} title="Google Auth Platform의 앱 정보와 Branding을 채웁니다."><p>처음이면 `시작하기`를 누르고 앱 이름은 <code>Subtitle Localizer</code>, 사용자 유형은 <strong>External</strong>로 설정합니다. 지원 이메일과 개발자 연락처에는 본인이 사용하는 이메일을 지정합니다.</p><div className="guide-values"><ValueBox label="홈페이지" value={APP_URL} /><ValueBox label="개인정보처리방침" value={PRIVACY_URL} /><ValueBox label="서비스 약관" value={TERMS_URL} /></div><a className="guide-action-link" href="https://console.cloud.google.com/auth/overview" target="_blank" rel="noreferrer">Google Auth Platform 열기 ↗</a></Step>
             <Step number={4} title="Audience / 게시 상태를 확인합니다."><p>여러 계정을 연결할 계획이면 <strong>In Production</strong>을 권장합니다. Testing 상태에서는 Test users에 없는 Google 계정이 <code>403 access_denied</code>로 막힐 수 있습니다.</p><div className="guide-note"><strong>Testing을 유지한다면</strong><span>실제로 로그인할 Google 계정을 Test users에 추가해야 합니다. 계정이 늘 때마다 다시 관리해야 할 수 있습니다.</span></div><a className="guide-action-link" href="https://console.cloud.google.com/auth/audience" target="_blank" rel="noreferrer">Audience 열기 ↗</a></Step>
-            <Step number={5} title="YouTube 권한 하나를 추가합니다."><p>Data Access에서 `범위 추가 또는 삭제`를 누르고 아래 scope를 선택한 뒤 `업데이트`와 `저장`까지 완료합니다.</p><ValueBox label="추가할 scope" value={YOUTUBE_SCOPE} /><a className="guide-action-link" href="https://console.cloud.google.com/auth/scopes" target="_blank" rel="noreferrer">Data Access 열기 ↗</a></Step>
-            <Step number={6} title="OAuth Client를 Web application으로 만듭니다."><p>Clients에서 `+ 클라이언트 만들기`를 누르고 유형은 <strong>Web application</strong>, 이름은 <code>Subtitle Localizer Web</code>을 권장합니다.</p><div className="guide-do-dont"><div><span>비워두세요</span><strong>Authorized JavaScript origins</strong><p>여기에는 Subtitle Localizer 주소를 넣지 않습니다.</p></div><div><span>여기에 넣으세요</span><strong>Authorized redirect URIs</strong><ValueBox label="callback" value={REDIRECT_URI} /></div></div><div className="guide-note"><strong>redirect_uri_mismatch가 뜬다면</strong><span>scheme, 도메인, 경로, 마지막 슬래시까지 Google에 등록한 URI와 앱의 redirect URI가 정확히 일치해야 합니다.</span></div><a className="guide-action-link" href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noreferrer">Clients 열기 ↗</a></Step>
+            <Step number={5} title="YouTube 권한 하나를 추가합니다."><p>Data Access에서 `범위 추가 또는 삭제`를 누르고 아래 scope를 선택한 뒤 `업데이트`와 `저장`까지 완료합니다. 아래 값은 웹 링크가 아니라 복사해서 사용하는 OAuth scope 식별자입니다.</p><ValueBox label="추가할 scope · 복사용 값" value={YOUTUBE_SCOPE} /><a className="guide-action-link" href="https://console.cloud.google.com/auth/scopes" target="_blank" rel="noreferrer">Data Access 열기 ↗</a></Step>
+            <Step number={6} title="OAuth Client를 Web application으로 만듭니다."><p>Clients에서 `+ 클라이언트 만들기`를 누르고 유형은 <strong>Web application</strong>, 이름은 <code>Subtitle Localizer Web</code>을 권장합니다.</p><div className="guide-do-dont"><div><span>비워두세요</span><strong>Authorized JavaScript origins</strong><p>여기에는 Subtitle Localizer 주소를 넣지 않습니다.</p></div><div><span>여기에 넣으세요</span><strong>Authorized redirect URIs</strong><ValueBox label="callback · 복사용 값" value={REDIRECT_URI} /></div></div><div className="guide-note"><strong>callback은 내부 이동 링크가 아닙니다.</strong><span>Google 승인 후 앱으로 돌아오기 위해 OAuth Client에 등록하는 설정값입니다. Google Cloud의 Authorized redirect URIs 칸에 그대로 복사해 넣으세요.</span></div><div className="guide-note"><strong>redirect_uri_mismatch가 뜬다면</strong><span>scheme, 도메인, 경로, 마지막 슬래시까지 Google에 등록한 URI와 앱의 redirect URI가 정확히 일치해야 합니다.</span></div><a className="guide-action-link" href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noreferrer">Clients 열기 ↗</a></Step>
             <Step number={7} title="Client ID와 Client Secret을 앱에 저장합니다."><p>Google이 발급한 값을 `연결 관리`의 7단계 입력칸에 넣습니다. Client Secret 역시 실제 값을 문서·GitHub·스크린샷에 남기지 않습니다.</p><p className="guide-complete">완료 기준 · 앱이 `Cloud Client를 저장했습니다` 상태로 넘어갑니다.</p></Step>
             <Step number={8} title="Google로 첫 YouTube 채널을 연결합니다."><p>마지막 단계에서 Google 연결 버튼을 누르고 사용할 계정을 선택한 뒤 YouTube 권한을 승인합니다. 앱으로 돌아왔을 때 채널 이름과 `현재 작업 채널`이 보이면 완료입니다.</p><p className="guide-complete">완료 기준 · 연결 관리 채널과 작업공간 상단 채널이 같은 채널을 가리킵니다.</p></Step>
           </div>
@@ -108,7 +110,7 @@ export default function InitialSetupPage() {
         <section id="troubleshooting" className="guide-section">
           <div className="guide-section-head"><span>TROUBLESHOOTING</span><h2>4. 자주 막히는 지점</h2></div>
           <div className="guide-faq">
-            <details><summary>OpenAI 연결은 됐는데 번역 중 API Key 오류가 납니다.</summary><p>저장된 키가 폐기되었거나 사용할 수 없는 상태일 수 있습니다. OpenAI Platform에서 새 키를 만든 뒤 연결 관리에서 `키 교체`를 사용하세요.</p></details>
+            <details><summary>OpenAI 연결은 됐는데 번역 중 API Key 또는 quota 오류가 납니다.</summary><p>저장된 키가 폐기되었는지 확인하고 OpenAI Platform의 API Billing에서 사용할 수 있는 결제 수단, 크레딧, 사용 한도 상태도 함께 확인하세요.</p></details>
             <details><summary>Google 로그인에서 403 access_denied가 나옵니다.</summary><p>Google Auth Platform이 Testing 상태라면 현재 계정이 Test users에 있는지 확인하세요. 여러 계정을 계속 연결하려면 Branding을 완료한 뒤 In Production 상태를 사용하는 흐름을 권장합니다.</p></details>
             <details><summary>redirect_uri_mismatch가 나옵니다.</summary><p>OAuth Client의 Authorized redirect URIs에 <code>{REDIRECT_URI}</code>가 정확히 등록되어 있는지 확인하세요. JavaScript origins 칸에 넣으면 해결되지 않습니다.</p></details>
             <details><summary>`확인되지 않은 앱` 경고가 보입니다.</summary><p>사용자가 직접 만든 미검증 OAuth 앱에서는 Google의 경고가 나타날 수 있습니다. 이는 Client ID/Secret 오타나 Testing의 403 문제와는 구분해야 합니다.</p></details>
@@ -121,9 +123,9 @@ export default function InitialSetupPage() {
           <div className="guide-section-head"><span>SECURITY & COST</span><h2>5. 누가 무엇을 소유하고 비용을 부담하나요?</h2></div>
           <div className="guide-table" role="table" aria-label="보안과 비용 요약">
             <div className="guide-table-row head" role="row"><span>항목</span><span>소유·비용</span><span>앱의 처리</span></div>
-            <div className="guide-table-row" role="row"><strong>OpenAI API Key</strong><span>사용자 OpenAI 계정</span><span>서버 암호화 + HttpOnly cookie</span></div>
+            <div className="guide-table-row" role="row"><strong>OpenAI API Key</strong><span>사용자 OpenAI API 계정</span><span>Billing은 OpenAI에서 직접 관리 · 키는 서버 암호화 + HttpOnly cookie</span></div>
             <div className="guide-table-row" role="row"><strong>Google OAuth Client</strong><span>사용자 Google Cloud 프로젝트</span><span>Client 정보 암호화 저장</span></div>
-            <div className="guide-table-row" role="row"><strong>YouTube quota</strong><span>사용자 Google Cloud 프로젝트</span><span>활성 채널 OAuth 세션으로 API 호출</span></div>
+            <div className="guide-table-row" role="row"><strong>YouTube quota</strong><span>사용자 Google Cloud 프로젝트</span><span>기본 quota 사용 · 추가 quota는 별도 확장/심사</span></div>
             <div className="guide-table-row" role="row"><strong>SRT 파일</strong><span>사용자 파일</span><span>서버 영구 파일 저장소에 보관하지 않음</span></div>
           </div>
           <div className="guide-final"><strong>설정이 끝났습니다.</strong><p>OpenAI와 YouTube 상태가 모두 연결됨이면 이제 실제 자막 작업만 진행하면 됩니다.</p><a className="guide-primary" href="/">Subtitle Localizer 시작하기</a></div>

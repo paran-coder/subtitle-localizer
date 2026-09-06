@@ -4,6 +4,10 @@
   padding-bottom: 32px;
 }
 
+.v17-connections-hero > span {
+  color: var(--primary, #ff6f0f);
+}
+
 .v17-connections-hero h1 {
   max-width: 780px;
   margin-bottom: 16px;
@@ -18,6 +22,19 @@
   word-break: keep-all;
   overflow-wrap: normal;
   text-wrap: pretty;
+}
+
+.guide-static-code {
+  display: block;
+  color: #35383d;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .92em;
+  font-weight: 500;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  cursor: text;
+  user-select: all;
 }
 
 .v17-workspace-channel-bar {
