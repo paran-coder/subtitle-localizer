@@ -1,280 +1,106 @@
 # checklist.md — Subtitle Localizer v1.7.0
 
-## v1.7.0 핵심 범위
-- [x] 운영자 비관여 BYOC 원칙 유지
-- [x] Google Cloud 최초 1회 설정 원칙
-- [x] 초보자용 Google 연결 마법사
+## 제품 범위
+- [x] 버전 `v1.7.0` 유지
+- [x] GitHub `paran-coder/subtitle-localizer` `main`만 사용
+- [x] Vercel `subtitle-localizer` Production 사용
+- [x] 기본 페이지 `/` = `작업하기`
+- [x] `/guide` = `초기 설정`
+- [x] `/connections` = `연결 관리`
+
+## OpenAI / 보안
+- [x] 사용자 BYOK 원칙
+- [x] ChatGPT 구독과 OpenAI API Billing 분리 안내
+- [x] API Billing 결제 수단/크레딧 안내
+- [x] OpenAI API Key 서버 암호화 + HttpOnly cookie
+- [x] localStorage/sessionStorage에 비밀정보 미저장
+- [x] 실제 API Key를 코드/문서/로그에 미포함
+
+## Google / YouTube
+- [x] 사용자 BYOC 원칙
+- [x] Google Cloud 최초 1회 설정 8단계 안내
+- [x] YouTube Data API v3 사용 설정 안내
+- [x] Branding 공개 URL 3개 안내
+- [x] Audience Testing / In Production 설명
+- [x] `youtube.force-ssl` scope를 복사용 설정값으로 표시
+- [x] Authorized JavaScript origins 비움 안내
+- [x] OAuth callback을 복사용 설정값으로 표시
 - [x] 다중 Google 계정 / YouTube 채널 연결
 - [x] 채널별 OAuth 세션 독립 저장
-- [x] 활성 채널 선택 및 작업공간 동기화
-- [x] 빈 채널 UX
-- [x] 공개 `/privacy` / `/terms`
-- [x] Branding / In Production 안내
-- [x] 실제 자막 업로드/재가져오기 E2E
+- [x] 활성 채널 전환 및 작업공간 동기화
+- [x] 영상 0개 채널 빈 상태
+- [x] 한 채널 해제 시 다른 연결 유지
 
-## 실제 OAuth / 다중 채널 E2E
-- [x] Testing 상태 새 계정 `403 access_denied` 재현
-- [x] Branding 공개 URL 저장
-- [x] Audience `In Production` 전환
-- [x] 미검증 앱 경고 통과 후 새 Google 계정 연결
-- [x] 기존 채널 유지 상태에서 두 번째 채널 추가
-- [x] 두 채널 사이 활성 채널 전환
-- [x] 상단 작업 채널과 업로드 패널 채널 일치
-- [x] 채널별 영상 목록 분리 확인
-- [x] 영상 0개 빈 상태 확인
+## 번역 / 자막 E2E
+- [x] SRT 업로드
+- [x] YouTube 기존 자막 가져오기
+- [x] 다국어 번역
+- [x] cue ID / 타임코드 구조 검증
+- [x] SRT 개별 다운로드
+- [x] 완료 언어 ZIP 다운로드
+- [x] YouTube 자막 업로드
+- [x] 업로드 직후 자막 목록 갱신
+- [x] 업로드한 트랙 재가져오기
+- [x] SRT 파일명 기반 자막 트랙 이름 기본값
 
-## 실제 자막 파이프라인 E2E
-- [x] 테스트 영상 `subtitle-localizer-e2e-test.mp4` YouTube 업로드
-- [x] 원본 `localization-challenge-en.srt` 30 cue 로드
-- [x] 한국어 번역 완료
-- [x] 타임코드 30/30 일치
-- [x] Cue ID 30/30 일치
-- [x] 누락 0 / 추가 0
-- [x] Subtitle Localizer에서 한국어 자막 YouTube 업로드 성공
-- [x] YouTube에서 `ko · Subtitle Localizer` 트랙 조회 성공
-- [x] YouTube 자막 SRT 다운로드 및 30 cue 가져오기 성공
-- [x] 업로드 직후 동일 영상 자막 목록 자동 갱신
-- [x] YouTube 자막 가져오기 완료 패널
-- [x] 가져온 원본 언어와 동일한 번역 대상 자동 해제
+## UI / 정보 구조
+- [x] 공통 순서 `타이틀바 → 초기 설정/연결 관리/작업하기 탭 → 내용`
+- [x] 작업하기만 탭 아래 현재 YouTube 작업 채널 표시
+- [x] 현재 탭 강조 및 `aria-current="page"`
+- [x] 연결 관리 제목 JSX 명시 줄바꿈
+- [x] 연결 관리 설명 JSX 명시 줄바꿈
+- [x] 현재 작업 채널 상·하 여백
+- [x] 데스크톱 오른쪽 카드 겹침 방지
+- [x] 오른쪽 열 내부 세로 스크롤 제거
+- [x] 브라우저 페이지 세로 스크롤 하나 사용
+- [x] 중복 대형 가이드 배너 제거
+- [x] 중복 상단 페이지 이동 CTA 제거
 
-## UI 레이아웃 보완
-- [x] 연결 관리 제목을 JSX 명시적 줄바꿈으로 고정
-- [x] 연결 관리 설명 두 문장을 JSX 명시적 줄바꿈으로 고정
-- [x] 현재 작업 채널 바 상·하 간격 보완
-- [x] 데스크톱 우측 카드 겹침 방지
-- [x] 우측 열 내부 세로 스크롤 제거 및 페이지 세로 스크롤 하나로 통일
-- [x] 실제 Production `/connections`에서 `<br/>` 반영 확인
-- [x] 실제 Production CSS에서 `.side-column` `position: static`, `max-height: none`, `overflow: visible` 확인
-- [x] 버전 `v1.7.0` 유지
-
-## 상세 초기 설정 `/guide`
-### 문서
-- [x] `context-notes.md` 범위/원칙/완료 결과 갱신
-- [x] `checklist.md` 구현/검증 결과 갱신
-- [x] `README.md` 사용자 설정 안내 설명
-- [x] `User manual.md` OpenAI/YouTube 첫 연결 상세 절차 확장
-
-### OpenAI 가이드
-- [x] OpenAI API Key의 용도와 사용자 비용 부담 설명
-- [x] API Key 생성 페이지로 이동하는 버튼
-- [x] 새 secret key 생성/즉시 복사/안전 보관 설명
-- [x] 앱 `연결 관리`의 입력·기억하기·저장 절차 설명
-- [x] API Key 전체 값이 다시 표시되지 않는 경우의 복구 안내
-- [x] ChatGPT 구독과 OpenAI API 결제 분리 안내
-- [x] 실제 secret 예시를 문서/코드에 넣지 않음
-
-### YouTube 가이드
-- [x] 전체 구조 설명: Project → YouTube API → Auth Platform → Audience → Scope → OAuth Client → Channel
-- [x] 앱의 실제 8단계 마법사와 동일한 순서 사용
-- [x] 프로젝트명 `Subtitle Localizer` 권장
-- [x] YouTube Data API v3 사용 설정
-- [x] Branding 공개 URL 3개 제공
-- [x] Audience `In Production` 권장과 Testing 차이 설명
-- [x] `youtube.force-ssl` scope 제공
-- [x] OAuth Client `Web application` / `Subtitle Localizer Web` 권장
-- [x] Authorized JavaScript origins는 비워두기
-- [x] Authorized redirect URI는 callback만 넣기
-- [x] Client ID/Secret 저장 후 첫 채널 연결
-- [x] 추가 계정/채널은 Cloud 설정 반복 없이 연결
-- [x] `403 access_denied`, `redirect_uri_mismatch`, 확인되지 않은 앱, 영상 0개 등 복구 설명
-
-### 기존 회귀 검증
-- [x] `package.json` 1.7.0 유지
-- [x] 실제 사용자 표시 버전 v1.7.0 유지 (`v17-version.css` 포함)
-- [x] 기존 OpenAI 연결 API 동작 코드 변경 없음
-- [x] 기존 Google Cloud 8단계 마법사 유지
-- [x] 다중 YouTube 채널 추가/전환 핵심 로직 변경 없음
-- [x] 기존 자막 번역/업로드/가져오기 핵심 로직 변경 없음
-- [x] 자동 테스트 전체 통과
-- [x] TypeScript 통과
-- [x] Next.js Production build 통과
-
-## 2026-09-06 상단 내비게이션 재정리
-### 정보 구조
-- [x] 명칭 확정: `초기 설정 / 연결 관리 / 작업하기`
-- [x] 기본 페이지 확정: `/` = `작업하기`
-- [x] `/guide` 역할 확정: `초기 설정`
-- [x] `/connections` 역할 확정: `연결 관리`
-
-### 구현
-- [x] `/`와 `/connections`의 큰 안내 배너 제거
-- [x] 주요 화면 공통 상단 탭 추가
-- [x] `초기 설정` → `/guide`
-- [x] `연결 관리` → `/connections`
-- [x] `작업하기` → `/`
-- [x] 현재 경로 탭 강조 및 `aria-current="page"` 적용
-- [x] 사이트 푸터의 `처음 사용 가이드`를 `초기 설정`으로 변경
-- [x] `/guide` 브라우저 제목과 목차 명칭도 `초기 설정`으로 통일
-- [x] 모바일에서도 탭이 명확하게 유지되도록 반응형 처리
-- [x] 기존 현재 YouTube 작업 채널 바 유지
-- [x] 연결/번역/다중 채널 핵심 로직 변경 없음
-
-## 2026-09-06 공통 상단 계층 정리
-### 정보 구조
-- [x] 공통 순서 확정: `타이틀바 → 탭 → 페이지별 내용`
-- [x] 작업하기 순서 확정: `타이틀바 → 탭 → 현재 YouTube 작업 채널 → 작업 본문`
-- [x] `/guide`, `/connections`에서도 공통 타이틀바를 맨 위에 유지
-- [x] 타이틀바와 탭 사이에 시각적 여백 확보
-
-### 구현
-- [x] 공통 `Subtitle Localizer` 타이틀바 추가
-- [x] Root Layout 순서를 `공통 타이틀바+탭 → 작업 채널 → 페이지`로 수정
-- [x] 기존 페이지 내부 타이틀바 중복 표시 제거
-- [x] 공통 타이틀바에서 OpenAI/YouTube 연결 상태 유지
-- [x] `/`에서만 현재 YouTube 작업 채널 바 표시
-- [x] 탭과 작업 채널 바 사이 간격 유지
-- [x] 모바일에서 동일한 계층 유지
-- [x] 연결/번역/다중 채널 핵심 로직 변경 없음
-
-### 검증
-- [x] 자동 테스트 전체 통과 (79/79)
-- [x] TypeScript 통과
-- [x] Next.js Production build 통과
-- [x] `/` HTTP 200 및 공통 타이틀바 → `작업하기` 활성 탭 확인
-- [x] `/guide` HTTP 200 및 공통 타이틀바 → `초기 설정` 활성 탭 확인
-- [x] `/connections` HTTP 200 및 공통 타이틀바 → `연결 관리` 활성 탭 확인
-- [x] Root Layout에서 `PrimarySectionNav`가 `WorkspaceChannelBar`보다 앞에 위치함을 회귀 테스트로 고정
-- [x] 내부 레거시 `.topbar`, `.v17-topbar`, `.guide-topbar`는 CSS로 중복 표시 방지
-- [x] 기존 `/connections` 제목/설명 명시적 `<br/>` 줄바꿈 유지
-- [x] 기능 검증 GitHub SHA `18ca255b03e43dbe52f6b13ceefd4272385c8327`
-- [x] 기능 검증 Production deployment `dpl_54v8cAhtfYpEZWPvPfFfSxxXuxtN` READY
-- [x] 관련 Runtime `error`/`fatal` 없음
-- [x] 버전 `v1.7.0` 유지
-
-## 2026-09-06 초기 설정 가이드 CTA 단순화
-### 구현
-- [x] `최초 1회 설정`의 `앱의 8단계 마법사와 함께 진행 →` 링크 삭제
-- [x] 7단계의 `연결 관리 7단계로 이동 →` 링크 삭제
-- [x] 7단계 설명과 완료 기준 유지
-- [x] Google Cloud Console 외부 작업 링크 유지
-- [x] 기존 연결/번역/다중 채널 로직 변경 없음
-
-### 검증
-- [x] 자동 테스트 전체 통과 (79/79)
-- [x] TypeScript 통과
-- [x] Next.js Production build 통과
-- [x] Production `/guide`에서 두 링크 미노출 확인
-- [x] 기능 검증 GitHub SHA `6dfc6db3512ac27dd7f6ea0366aa6d17cb3a0b20`
-- [x] 기능 검증 Production deployment `dpl_FaJCEUrAYuKPfiDa2QvLafhqqYzv` READY
-- [x] Runtime `error`/`fatal` 없음
-- [x] 버전 `v1.7.0` 유지
-
-## 2026-09-06 상단 중복 정보 정리
-### 구현
-- [x] 현재 YouTube 작업 채널 바의 `v1.7.0` 삭제
-- [x] 공통 타이틀바의 `v1.7.0` 유지
-- [x] 공통 타이틀바 우측 `연결 관리` / `작업하기` CTA 삭제
-- [x] 페이지 이동은 `초기 설정 / 연결 관리 / 작업하기` 탭만 담당
-- [x] OpenAI/YouTube 상태와 파일 비저장 안내 유지
-- [x] 초기 설정 준비물 카드의 SRT 보조문장 데스크톱 한 줄 처리
-- [x] 모바일에서는 보조문장 자연 줄바꿈 허용
-- [x] 기존 채널 전환/채널 추가/연결/번역 로직 변경 없음
-
-### 검증
-- [x] 자동 테스트 전체 통과 (79/79)
-- [x] TypeScript 통과
-- [x] Next.js Production build 통과
-- [x] 배포 소스 및 회귀 테스트에서 작업 채널 바 버전 마크업 제거 확인
-- [x] Production 주요 화면에서 공통 타이틀바 페이지 이동 CTA 미노출 확인
-- [x] Production CSS에서 준비물 보조문장 데스크톱 `white-space: nowrap` / 모바일 `normal` 확인
-- [x] 기능 검증 GitHub SHA `c4a8b07d9bcf26d64fcb82c3610eb78743bbc3ce`
-- [x] 기능 검증 Production deployment `dpl_DEBbPvsrbjmDSzfKusHaZS84ZB9S` READY
-- [x] Runtime `error`/`fatal` 없음
-- [x] 버전 `v1.7.0` 유지
-
-## 2026-09-06 초기 설정 값·결제 안내 보완
-### 구현
-- [x] callback URI를 이동 링크가 아닌 복사용 설정값으로 명확히 표시
-- [x] `youtube.force-ssl` scope를 이동 링크가 아닌 복사용 설정값으로 명확히 표시
-- [x] URL/scope 값의 링크 밑줄·클릭 affordance 제거
-- [x] 초기 설정 hero의 `FIRST-TIME SETUP` 버전 중복 삭제
-- [x] 연결 관리 `CONNECTIONS` 라벨을 오렌지 계열로 변경
-- [x] OpenAI API Billing/결제 수단 등록 단계 추가
-- [x] ChatGPT 구독과 OpenAI API 결제가 별도임을 유지
-- [x] Google/YouTube 기본 quota 사용에 카드 등록을 필수 단계로 안내하지 않기
-- [x] Google/YouTube 추가 quota는 별도 확장/심사 절차임을 안내
-- [x] 기존 OAuth/채널/번역/자막 업로드 핵심 로직 변경 없음
-
-### 검증
-- [x] 자동 테스트 전체 통과 (80/80)
-- [x] TypeScript 통과
-- [x] Next.js Production build 통과
-- [x] Production `/guide`에서 `FIRST-TIME SETUP` 버전 중복 제거 확인
-- [x] Production `/guide`에서 callback/scope가 비링크 `guide-static-code`로 렌더링됨을 확인
-- [x] Production `/guide`에서 OpenAI API Billing/결제 수단 안내 확인
-- [x] Production `/guide`에서 Google 카드 등록이 기본 8단계 필수가 아님을 안내하는 문구 확인
-- [x] Production CSS에서 `CONNECTIONS` 라벨 오렌지 강조 확인
-- [x] 기능 검증 GitHub SHA `caf68f303b1352cb65055255512ba92148a1a80b`
-- [x] 기능 검증 Production deployment `dpl_5FtUqLwNFHu5F5qypKwDTFkKGeUn` READY
-- [x] Runtime `error`/`fatal` 없음
-- [x] 버전 `v1.7.0` 유지
-
-## 2026-09-06 작업 화면 단일 스크롤·quota·트랙 이름 보완
-### 구현
-- [x] 데스크톱 `.side-column` 내부 `overflow-y:auto` 제거
-- [x] 우측 열 `max-height` 제거 및 `overflow: visible` 적용
-- [x] 우측 `YouTube에 올리기` / `현재 작업` 카드 sticky 해제 후 일반 문서 흐름 유지
-- [x] 현재 SRT 파일명에서 마지막 `.srt`를 제거한 값을 `자막 트랙 이름` 기본값으로 자동 입력
-- [x] 새 SRT 로드 시 트랙 이름을 새 파일명 기준으로 갱신
-- [x] 업로드 대상 영상 변경 시 이전 수동 입력값을 유지하지 않고 현재 SRT 파일명 기준으로 재설정
-- [x] 수동 수정한 트랙 이름은 실제 업로드에 사용
-- [x] 기본 YouTube Data API quota `10,000 units/일` 안내
-- [x] `captions.list` 50 / `captions.download` 200 / `captions.insert` 400 units 안내
+## YouTube quota 안내
+- [x] 자막 API 기본 `10,000 units/일` 안내
+- [x] `captions.list` 50 units 안내
+- [x] `captions.download` 200 units 안내
+- [x] `captions.insert` 400 units 안내
 - [x] PT 자정 일일 초기화 안내
-- [x] quota 소진 시 카드 구매가 아니라 다음 초기화 또는 quota 확장·심사임을 안내
-- [x] 버전 `v1.7.0` 유지
+- [x] 소진 시 카드 즉시 구매가 아닌 초기화 대기 / quota 확장·심사 안내
+- [x] 실제 프로젝트 Quotas 화면이 최종 기준임을 문서화
 
-### 검증
-- [x] 신규 회귀 테스트에 SRT 파일명 기본값·quota 문구·내부 스크롤 제거 고정
-- [x] 자동 테스트 전체 통과 (80/80)
+## OG / 소셜 공유
+- [x] 사용자 확정 이미지를 1200×630으로 변환
+- [x] `/og/subtitle-localizer` 이미지 엔드포인트 추가
+- [x] `Content-Type: image/jpeg`
+- [x] 장기 캐시 헤더 설정
+- [x] `metadataBase` Production URL 설정
+- [x] Open Graph title / description / site name / locale / image 설정
+- [x] OG image width 1200 / height 630 / alt 설정
+- [x] Twitter `summary_large_image` 설정
+- [x] OG JPEG 자체 크기를 회귀 테스트로 1200×630 검증
+- [x] Production HTML에서 실제 OG/Twitter 태그 확인
+- [x] Production OG URL HTTP 200 확인
+
+## 저장소 정리
+- [x] 구버전 중복 `User%20manual.md` 삭제
+- [x] 최종 `User manual.md` 유지
+- [x] OG 실험용 `compact-*` 파일 삭제
+- [x] OG 실험용 `final-*` 파일 삭제
+- [x] 최종 OG route backing `part-00.ts` ~ `part-05.ts`만 유지
+- [x] ZIP은 GitHub에 커밋하지 않음
+
+## 자동 검증
+- [x] 자동 테스트 **83/83** 통과
 - [x] TypeScript 통과
 - [x] Next.js Production build 통과
-- [x] 기능 구현 GitHub SHA `18ff48c5914a0885618716a90fd87fd4f5fbb308`
-- [x] 기능 구현 Production deployment `dpl_65XkKFWKyFxqz5eekN8Qf6obZmTv` READY
-- [x] Production `/` HTTP 200
-- [x] Production CSS에서 `.side-column` `position: static`, `max-height: none`, `overflow: visible` 확인
-- [x] Runtime `error`/`fatal` 없음
-- [x] README / context-notes / User manual / checklist 동기화
+- [x] `/` HTTP 200
+- [x] `/guide` HTTP 200
+- [x] `/connections` HTTP 200
+- [x] `/og/subtitle-localizer` HTTP 200
+- [x] Production OG 응답 `image/jpeg`
+- [x] Production Runtime `error` / `fatal` 0건
 
-## 단계별 자체 점검
-### 기존 v1.7.0 기능/E2E
-- 상태: 완료
-- 자체 점수: 10/10
-
-### 기존 UI 3건
-- 상태: 코드 및 Production 반영 완료
-- 자체 점수: 10/10
-
-### 상세 초기 설정 페이지
-- 상태: 완료
-- 자체 점수: 9.5/10
-
-### 상단 내비게이션 재정리
-- 상태: 완료
-- 결과: 대형 안내 배너 제거, `초기 설정 / 연결 관리 / 작업하기` 공통 탭, 기본 `/` 작업하기, 현재 탭 강조, 명칭 통일, Production 검증 완료
-- 자체 점수: 10/10
-
-### 공통 상단 계층 정리
-- 상태: 완료
-- 결과: 모든 주요 화면 공통 타이틀바를 맨 위에 두고 탭을 그 아래로 통일. 작업하기에서만 탭 아래 현재 작업 채널 표시. 타이틀바/탭 간 여백과 모바일 계층 유지.
-- 자체 점수: 10/10
-
-### 초기 설정 가이드 CTA 단순화
-- 상태: 완료
-- 결과: 요청된 두 내부 이동 링크 삭제, 설명/완료 기준 및 외부 작업 링크 유지, Production 검증 완료
-- 자체 점수: 10/10
-
-### 상단 중복 정보 정리
-- 상태: 완료
-- 결과: 작업 채널 버전 중복 제거, 공통 타이틀바 이동 CTA 제거, 준비물 보조문장 데스크톱 한 줄 처리 및 모바일 줄바꿈 유지, Production 검증 완료
-- 자체 점수: 10/10
-
-### 초기 설정 값·결제 안내 보완
-- 상태: 완료
-- 결과: callback/scope를 복사용 설정값으로 정리, hero 버전 중복 제거, CONNECTIONS 오렌지 강조, OpenAI Billing 안내 추가, Google/YouTube 기본 quota 카드 필수 오해 방지, Production 검증 완료
-- 자체 점수: 10/10
-
-### 작업 화면 단일 스크롤·quota·트랙 이름 보완
-- 상태: 완료
-- 결과: 우측 내부 세로 스크롤 제거, 일일 quota 의미/소진 처리 명확화, SRT 파일명 기반 트랙 이름 자동 입력, Production 검증 완료
-- 자체 점수: 10/10
+## 최종 배포 마감
+- [ ] 이 체크리스트를 포함한 최종 GitHub `main` SHA 확인
+- [ ] 해당 최종 SHA의 Vercel Production `READY` 확인
+- [ ] 최종 Production에서 OG/Twitter 태그 재확인
+- [ ] 최종 Production Runtime `error` / `fatal` 재확인
+- [ ] 비밀정보 / `.git` 제외 최종 `subtitle-localizer-v1.7.0.zip` 생성
+- [ ] 최종 ZIP 사용자에게만 전달
