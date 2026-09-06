@@ -97,3 +97,6 @@ OPENAI_TRANSLATION_MODEL=gpt-5.6-luna
 - Vercel Production READY
 - 관련 Runtime Error 없음
 - 전체 프로젝트 ZIP 사용자 제공(저장소에는 포함하지 않음)
+
+## v1.7.0 UI 레이아웃 보완
+실사용 화면 기준으로 연결 관리의 한글 줄바꿈, 작업 채널 바의 상하 여백, 데스크톱 우측 업로드/요약 카드의 스크롤 겹침을 보완합니다. 기능/버전은 v1.7.0을 유지합니다.
