@@ -22,9 +22,8 @@ v1.7.0의 핵심 목표는 다음과 같습니다.
 - GitHub: `paran-coder/subtitle-localizer`의 `main`만 사용
 - Vercel: `subtitle-localizer` 프로젝트만 사용
 - Production URL: `https://subtitle-localizer.vercel.app`
-- 가이드 기능 검증 커밋: `636ff89f33dc62bcd10e8dd87fce008962a78368`
-- 가이드 기능 검증 배포: `dpl_6dbX6JQ6sp8ZYuDmXqwp7ucQG2uQ` · `READY`
-- 자동 테스트: 78/78 통과
+- 2026-09-06 상단 내비게이션 작업 시작 기준 main: `050c2dad528181edca644b64ac6092a5056c925c`
+- 자동 테스트 기준: 78/78 통과
 - TypeScript / Next.js Production build: 통과
 - 관련 Runtime Error: 확인 범위 0건
 
@@ -87,43 +86,37 @@ Cloud config 하나를 여러 채널 연결이 재사용합니다. 채널별 `co
 - 데스크톱 우측 열을 sticky + 내부 스크롤 구조로 바꿔 `YouTube에 올리기`와 `현재 작업` 카드 겹침 방지
 - Production `/connections` HTML에서 명시적 줄바꿈 유지 확인
 
-## 2026-09-06 첫 사용자 가이드 완료
-신규 버전으로 올리지 않고 v1.7.0 안에서 `/guide` 페이지를 구현했습니다.
+## 2026-09-06 상세 설정 페이지
+`/guide`에는 OpenAI API Key와 Google/YouTube 최초 연결 절차가 상세하게 구현되어 있습니다.
 
-### 가이드 내용
-- 시작 전 준비물과 전체 연결 구조
-- OpenAI API Key의 용도, 비용 주체, 생성/복사/연결/교체 흐름
-- ChatGPT 구독과 OpenAI API 사용료가 별도라는 안내
-- 사용자 API Key의 암호화 + HttpOnly cookie 저장 원칙
-- Google Cloud Project → YouTube API → Auth Platform → Audience → Scope → OAuth Client → Channel의 전체 흐름
-- 앱의 실제 Google 8단계 마법사와 동일한 고정값
+포함 내용:
+- OpenAI API Key 용도, 비용 주체, 생성/복사/연결/교체
+- ChatGPT 구독과 OpenAI API 사용료의 분리
+- Google Cloud Project → YouTube API → Auth Platform → Audience → Scope → OAuth Client → Channel
+- Google 8단계 마법사와 동일한 값
 - Branding 공개 URL 3개
 - `youtube.force-ssl` scope
-- `Authorized JavaScript origins`와 `Authorized redirect URIs`의 차이
-- `403 access_denied`, `redirect_uri_mismatch`, `확인되지 않은 앱`, 영상 0개 등 문제 해결
-- 연결 후 SRT 번역, YouTube 자막 가져오기/업로드, 추가 채널 전환 흐름
-- 보안 및 비용 소유 구조 요약
+- Authorized JavaScript origins / Authorized redirect URIs 구분
+- `403 access_denied`, `redirect_uri_mismatch`, `확인되지 않은 앱`, 영상 0개 문제 해결
+- 보안 및 비용 소유 구조
 
-### 사용자 진입점
-- 작업공간 상단: `처음 사용 가이드`
-- 연결 관리 상단: `설정 가이드 보기`
-- 사이트 푸터: `처음 사용 가이드`
+## 2026-09-06 상단 정보 구조 재정리
+기존 `/`와 `/connections` 상단의 `처음 사용하시나요?`, `설정이 낯설다면`, `처음 사용 가이드`, `설정 가이드 보기` 대형 안내 배너는 사용자 위치를 오히려 헷갈리게 하므로 제거합니다.
 
-### UI / 접근성
-- 데스크톱: 좌측 sticky 목차 + 본문 카드
-- 모바일: 단일 열 재배치
-- focus-visible 유지
-- prefers-reduced-motion 유지
-- 기존 v1.7.0 디자인 언어 유지
+대신 모든 주요 화면에서 같은 상단 탭을 사용합니다.
+- `초기 설정` → `/guide`
+- `연결 관리` → `/connections`
+- `작업하기` → `/`
 
-### Production 검증
-- `/guide`: HTTP 200, 핵심 OpenAI/Google 안내와 링크 반영 확인
-- `/connections`: HTTP 200, 새 설정 가이드 진입점과 기존 명시적 줄바꿈 유지 확인
-- 테스트 78/78 통과
-- TypeScript 통과
-- Next.js Production build 통과
-- Vercel Production `READY`
-- 확인 범위 Runtime `error`/`fatal` 0건
+규칙:
+- 기본 진입 페이지는 `/`이며 `작업하기`가 기본 선택 상태입니다.
+- 현재 경로에 해당하는 탭을 시각적으로 명확하게 강조합니다.
+- `/guide`는 제품 사용법 전체가 아니라 OpenAI API Key와 Google/YouTube 최초 설정을 담당하는 `초기 설정` 화면으로 표현합니다.
+- `/connections`는 저장된 API Key와 Google/YouTube 연결을 확인·교체·추가·전환하는 `연결 관리` 화면입니다.
+- `/`는 SRT 업로드, YouTube 자막 가져오기, 번역, YouTube 업로드를 수행하는 `작업하기` 화면입니다.
+- 큰 설명 배너 대신 탭 자체가 사용자의 현재 위치와 다음 이동 경로를 설명하도록 합니다.
+- 사이트 푸터의 `/guide` 링크도 `처음 사용 가이드` 대신 `초기 설정`으로 통일합니다.
+- 기존 연결/번역/다중 채널 로직은 변경하지 않습니다.
 
 ## 버전 표시 메모
-`app/page.tsx`에는 과거 `v1.6.4` 문자열이 레거시 마크업으로 남아 있지만, `app/v17-version.css`가 홈 브랜드와 내부 푸터의 사용자 표시를 `v1.7.0`으로 명시 교체합니다. 실제 제품 버전과 package.json은 `1.7.0`이며 이번 작업에서도 버전을 올리지 않았습니다.
+`app/page.tsx`에는 과거 `v1.6.4` 문자열이 레거시 마크업으로 남아 있지만, `app/v17-version.css`가 홈 브랜드와 내부 푸터의 사용자 표시를 `v1.7.0`으로 명시 교체합니다. 실제 제품 버전과 package.json은 `1.7.0`이며 이번 작업에서도 버전을 올리지 않습니다.
