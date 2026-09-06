@@ -54,18 +54,26 @@ test("연결 완료 화면은 Publishing 확인과 여러 채널 누적 관리�
   assert.match(page, /Audience \/ 게시 상태 확인/);
 });
 
-test("공개 가이드·개인정보처리방침·서비스 약관을 사이트에서 찾을 수 있다", () => {
+test("주요 화면은 초기 설정·연결 관리·작업하기 탭으로 구분한다", () => {
   const layout = read("app/layout.tsx");
   const footer = read("components/site-policy-footer.tsx");
-  const guideEntry = read("components/first-use-guide-link.tsx");
+  const nav = read("components/first-use-guide-link.tsx");
   const privacy = read("app/privacy/page.tsx");
   const terms = read("app/terms/page.tsx");
-  assert.match(layout, /FirstUseGuideLink/);
+  assert.match(layout, /PrimarySectionNav/);
   assert.match(layout, /SitePolicyFooter/);
-  assert.match(footer, /href="\/guide"/);
+  assert.match(nav, /초기 설정/);
+  assert.match(nav, /연결 관리/);
+  assert.match(nav, /작업하기/);
+  assert.match(nav, /href: "\/guide"/);
+  assert.match(nav, /href: "\/connections"/);
+  assert.match(nav, /href: "\/"/);
+  assert.match(nav, /aria-current/);
+  assert.equal(nav.includes("처음 사용하시나요?"), false);
+  assert.equal(nav.includes("설정이 낯설다면"), false);
+  assert.match(footer, /href="\/guide">초기 설정/);
   assert.match(footer, /href="\/privacy"/);
   assert.match(footer, /href="\/terms"/);
-  assert.match(guideEntry, /처음 사용 가이드/);
   assert.match(privacy, /개인정보처리방침/);
   assert.match(privacy, /HttpOnly cookie/);
   assert.match(privacy, /OpenAI/);
@@ -76,7 +84,7 @@ test("공개 가이드·개인정보처리방침·서비스 약관을 사이트�
   assert.match(terms, /YouTube Data API quota/);
 });
 
-test("첫 사용자 가이드는 OpenAI와 YouTube 연결을 실제 값 기준으로 안내한다", () => {
+test("초기 설정 화면은 OpenAI와 YouTube 연결을 실제 값 기준으로 안내한다", () => {
   const guide = read("app/guide/page.tsx");
   assert.match(guide, /OpenAI API Keys 열기/);
   assert.match(guide, /ChatGPT 구독과 OpenAI API 결제는 별도/);
@@ -105,11 +113,11 @@ test("workspace 채널 바는 썸네일·채널 선택·빈 영상 행동을 제
   assert.match(bar, /v1\.7\.0/);
 });
 
-test("v1.7 UI·가이드·공개 정책 페이지는 모바일 재배치와 focus-visible/reduced-motion을 유지한다", () => {
+test("v1.7 UI·초기 설정·공개 정책 페이지는 모바일 재배치와 focus-visible/reduced-motion을 유지한다", () => {
   const css = read("app/v17.css");
   const legalCss = read("app/legal.css");
   const guideCss = read("app/guide.css");
-  const guideEntryCss = read("app/first-use-guide.css");
+  const navCss = read("app/first-use-guide.css");
   assert.match(css, /grid-template-columns:repeat\(8/);
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /\.v17-do-dont\{grid-template-columns:1fr\}/);
@@ -121,6 +129,8 @@ test("v1.7 UI·가이드·공개 정책 페이지는 모바일 재배치와 focu
   assert.match(guideCss, /@media\(max-width:760px\)/);
   assert.match(guideCss, /focus-visible/);
   assert.match(guideCss, /prefers-reduced-motion/);
-  assert.match(guideEntryCss, /@media\(max-width:760px\)/);
-  assert.match(guideEntryCss, /focus-visible/);
+  assert.match(navCss, /@media\(max-width:760px\)/);
+  assert.match(navCss, /focus-visible/);
+  assert.match(navCss, /prefers-reduced-motion/);
+  assert.match(navCss, /\.primary-section-nav/);
 });
