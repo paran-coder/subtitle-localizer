@@ -141,19 +141,21 @@
 
 ## 2026-09-06 초기 설정 가이드 CTA 단순화
 ### 구현
-- [ ] `최초 1회 설정`의 `앱의 8단계 마법사와 함께 진행 →` 링크 삭제
-- [ ] 7단계의 `연결 관리 7단계로 이동 →` 링크 삭제
-- [ ] 7단계 설명과 완료 기준 유지
-- [ ] Google Cloud Console 외부 작업 링크 유지
-- [ ] 기존 연결/번역/다중 채널 로직 변경 없음
+- [x] `최초 1회 설정`의 `앱의 8단계 마법사와 함께 진행 →` 링크 삭제
+- [x] 7단계의 `연결 관리 7단계로 이동 →` 링크 삭제
+- [x] 7단계 설명과 완료 기준 유지
+- [x] Google Cloud Console 외부 작업 링크 유지
+- [x] 기존 연결/번역/다중 채널 로직 변경 없음
 
 ### 검증
-- [ ] 자동 테스트 전체 통과
-- [ ] TypeScript 통과
-- [ ] Next.js Production build 통과
-- [ ] Production `/guide`에서 두 링크 미노출 확인
-- [ ] Runtime `error`/`fatal` 없음
-- [ ] 버전 `v1.7.0` 유지
+- [x] 자동 테스트 전체 통과 (79/79)
+- [x] TypeScript 통과
+- [x] Next.js Production build 통과
+- [x] Production `/guide`에서 두 링크 미노출 확인
+- [x] 기능 검증 GitHub SHA `6dfc6db3512ac27dd7f6ea0366aa6d17cb3a0b20`
+- [x] 기능 검증 Production deployment `dpl_FaJCEUrAYuKPfiDa2QvLafhqqYzv` READY
+- [x] Runtime `error`/`fatal` 없음
+- [x] 버전 `v1.7.0` 유지
 
 ## 단계별 자체 점검
 ### 기존 v1.7.0 기능/E2E
@@ -179,5 +181,6 @@
 - 자체 점수: 10/10
 
 ### 초기 설정 가이드 CTA 단순화
-- 상태: 진행 중
-- 자체 점수: 검증 후 기록
+- 상태: 완료
+- 결과: 요청된 두 내부 이동 링크 삭제, 설명/완료 기준 및 외부 작업 링크 유지, Production 검증 완료
+- 자체 점수: 10/10
