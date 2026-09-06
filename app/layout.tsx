@@ -6,6 +6,7 @@ import "./globals.css";
 import "./v17.css";
 import "./v17-version.css";
 import "./legal.css";
+import "./ui-polish-v17.css";
 
 export const metadata: Metadata = {
   title: "Subtitle Localizer",
