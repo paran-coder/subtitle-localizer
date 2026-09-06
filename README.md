@@ -16,7 +16,7 @@
 v1.7.0의 주요 화면은 사용자 목적 기준으로 세 영역으로 나눕니다.
 
 1. **초기 설정** — `/guide`
-   - OpenAI API Key 생성과 연결
+   - OpenAI API Billing과 API Key 생성/연결
    - Google Cloud / YouTube 최초 8단계 설정
    - 최초 연결 중 자주 발생하는 오류와 복구
 2. **연결 관리** — `/connections`
@@ -40,6 +40,8 @@ v1.7.0의 주요 화면은 사용자 목적 기준으로 세 영역으로 나눕
 
 1. **내 OpenAI API Key**
    - 왜 필요한지
+   - ChatGPT 구독과 별도로 OpenAI API Billing을 설정하는 방법
+   - 유료 API 사용을 위한 결제 수단/선불 크레딧 설정
    - 비용은 누구에게 청구되는지
    - OpenAI에서 secret key를 어디서 만들고 언제 복사해야 하는지
    - Subtitle Localizer `연결 관리`의 어느 칸에 넣는지
@@ -54,9 +56,12 @@ v1.7.0의 주요 화면은 사용자 목적 기준으로 세 영역으로 나눕
    - Testing / In Production 차이와 `403 access_denied`
    - OAuth callback URI를 정확한 칸에 넣는 방법
    - 첫 채널 연결 후 추가 계정/채널 연결 방법
+   - 기본 YouTube Data API quota 사용에는 카드 등록을 필수 단계로 두지 않으며 추가 quota는 별도 확장/심사 절차임을 안내
 
 ## OpenAI 연결 원칙
 - OpenAI API Key는 사용자가 직접 발급하고 소유합니다.
+- ChatGPT 구독과 OpenAI API 결제는 별도입니다.
+- 유료 API 사용을 시작하려면 OpenAI API Billing에서 결제 수단을 추가하거나 선불 크레딧을 설정합니다.
 - 번역 사용료는 사용자가 입력한 OpenAI 계정에 직접 청구됩니다.
 - 앱은 입력받은 API Key를 서버에서 암호화하고 HttpOnly cookie로 보관합니다.
 - localStorage/sessionStorage에는 비밀정보를 저장하지 않습니다.
@@ -82,6 +87,10 @@ v1.7.0은 Google Cloud 설정과 YouTube 채널 연결을 분리합니다.
 - 권장 Client 이름: `Subtitle Localizer Web`
 - Authorized JavaScript origins: 비움
 - Authorized redirect URIs: `https://subtitle-localizer.vercel.app/api/youtube/oauth/callback`
+
+`https://www.googleapis.com/auth/youtube.force-ssl`은 웹페이지로 이동하는 링크가 아니라 OAuth scope 식별자입니다. `https://subtitle-localizer.vercel.app/api/youtube/oauth/callback`도 사용자가 방문하는 페이지 링크가 아니라 Google OAuth Client의 Authorized redirect URIs에 등록하는 callback 값입니다.
+
+YouTube Data API는 프로젝트 quota를 사용합니다. 기본 quota 사용 흐름에 카드 등록을 필수 단계로 넣지 않으며, 기본 quota보다 더 많은 사용량이 필요하면 YouTube의 quota 확장 및 심사 절차를 따릅니다.
 
 `Client 저장됨`과 Google 앱의 Publishing 상태는 별개입니다. 앱은 Google Console의 실제 Publishing 상태까지 자동 판별하지 않습니다.
 
@@ -121,6 +130,9 @@ v1.7.0은 Google Cloud 설정과 YouTube 채널 연결을 분리합니다.
 3. 데스크톱 오른쪽 열 전체를 sticky + 내부 스크롤 구조로 만들어 `YouTube에 올리기`와 `현재 작업` 카드가 겹치지 않게 합니다.
 4. 주요 화면 이동은 `초기 설정 / 연결 관리 / 작업하기` 공통 탭으로 구분합니다.
 5. 세 주요 화면 모두 공통 `Subtitle Localizer` 타이틀바를 탭 위에 표시하며, 작업하기에서만 탭 아래에 현재 YouTube 작업 채널을 표시합니다.
+6. 제품 버전은 공통 타이틀바에서만 반복 없이 표시합니다.
+7. 초기 설정의 callback URI와 YouTube scope는 이동 링크가 아니라 복사용 설정값으로 표시합니다.
+8. 작업 화면의 `자막 트랙 이름`은 새 작업/업로드 대상 변경 시 이전 입력이 남지 않도록 초기화합니다.
 
 버전은 계속 `v1.7.0`을 유지합니다.
 
@@ -128,8 +140,9 @@ v1.7.0은 Google Cloud 설정과 YouTube 채널 연결을 분리합니다.
 - OpenAI API Key, Google Client Secret, YouTube access/refresh token은 서버에서 암호화합니다.
 - 브라우저에는 HttpOnly cookie로 저장하며 localStorage/sessionStorage에 비밀정보를 두지 않습니다.
 - SRT 파일은 서버 영구 저장소에 저장하지 않습니다.
-- OpenAI 사용료는 사용자 OpenAI 계정에 청구됩니다.
-- YouTube Data API quota는 사용자 Google Cloud 프로젝트를 사용합니다.
+- OpenAI 사용료는 사용자 OpenAI 계정에 청구되며 ChatGPT 구독과 별도입니다.
+- OpenAI 유료 API 사용을 위해 사용자가 자신의 API Billing 결제 수단/크레딧을 관리합니다.
+- YouTube Data API quota는 사용자 Google Cloud 프로젝트를 사용하며 기본 quota 사용 자체를 카드 결제 단계로 안내하지 않습니다.
 - 호스팅/function 비용만 배포자 Vercel 계정에 귀속됩니다.
 
 ## 배포 환경 변수
