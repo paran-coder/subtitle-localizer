@@ -180,6 +180,34 @@
 - [x] Runtime `error`/`fatal` 없음
 - [x] 버전 `v1.7.0` 유지
 
+## 2026-09-06 초기 설정 값·결제 안내 보완
+### 구현
+- [ ] callback URI를 이동 링크가 아닌 복사용 설정값으로 명확히 표시
+- [ ] `youtube.force-ssl` scope를 이동 링크가 아닌 복사용 설정값으로 명확히 표시
+- [ ] URL/scope 값의 링크 밑줄·클릭 affordance 제거
+- [ ] 작업하기 `자막 트랙 이름` 초기값 비우기
+- [ ] 업로드 대상 영상 변경 시 `자막 트랙 이름` 다시 비우기
+- [ ] 비어 있는 트랙 이름의 기본 처리 규칙을 사용자에게 숨기지 않기
+- [ ] 초기 설정 hero의 `FIRST-TIME SETUP` 버전 중복 삭제
+- [ ] 연결 관리 `CONNECTIONS` 라벨을 오렌지 계열로 변경
+- [ ] OpenAI API Billing/결제 수단 등록 단계 추가
+- [ ] ChatGPT 구독과 OpenAI API 결제가 별도임을 유지
+- [ ] Google/YouTube 기본 quota 사용에 카드 등록을 필수 단계로 안내하지 않기
+- [ ] Google/YouTube 추가 quota는 별도 확장/심사 절차임을 안내
+- [ ] 기존 OAuth/채널/번역/자막 업로드 핵심 로직 변경 없음
+
+### 검증
+- [ ] 자동 테스트 전체 통과
+- [ ] TypeScript 통과
+- [ ] Next.js Production build 통과
+- [ ] Production `/guide`에서 버전 중복 제거 확인
+- [ ] Production `/guide`에서 callback/scope 비링크 스타일 확인
+- [ ] Production `/guide`에서 OpenAI Billing 안내 확인
+- [ ] Production `/connections`에서 `CONNECTIONS` 오렌지 라벨 확인
+- [ ] 작업 화면에서 트랙 이름 초기화 동작 확인
+- [ ] Runtime `error`/`fatal` 없음
+- [ ] 버전 `v1.7.0` 유지
+
 ## 단계별 자체 점검
 ### 기존 v1.7.0 기능/E2E
 - 상태: 완료
@@ -212,3 +240,7 @@
 - 상태: 완료
 - 결과: 작업 채널 버전 중복 제거, 공통 타이틀바 이동 CTA 제거, 준비물 보조문장 데스크톱 한 줄 처리 및 모바일 줄바꿈 유지, Production 검증 완료
 - 자체 점수: 10/10
+
+### 초기 설정 값·결제 안내 보완
+- 상태: 진행 중
+- 자체 점수: 검증 후 기록
