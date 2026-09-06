@@ -101,7 +101,6 @@ export default function WorkspaceChannelBar() {
       <div className="v17-workspace-channel-copy"><span>현재 YouTube 작업 채널</span><strong>{active.channelTitle}</strong><small>영상 가져오기와 자막 업로드가 이 채널을 사용합니다.</small></div>
       {connections.length > 1 && <label className="v17-channel-select"><span className="sr-only">작업 채널 선택</span><select value={activeConnectionId} disabled={switching} onChange={(event) => void switchChannel(event.target.value)}>{connections.map((connection) => <option value={connection.connectionId} key={connection.connectionId}>{connection.channelTitle}</option>)}</select></label>}
       <a className="v17-secondary" href="/connections?setup=youtube&return=/">+ 계정 또는 채널 추가</a>
-      <span className="v17-workspace-version">v1.7.0</span>
     </div>
     {emptyVideos && !loadingVideos && <div className="v17-empty-video"><div><strong>이 채널에는 업로드된 영상이 없습니다.</strong><span>자막 가져오기나 업로드를 하려면 YouTube에 영상을 하나 올린 뒤 다시 불러오세요.</span></div><div><a href="https://studio.youtube.com" target="_blank" rel="noreferrer">YouTube Studio 열기 ↗</a><button type="button" onClick={() => setRefreshKey((value) => value + 1)}>다시 불러오기</button></div></div>}
     {message && <p className="v17-channel-bar-message">{message}</p>}
