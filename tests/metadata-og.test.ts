@@ -33,10 +33,10 @@ test("공통 metadata는 1200x630 OG와 Twitter large image 태그를 정의한�
   assert.match(layout, /summary_large_image/);
   assert.match(layout, /width: 1200/);
   assert.match(layout, /height: 630/);
-  assert.match(layout, /\/og\/subtitle-localizer/);
+  assert.match(layout, /const OG_IMAGE_URL = "\/og\.png"/);
 });
 
-test("확정 OG JPEG 데이터는 실제 1200x630 이미지다", () => {
+test("기존 확정 OG JPEG 데이터는 실제 1200x630 이미지다", () => {
   const parts = Array.from({ length: 6 }, (_, index) => {
     const source = read(`lib/og-image/part-0${index}.ts`);
     const match = source.match(/export default "([\s\S]*)";\s*$/);
@@ -45,9 +45,6 @@ test("확정 OG JPEG 데이터는 실제 1200x630 이미지다", () => {
   });
   const image = Buffer.from(parts.join(""), "base64");
   assert.deepEqual(jpegDimensions(image), { width: 1200, height: 630 });
-  const route = read("app/og/subtitle-localizer/route.ts");
-  assert.match(route, /Content-Type\": \"image\/jpeg/);
-  assert.match(route, /max-age=31536000, immutable/);
 });
 
 test("구버전 중복 문서와 OG 실험 데이터는 최종 트리에 남지 않는다", () => {
