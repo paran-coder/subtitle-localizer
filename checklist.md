@@ -31,19 +31,22 @@
 - [x] Client ID / Secret만 필수 입력
 - [x] 첫 OAuth 성공 후 실제 YouTube channel ID/title 확인
 - [x] 실제 OAuth callback에서 승인된 YouTube channel ID/title 식별 API 구현
-- [ ] Branding 단계에서 홈페이지 / 개인정보처리방침 / 서비스 약관 URL을 정확히 안내
-- [ ] Client 저장만으로 Publishing 완료를 단정하지 않도록 완료 문구 수정
+- [x] Branding 단계에서 홈페이지 / 개인정보처리방침 / 서비스 약관 URL을 정확히 안내
+- [x] Client 저장만으로 Publishing 완료를 단정하지 않도록 완료 문구 수정
 
 ## 공개 OAuth 정책 페이지
-- [ ] `/privacy` 공개 페이지 추가
-- [ ] `/terms` 공개 페이지 추가
-- [ ] 메인 화면에서 개인정보처리방침 / 서비스 약관 링크 제공
-- [ ] 연결 관리 화면에서도 정책 페이지 링크 제공
-- [ ] 홈페이지 URL `https://subtitle-localizer.vercel.app/` 안내
-- [ ] 개인정보처리방침 URL `https://subtitle-localizer.vercel.app/privacy` 안내
-- [ ] 서비스 약관 URL `https://subtitle-localizer.vercel.app/terms` 안내
-- [ ] 정책 페이지에 BYOK/BYOC, HttpOnly 암호화, OpenAI/Google API 처리, SRT 비영구 저장 원칙 반영
-- [ ] 정책 페이지 모바일/focus-visible 확인
+- [x] `/privacy` 공개 페이지 추가
+- [x] `/terms` 공개 페이지 추가
+- [x] 메인 화면에서 개인정보처리방침 / 서비스 약관 링크 제공
+- [x] 연결 관리 화면에서도 정책 페이지와 Branding 입력 URL 안내 제공
+- [x] 홈페이지 URL `https://subtitle-localizer.vercel.app/` 안내
+- [x] 개인정보처리방침 URL `https://subtitle-localizer.vercel.app/privacy` 안내
+- [x] 서비스 약관 URL `https://subtitle-localizer.vercel.app/terms` 안내
+- [x] 정책 페이지에 BYOK/BYOC, HttpOnly 암호화, OpenAI/Google API 처리, SRT 비영구 저장 원칙 반영
+- [x] 정책 페이지 모바일/focus-visible/reduced-motion CSS 및 회귀 테스트 추가
+- [x] Production에서 `/privacy` HTTP 200 확인
+- [x] Production에서 `/terms` HTTP 200 확인
+- [x] Production 메인/연결 화면에서 정책 링크 노출 확인
 
 ## Google Cloud 재설정 없는 추가 연결
 - [x] 첫 설정 후 `+ 계정 또는 채널 추가` UI에서 Google Cloud 재설정 요구 없음
@@ -94,8 +97,8 @@
 - [x] 활성 채널 세션 선택 단위 테스트
 - [x] v1.6 legacy 세션 fallback 단위 테스트
 - [x] 다중 채널 API 구조 architecture 테스트
-- [ ] 공개 정책 페이지/링크 테스트 추가
-- [ ] Publishing 안내 회귀 테스트 추가
+- [x] 공개 정책 페이지/링크 테스트 추가
+- [x] Publishing 안내 회귀 테스트 추가
 - [ ] 실제 채널 A 추가 후 B 추가 시 A 유지 E2E
 - [ ] 동일 채널 재연결 E2E
 - [ ] 활성 채널 전환 E2E
@@ -104,12 +107,12 @@
 - [ ] 채널별 자막 업로드 E2E
 - [x] OAuth 오류 `403 access_denied` 원인 확인 E2E
 - [x] 영상 없음 UI E2E
-- [ ] 모바일 가로 overflow 없음
-- [ ] focus-visible 유지
-- [ ] prefers-reduced-motion 유지
-- [x] Production에서 자동 테스트 **67/67 통과** 이력
-- [x] Vercel `next build` TypeScript 검사 통과 이력
-- [x] Vercel Production build 통과 이력
+- [ ] 실제 모바일 기기 가로 overflow E2E
+- [x] focus-visible 회귀 테스트
+- [x] prefers-reduced-motion 회귀 테스트
+- [x] 최신 Production 자동 테스트 **70/70 통과**
+- [x] 최신 Vercel `next build` TypeScript 검사 통과
+- [x] 최신 Vercel Production build 통과
 
 ## 패키징 / 배포
 - [ ] 전체 프로젝트 ZIP 생성
@@ -117,13 +120,12 @@
 - [ ] 최종 v1.7.0 변경 전체를 GitHub main에 반영
 - [x] 2단계 API 변경 GitHub main 반영
 - [x] 3단계 UI 변경 GitHub main 반영
-- [x] 최신 기존 커밋 `386b5fc4f1c06c30e38cbd401bdc40a64f7dbe0f` Production READY 확인
-- [x] 해당 상태에서 Runtime Errors 없음 확인
-- [ ] 공개 정책 페이지 변경 후 최종 Vercel Production READY 확인
-- [ ] 공개 정책 페이지 변경 후 최종 Runtime Errors 확인
+- [x] 4단계 공개 정책/Publishing 보완 GitHub main 반영
+- [x] 공개 정책 변경 Production deployment `dpl_5gQKBErpzopXQLdVsadyzuic1PEj` READY 확인
+- [x] 공개 정책 변경 후 Runtime Errors 없음 확인
 - [x] 기존 Google 연결 E2E
 - [x] 첫 채널 연결 유지 E2E
-- [ ] 추가 계정/채널 연결 E2E — Testing 상태 때문에 현재 차단
+- [ ] 추가 계정/채널 연결 E2E — Branding URL 저장 + In Production 전환 후 재개
 - [ ] 채널 전환 E2E
 - [ ] 영상 가져오기 → 번역 → YouTube 자막 업로드 E2E
 
@@ -143,14 +145,18 @@
 - 자체 점수: **9.6/10**
 
 ### 3단계 — Google 설정 마법사 / 작업공간 UI
-- 상태: **구현 완료, E2E 보완 중**
+- 상태: **구현 완료, E2E 보완 완료**
 - 완료: 8단계 마법사, 다중 채널 관리, 작업공간 채널 바, 썸네일, 빈 영상 UX
 - E2E 발견: Client 저장 여부만 보고 `Google Cloud 설정은 끝났습니다`라고 표시했지만 실제 Google OAuth 앱은 Testing 상태였고 새 계정은 `403 access_denied`로 차단됨
-- 보완 방향: 공개 정책 페이지를 제공하고 Branding URL 등록 → Audience `In Production` 흐름을 마법사와 연결 관리 화면에 반영
-- 현재 자체 점수: **9.2/10**
+- 수정: Client 저장과 Google Publishing 완료를 분리해 표시하고 Branding/Publishing 확인 경로를 UI에 추가
+- 자체 점수: **9.7/10**
 
 ### 4단계 — 공개 정책 / Publishing 보완
-- 상태: **진행 중**
+- 상태: **완료**
+- 완료: 공개 `/privacy`, `/terms`, 전역 정책 링크, Branding 입력 URL 복사, Audience/Branding 바로가기, 문서 동기화, 회귀 테스트 추가
+- 검증: 최신 Production에서 자동 테스트 **70/70**, TypeScript, Next.js build 통과. `/privacy`, `/terms`, `/connections`, `/` HTTP 200. Runtime Errors 0건
+- 남은 확인: 실제 Google Branding에 URL 3개 저장 → Audience `In Production` → 새 Google 계정 추가 E2E
+- 자체 점수: **9.8/10**
 
-### 5단계 — 최종 테스트 / 패키징 / 배포
-- 상태: 대기
+### 5단계 — 최종 E2E / 패키징 / 배포
+- 상태: **진행 대기**
