@@ -95,28 +95,30 @@
 - [x] `/connections` 역할 확정: `연결 관리`
 
 ### 구현
-- [ ] `/`와 `/connections`의 큰 안내 배너 제거
-- [ ] 주요 화면 공통 상단 탭 추가
-- [ ] `초기 설정` → `/guide`
-- [ ] `연결 관리` → `/connections`
-- [ ] `작업하기` → `/`
-- [ ] 현재 경로 탭 강조
-- [ ] 사이트 푸터의 `처음 사용 가이드`를 `초기 설정`으로 변경
-- [ ] 모바일에서도 탭이 명확하게 유지되도록 반응형 처리
-- [ ] 기존 현재 YouTube 작업 채널 바 유지
-- [ ] 연결/번역/다중 채널 핵심 로직 변경 없음
+- [x] `/`와 `/connections`의 큰 안내 배너 제거
+- [x] 주요 화면 공통 상단 탭 추가
+- [x] `초기 설정` → `/guide`
+- [x] `연결 관리` → `/connections`
+- [x] `작업하기` → `/`
+- [x] 현재 경로 탭 강조 및 `aria-current="page"` 적용
+- [x] 사이트 푸터의 `처음 사용 가이드`를 `초기 설정`으로 변경
+- [x] `/guide` 브라우저 제목과 목차 명칭도 `초기 설정`으로 통일
+- [x] 모바일에서도 탭이 명확하게 유지되도록 반응형 처리
+- [x] 기존 현재 YouTube 작업 채널 바 유지
+- [x] 연결/번역/다중 채널 핵심 로직 변경 없음
 
 ### 검증
-- [ ] 자동 테스트 전체 통과
-- [ ] TypeScript 통과
-- [ ] Next.js Production build 통과
-- [ ] `/` HTTP 200 및 `작업하기` 활성 탭 확인
-- [ ] `/guide` HTTP 200 및 `초기 설정` 활성 탭 확인
-- [ ] `/connections` HTTP 200 및 `연결 관리` 활성 탭 확인
-- [ ] 기존 `/connections` 명시적 줄바꿈 유지
-- [ ] Vercel Production READY
-- [ ] 관련 Runtime `error`/`fatal` 없음
-- [ ] 버전 `v1.7.0` 유지
+- [x] 자동 테스트 전체 통과 (78/78)
+- [x] TypeScript 통과
+- [x] Next.js Production build 통과
+- [x] `/` HTTP 200 및 `작업하기` 활성 탭 확인
+- [x] `/guide` HTTP 200 및 `초기 설정` 활성 탭 확인
+- [x] `/connections` HTTP 200 및 `연결 관리` 활성 탭 확인
+- [x] 기존 `/connections` 제목/설명 명시적 `<br/>` 줄바꿈 유지
+- [x] 기능 검증 Production deployment `dpl_AsjimHBwhn1FMq7soXBrxzqqkbV8` READY
+- [x] 기능 검증 GitHub SHA `6d586be44a9951c415237ee145136f713c92538c`
+- [x] 관련 Runtime `error`/`fatal` 없음
+- [x] 버전 `v1.7.0` 유지
 
 ## 단계별 자체 점검
 ### 기존 v1.7.0 기능/E2E
@@ -132,5 +134,6 @@
 - 자체 점수: 9.5/10
 
 ### 상단 내비게이션 재정리
-- 상태: 문서 선행 완료, 구현 전
-- 다음 단계: 공통 탭 구현 → 회귀 테스트 → Production 검증
+- 상태: 완료
+- 결과: 대형 안내 배너 제거, `초기 설정 / 연결 관리 / 작업하기` 공통 탭, 기본 `/` 작업하기, 현재 탭 강조, 명칭 통일, Production 검증 완료
+- 자체 점수: 10/10
