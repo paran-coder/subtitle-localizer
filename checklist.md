@@ -83,7 +83,7 @@
 - [x] 기존 Google Cloud 8단계 마법사 유지
 - [x] 다중 YouTube 채널 추가/전환 핵심 로직 변경 없음
 - [x] 기존 자막 번역/업로드/가져오기 핵심 로직 변경 없음
-- [x] 자동 테스트 전체 통과 (78/78)
+- [x] 자동 테스트 전체 통과
 - [x] TypeScript 통과
 - [x] Next.js Production build 통과
 
@@ -107,19 +107,6 @@
 - [x] 기존 현재 YouTube 작업 채널 바 유지
 - [x] 연결/번역/다중 채널 핵심 로직 변경 없음
 
-### 검증
-- [x] 자동 테스트 전체 통과 (78/78)
-- [x] TypeScript 통과
-- [x] Next.js Production build 통과
-- [x] `/` HTTP 200 및 `작업하기` 활성 탭 확인
-- [x] `/guide` HTTP 200 및 `초기 설정` 활성 탭 확인
-- [x] `/connections` HTTP 200 및 `연결 관리` 활성 탭 확인
-- [x] 기존 `/connections` 제목/설명 명시적 `<br/>` 줄바꿈 유지
-- [x] 기능 검증 Production deployment `dpl_AsjimHBwhn1FMq7soXBrxzqqkbV8` READY
-- [x] 기능 검증 GitHub SHA `6d586be44a9951c415237ee145136f713c92538c`
-- [x] 관련 Runtime `error`/`fatal` 없음
-- [x] 버전 `v1.7.0` 유지
-
 ## 2026-09-06 공통 상단 계층 정리
 ### 정보 구조
 - [x] 공통 순서 확정: `타이틀바 → 탭 → 페이지별 내용`
@@ -128,27 +115,29 @@
 - [x] 타이틀바와 탭 사이에 시각적 여백 확보
 
 ### 구현
-- [ ] 공통 `Subtitle Localizer` 타이틀바 추가
-- [ ] Root Layout 순서를 `공통 상단 → 작업 채널 → 페이지`로 수정
-- [ ] 기존 페이지 내부 타이틀바 중복 표시 제거
-- [ ] 공통 타이틀바에서 OpenAI/YouTube 연결 상태 유지
-- [ ] `/`에서만 현재 YouTube 작업 채널 바 표시
-- [ ] 탭과 작업 채널 바 사이 간격 유지
-- [ ] 모바일에서 동일한 계층 유지
-- [ ] 연결/번역/다중 채널 핵심 로직 변경 없음
+- [x] 공통 `Subtitle Localizer` 타이틀바 추가
+- [x] Root Layout 순서를 `공통 타이틀바+탭 → 작업 채널 → 페이지`로 수정
+- [x] 기존 페이지 내부 타이틀바 중복 표시 제거
+- [x] 공통 타이틀바에서 OpenAI/YouTube 연결 상태 유지
+- [x] `/`에서만 현재 YouTube 작업 채널 바 표시
+- [x] 탭과 작업 채널 바 사이 간격 유지
+- [x] 모바일에서 동일한 계층 유지
+- [x] 연결/번역/다중 채널 핵심 로직 변경 없음
 
 ### 검증
-- [ ] 자동 테스트 전체 통과
-- [ ] TypeScript 통과
-- [ ] Next.js Production build 통과
-- [ ] `/`에서 `타이틀바 → 탭 → 작업 채널` 순서 확인
-- [ ] `/guide`에서 `타이틀바 → 탭 → 초기 설정 본문` 순서 확인
-- [ ] `/connections`에서 `타이틀바 → 탭 → 연결 관리 본문` 순서 확인
-- [ ] 기존 활성 탭 강조 유지
-- [ ] 기존 `/connections` 명시적 줄바꿈 유지
-- [ ] Vercel Production READY
-- [ ] 관련 Runtime `error`/`fatal` 없음
-- [ ] 버전 `v1.7.0` 유지
+- [x] 자동 테스트 전체 통과 (79/79)
+- [x] TypeScript 통과
+- [x] Next.js Production build 통과
+- [x] `/` HTTP 200 및 공통 타이틀바 → `작업하기` 활성 탭 확인
+- [x] `/guide` HTTP 200 및 공통 타이틀바 → `초기 설정` 활성 탭 확인
+- [x] `/connections` HTTP 200 및 공통 타이틀바 → `연결 관리` 활성 탭 확인
+- [x] Root Layout에서 `PrimarySectionNav`가 `WorkspaceChannelBar`보다 앞에 위치함을 회귀 테스트로 고정
+- [x] 내부 레거시 `.topbar`, `.v17-topbar`, `.guide-topbar`는 CSS로 중복 표시 방지
+- [x] 기존 `/connections` 제목/설명 명시적 `<br/>` 줄바꿈 유지
+- [x] 기능 검증 GitHub SHA `18ca255b03e43dbe52f6b13ceefd4272385c8327`
+- [x] 기능 검증 Production deployment `dpl_54v8cAhtfYpEZWPvPfFfSxxXuxtN` READY
+- [x] 관련 Runtime `error`/`fatal` 없음
+- [x] 버전 `v1.7.0` 유지
 
 ## 단계별 자체 점검
 ### 기존 v1.7.0 기능/E2E
@@ -169,5 +158,6 @@
 - 자체 점수: 10/10
 
 ### 공통 상단 계층 정리
-- 상태: 문서 선행 완료, 구현 전
-- 다음 단계: 공통 타이틀바 구현 → 레이아웃 순서 수정 → 회귀 테스트 → Production 검증
+- 상태: 완료
+- 결과: 모든 주요 화면 공통 타이틀바를 맨 위에 두고 탭을 그 아래로 통일. 작업하기에서만 탭 아래 현재 작업 채널 표시. 타이틀바/탭 간 여백과 모바일 계층 유지.
+- 자체 점수: 10/10
