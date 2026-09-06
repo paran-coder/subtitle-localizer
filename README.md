@@ -13,7 +13,7 @@
 - 운영자 소유 Google OAuth Client/Google Cloud 프로젝트/quota는 사용하지 않음
 
 ## 연결 원칙
-Subtitle Localizer는 여전히 사용자 소유 BYOC 구조를 유지합니다.
+Subtitle Localizer는 사용자 소유 BYOC 구조를 유지합니다.
 
 ```text
 사용자 Google Cloud 프로젝트
@@ -26,11 +26,11 @@ Subtitle Localizer는 여전히 사용자 소유 BYOC 구조를 유지합니다.
 운영자는 사용자의 Google Cloud 프로젝트, Google OAuth Client, YouTube quota를 대신 소유하지 않습니다.
 
 ## 초보자용 Google 연결 마법사
-기존 4단계 Wizard를 실제 Google Cloud 작업 순서에 가까운 8단계 흐름으로 재구성합니다.
+기존 4단계 Wizard를 실제 Google Cloud 작업 순서에 가까운 8단계 흐름으로 재구성했습니다.
 
 1. Google Cloud 프로젝트 준비
 2. YouTube Data API v3 활성화
-3. Google Auth Platform 기본 설정
+3. Google Auth Platform 기본 설정 + Branding 완성
 4. Publishing 상태 정리 — `In Production` 권장
 5. YouTube 권한(scope) 추가
 6. OAuth Web Client 생성
@@ -43,8 +43,28 @@ Subtitle Localizer는 여전히 사용자 소유 BYOC 구조를 유지합니다.
 - `Authorized JavaScript origins`: 비워둠
 - `Authorized redirect URIs`: Subtitle Localizer callback URI만 입력
 
+## Google Branding에 넣을 공개 URL
+다중 Google 계정을 Test user 재등록 없이 추가하려면 OAuth 앱의 Branding을 완성하고 Audience에서 `In Production`으로 전환하는 흐름을 권장합니다.
+
+Subtitle Localizer가 제공하는 공개 URL:
+
+```text
+애플리케이션 홈페이지
+https://subtitle-localizer.vercel.app/
+
+개인정보처리방침
+https://subtitle-localizer.vercel.app/privacy
+
+서비스 약관
+https://subtitle-localizer.vercel.app/terms
+```
+
+`/privacy`와 `/terms`는 로그인 없이 공개 접근 가능해야 하며 메인/연결 화면에서 찾을 수 있게 유지합니다.
+
+실제 E2E에서 OAuth 앱이 Testing 상태인 경우 기존 테스트 사용자 외의 Google 계정 추가가 `403 access_denied`로 차단되는 것을 확인했습니다. 따라서 Client ID/Secret이 저장되어 있다는 사실만으로 Google Publishing 설정까지 완료됐다고 단정하지 않습니다.
+
 ## 한 번 설정 후 추가 연결
-초기 Cloud 설정이 끝나면 정상적인 계정/채널 추가를 위해 Google Cloud Console로 다시 돌아갈 필요가 없도록 설계합니다.
+초기 Cloud와 Publishing 설정이 끝나면 정상적인 계정/채널 추가를 위해 Google Cloud Console로 다시 돌아갈 필요가 없도록 설계합니다.
 
 ```text
 + 계정 또는 채널 추가
@@ -89,8 +109,6 @@ Cloud config와 YouTube 채널 세션을 분리합니다.
 ## 빈 채널 UX
 연결된 채널에 업로드 영상이 없으면 단순히 `0개`만 표시하지 않습니다.
 
-예시:
-
 ```text
 이 채널에는 업로드된 영상이 없습니다.
 YouTube에 영상을 올린 뒤 다시 불러오세요.
@@ -99,6 +117,16 @@ YouTube에 영상을 올린 뒤 다시 불러오세요.
 ```
 
 YouTube 채널 자체가 없는 계정도 영상 0개 상태와 구분해 안내합니다.
+
+## 개인정보 처리 개요
+- OpenAI API Key와 Google OAuth Client Secret은 서버에서 암호화한 HttpOnly cookie에 보관합니다.
+- YouTube access/refresh token도 서버에서 암호화한 HttpOnly cookie에 보관합니다.
+- 번역 요청 시 필요한 자막 텍스트는 사용자가 연결한 OpenAI API를 통해 처리됩니다.
+- YouTube 연결/가져오기/업로드에 필요한 데이터는 Google/YouTube API를 통해 처리됩니다.
+- 사용자가 올린 SRT 파일을 앱의 영구 파일 저장소에 보관하도록 설계하지 않습니다.
+- 저장된 자격증명은 연결 관리에서 사용자가 삭제할 수 있습니다.
+
+자세한 내용은 `/privacy` 페이지에서 공개합니다.
 
 ## 비용 소유
 - OpenAI 사용료: 최종 사용자의 OpenAI API Key 계정
@@ -132,7 +160,8 @@ npm run check
 
 ## v1.7.0 완료 기준
 - 초보자용 8단계 Google 연결 마법사 동작
-- 첫 설정 이후 Cloud 재설정 없이 추가 계정/채널 연결 가능
+- 공개 홈페이지/개인정보처리방침/서비스 약관 URL 제공
+- Google Branding + Publishing 설정 후 Cloud 재설정 없이 추가 계정/채널 연결 가능
 - 여러 채널 동시 보유 및 활성 채널 전환 가능
 - 채널별 영상/자막 동작 분리
 - 기존 OpenAI BYOK 및 SRT 번역 회귀 없음
