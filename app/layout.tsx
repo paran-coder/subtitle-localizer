@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import WorkspaceChannelBar from "@/components/workspace-channel-bar";
+import FirstUseGuideLink from "@/components/first-use-guide-link";
 import SitePolicyFooter from "@/components/site-policy-footer";
 import "./globals.css";
 import "./v17.css";
 import "./v17-version.css";
 import "./legal.css";
 import "./ui-polish-v17.css";
+import "./guide.css";
+import "./first-use-guide.css";
 
 export const metadata: Metadata = {
   title: "Subtitle Localizer",
@@ -16,7 +19,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="ko">
-      <body><WorkspaceChannelBar />{children}<SitePolicyFooter /></body>
+      <body><WorkspaceChannelBar /><FirstUseGuideLink />{children}<SitePolicyFooter /></body>
     </html>
   );
 }
