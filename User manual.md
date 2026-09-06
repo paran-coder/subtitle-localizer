@@ -23,15 +23,36 @@
 - Google Cloud 화면에서 `사용 설정`을 누릅니다.
 - `사용 설정됨` 상태가 보이면 완료입니다.
 
-### 3/8 Google Auth Platform 기본 설정
+### 3/8 Google Auth Platform 기본 설정 + Branding 완성
 - Google Auth Platform에서 시작합니다.
 - 앱 이름은 `Subtitle Localizer`를 사용합니다.
 - Audience는 `External`을 선택합니다.
-- 지원 이메일과 개발자 연락처처럼 본인만 알 수 있는 필수 값만 입력합니다.
+- 지원 이메일과 개발자 연락처처럼 본인만 알 수 있는 필수 값을 입력합니다.
+
+Branding의 앱 도메인에는 Subtitle Localizer가 보여주는 아래 공개 URL을 그대로 사용합니다.
+
+```text
+애플리케이션 홈페이지
+https://subtitle-localizer.vercel.app/
+
+애플리케이션 개인정보처리방침 링크
+https://subtitle-localizer.vercel.app/privacy
+
+애플리케이션 서비스 약관 링크
+https://subtitle-localizer.vercel.app/terms
+```
+
+`승인된 도메인`에는 `subtitle-localizer.vercel.app`을 사용합니다. 이미 들어가 있으면 다시 추가할 필요가 없습니다.
+
+앱 이름, 지원 이메일, 승인된 도메인, 개발자 연락처를 이미 설정한 기존 사용자는 다시 입력하지 말고 비어 있는 앱 도메인 URL만 확인하면 됩니다.
 
 ### 4/8 Publishing 상태 정리
-- 앞으로 추가 Google 계정을 연결할 때 Test user를 계속 관리하지 않으려면 `In Production` 전환을 권장합니다.
-- Testing을 유지할 수도 있지만 추가 계정과 장기 연결에서 제약이 생길 수 있습니다.
+Branding 저장을 완료한 뒤 왼쪽 `대상`으로 이동합니다.
+
+- 여러 Google 계정을 나중에 추가할 때 Test user를 계속 관리하지 않으려면 `In Production` 전환을 권장합니다.
+- 화면이 `테스트 중`이면 새로운 Google 계정이 `403 access_denied`로 차단될 수 있습니다.
+- `앱 게시` 버튼이 비활성화되어 있다면 먼저 Branding의 필수 정보와 앱 도메인 URL이 저장되어 있는지 확인합니다.
+- Testing을 유지할 수도 있지만 실제로 로그인할 Google 계정을 Test users에 계속 추가해야 할 수 있습니다.
 - Google 검증 신청은 별도 절차이며 일반 초기 연결의 필수 단계로 보지 않습니다.
 
 ### 5/8 YouTube 권한 추가
@@ -62,16 +83,18 @@ Secret은 채팅이나 문서에 붙여넣지 말고 Subtitle Localizer 입력�
 
 앱은 이 값을 서버에서 암호화한 HttpOnly cookie로 저장합니다.
 
+Client가 저장됐다는 사실만으로 Google Auth Platform의 Publishing 상태까지 자동 확인되는 것은 아닙니다. 여러 Google 계정을 추가할 예정이라면 3/8과 4/8의 Branding/Publishing 상태도 완료해야 합니다.
+
 ### 8/8 첫 YouTube 채널 연결
 - `Google로 YouTube 연결`을 누릅니다.
 - Google 계정을 선택합니다.
 - YouTube 권한을 승인합니다.
 - Subtitle Localizer로 돌아오면 실제 YouTube 채널 정보를 확인합니다.
 
-실제 채널이 확인되고 기본 API 호출이 성공해야 초기 설정 완료로 표시됩니다.
+실제 채널이 확인되고 기본 API 호출이 성공하면 첫 채널 연결이 완료됩니다.
 
 ## 3. 이후 계정 또는 채널 추가하기
-초기 Google Cloud 설정이 완료된 뒤에는 정상적인 추가 연결 때문에 Google Cloud Console을 다시 설정하지 않습니다.
+초기 Google Cloud 및 Publishing 설정이 완료된 뒤에는 정상적인 추가 연결 때문에 Google Cloud Console을 다시 설정하지 않습니다.
 
 `+ 계정 또는 채널 추가`를 누른 뒤 다음 순서만 진행합니다.
 
@@ -92,6 +115,8 @@ Secret은 채팅이나 문서에 붙여넣지 말고 Subtitle Localizer 입력�
 ```
 
 같은 채널을 다시 연결하면 중복으로 하나 더 만들지 않고 기존 연결 정보를 갱신합니다.
+
+새 계정 선택 직후 Google에서 `403 access_denied`가 보이고 앱이 `Testing` 상태라면, Google Auth Platform → Branding에서 공개 URL 저장 여부를 확인한 뒤 → Audience에서 Publishing 상태를 확인합니다.
 
 ## 4. 작업 채널 선택하기
 메인 작업공간의 `현재 작업 채널`에서 사용할 YouTube 채널을 선택합니다.
@@ -133,24 +158,41 @@ YouTube 채널 자체가 없는 계정은 `업로드 영상 0개`와 다른 상�
 - Google 계정에서 Subtitle Localizer 권한을 직접 취소한 경우
 - OAuth Client를 삭제하거나 Secret을 교체한 경우
 - Google Cloud 프로젝트나 YouTube Data API를 삭제/비활성화한 경우
+- Google OAuth 앱을 다시 Testing으로 돌리거나 Branding 필수 정보가 제거된 경우
 
-## 7. 보안
+## 7. 개인정보처리방침 / 서비스 약관
+공개 페이지는 로그인 없이 열립니다.
+
+- 개인정보처리방침: `/privacy`
+- 서비스 약관: `/terms`
+
+개인정보처리방침에는 OpenAI/Google 연결에서 어떤 정보가 처리되는지, 비밀정보를 어떻게 보관하는지, SRT 파일을 영구 저장하도록 설계하지 않았다는 점을 설명합니다.
+
+서비스 약관에는 BYOK/BYOC 비용 구조, 외부 API 의존성, 업로드·번역·게시 콘텐츠에 필요한 권한을 사용자가 보유해야 한다는 점을 설명합니다.
+
+## 8. 보안
 - OpenAI API Key, Google Client Secret, YouTube access/refresh token은 서버에서 암호화됩니다.
 - 비밀정보는 HttpOnly cookie에 저장됩니다.
 - localStorage / sessionStorage에는 비밀정보를 저장하지 않습니다.
 - APP_SESSION_SECRET은 배포자 Vercel에만 저장합니다.
 - 운영자 소유 Google OAuth Client는 사용하지 않습니다.
 
-## 8. 비용
+## 9. 비용
 - OpenAI 번역 비용: 사용자가 입력한 자신의 OpenAI 계정
 - YouTube Data API quota: 사용자가 설정한 자신의 Google Cloud 프로젝트
 - Vercel hosting/function 사용량: 앱 배포자 계정
 
-## 9. 처음 설정 완료 기준
-다음이 모두 성공해야 설정 완료로 봅니다.
+## 10. 처음 설정 완료 기준
+앱에서 직접 확인할 수 있는 상태와 Google Console에서 사용자가 완료해야 하는 상태를 구분합니다.
+
+앱에서 확인:
 - Client ID / Secret 저장
 - Google OAuth 승인
 - 실제 YouTube 채널 확인
 - 채널 세션 저장
 - 해당 채널 API 호출 성공
-- 이후 Google Cloud 재설정 없이 `+ 계정 또는 채널 추가`를 사용할 준비 완료
+
+Google Console에서 확인:
+- Branding 필수 정보 저장
+- 홈페이지 / 개인정보처리방침 / 서비스 약관 URL 저장
+- 여러 Google 계정을 Test user 재등록 없이 추가하려면 Audience에서 `In Production` 전환
