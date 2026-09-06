@@ -69,6 +69,8 @@ test("주요 화면은 초기 설정·연결 관리·작업하기 탭으로 구�
   assert.match(nav, /href: "\/connections"/);
   assert.match(nav, /href: "\/"/);
   assert.match(nav, /aria-current/);
+  assert.match(nav, /v1\.7\.0/);
+  assert.equal(nav.includes("primary-titlebar-action"), false);
   assert.equal(nav.includes("처음 사용하시나요?"), false);
   assert.equal(nav.includes("설정이 낯설다면"), false);
   assert.match(footer, /href="\/guide">초기 설정/);
@@ -131,7 +133,7 @@ test("workspace 채널 바는 썸네일·채널 선택·빈 영상 행동을 제
   assert.match(bar, /이 채널에는 업로드된 영상이 없습니다/);
   assert.match(bar, /YouTube Studio 열기/);
   assert.match(bar, /다시 불러오기/);
-  assert.match(bar, /v1\.7\.0/);
+  assert.equal(bar.includes("v17-workspace-version"), false);
 });
 
 test("v1.7 UI·초기 설정·공개 정책 페이지는 모바일 재배치와 focus-visible/reduced-motion을 유지한다", () => {
@@ -148,6 +150,8 @@ test("v1.7 UI·초기 설정·공개 정책 페이지는 모바일 재배치와 
   assert.match(legalCss, /focus-visible/);
   assert.match(legalCss, /prefers-reduced-motion/);
   assert.match(guideCss, /@media\(max-width:760px\)/);
+  assert.match(guideCss, /\.guide-ready-card p\{[^}]*white-space:nowrap/);
+  assert.match(guideCss, /\.guide-ready-card p\{white-space:normal\}/);
   assert.match(guideCss, /focus-visible/);
   assert.match(guideCss, /prefers-reduced-motion/);
   assert.match(navCss, /@media\(max-width:760px\)/);
