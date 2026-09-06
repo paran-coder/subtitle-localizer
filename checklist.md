@@ -56,7 +56,8 @@
 - [x] 정상적인 계정/채널 추가와 복구 상황을 UI에서 구분
 - [x] v1.6 Cloud config를 그대로 보존하는 자동 마이그레이션 구현
 - [x] 자동 마이그레이션 실패 시 기존 Cloud config 보존 + legacy YouTube 세션만 정리
-- [ ] Branding 완료 + `In Production` 전환 후 새 Google 계정 연결 E2E 재검증
+- [x] Branding 완료 + `In Production` 전환 후 새 Google 계정 연결 E2E 성공
+- [x] 미검증 Production 앱 경고 → 고급 → 계속 → 실제 권한 동의 흐름 E2E 확인
 
 ## 다중 YouTube 연결
 - [x] 채널별 connectionId 저장
@@ -64,12 +65,16 @@
 - [x] 채널별 access/refresh token 독립 저장
 - [x] 같은 channelId 재연결 시 중복 대신 갱신
 - [x] 기존 채널 A를 유지한 채 B/C 계속 추가하는 registry 구조
+- [x] 실제 기존 채널 A 유지 상태에서 새 채널 B 추가 E2E 성공
 - [x] 특정 채널 연결 해제 시 다른 채널 유지
 - [x] Google Cloud 설정 전체 삭제 시 모든 YouTube 연결 제거
 - [x] 활성 채널 선택 API
 - [x] 작업공간 채널 선택기
 - [x] 활성 채널 변경 시 영상/자막 선택 상태 초기화
 - [x] 영상 조회/자막 다운로드/자막 업로드 API가 같은 활성 채널 세션 사용
+- [x] 채널 전환 API가 선택 대상의 실제 OAuth 세션과 channelId를 검증한 뒤 활성화하도록 보강
+- [x] 활성 세션 오류 시 다른 채널로 조용히 자동 전환하지 않도록 보강
+- [x] 작업공간 채널 전환 후 registry cookie 반영을 재조회해 검증하도록 보강
 
 ## 빈 채널 UX
 - [x] OAuth callback에서 YouTube 채널 없음 상태를 별도 오류로 구분
@@ -99,9 +104,10 @@
 - [x] 다중 채널 API 구조 architecture 테스트
 - [x] 공개 정책 페이지/링크 테스트 추가
 - [x] Publishing 안내 회귀 테스트 추가
-- [ ] 실제 채널 A 추가 후 B 추가 시 A 유지 E2E
+- [x] 채널 전환 세션 검증/무음 fallback 방지/쿠키 반영 확인 회귀 테스트 추가
+- [x] 실제 채널 A 추가 후 B 추가 시 A 유지 E2E
 - [ ] 동일 채널 재연결 E2E
-- [ ] 활성 채널 전환 E2E
+- [ ] 활성 채널 전환 E2E — 연결 관리에서 전환 직후 작업공간이 다른 채널을 표시하는 불일치 발견, 보강 배포 후 재검증 필요
 - [ ] 채널별 영상 목록 분리 E2E
 - [ ] 채널별 자막 다운로드 E2E
 - [ ] 채널별 자막 업로드 E2E
@@ -110,7 +116,7 @@
 - [ ] 실제 모바일 기기 가로 overflow E2E
 - [x] focus-visible 회귀 테스트
 - [x] prefers-reduced-motion 회귀 테스트
-- [x] 최신 Production 자동 테스트 **70/70 통과**
+- [x] 최신 Production 자동 테스트 **73/73 통과**
 - [x] 최신 Vercel `next build` TypeScript 검사 통과
 - [x] 최신 Vercel Production build 통과
 
@@ -121,12 +127,13 @@
 - [x] 2단계 API 변경 GitHub main 반영
 - [x] 3단계 UI 변경 GitHub main 반영
 - [x] 4단계 공개 정책/Publishing 보완 GitHub main 반영
-- [x] 공개 정책 변경 Production deployment `dpl_5gQKBErpzopXQLdVsadyzuic1PEj` READY 확인
-- [x] 공개 정책 변경 후 Runtime Errors 없음 확인
+- [x] 채널 전환 일관성 보강 커밋 `b2dcb5aa1fed922b1e5997648ebdabf1b143108c` main 반영
+- [x] 해당 코드 Production deployment `dpl_BANKyWACxpzwsaGymjNAjz2YYArG` READY 확인
+- [x] 해당 코드 배포 후 Runtime Errors 없음 확인
 - [x] 기존 Google 연결 E2E
 - [x] 첫 채널 연결 유지 E2E
-- [ ] 추가 계정/채널 연결 E2E — Branding URL 저장 + In Production 전환 후 재개
-- [ ] 채널 전환 E2E
+- [x] 추가 계정/채널 연결 E2E
+- [ ] 채널 전환 E2E 재검증
 - [ ] 영상 가져오기 → 번역 → YouTube 자막 업로드 E2E
 
 ## 단계별 자체 점검 기록
@@ -154,9 +161,15 @@
 ### 4단계 — 공개 정책 / Publishing 보완
 - 상태: **완료**
 - 완료: 공개 `/privacy`, `/terms`, 전역 정책 링크, Branding 입력 URL 복사, Audience/Branding 바로가기, 문서 동기화, 회귀 테스트 추가
-- 검증: 최신 Production에서 자동 테스트 **70/70**, TypeScript, Next.js build 통과. `/privacy`, `/terms`, `/connections`, `/` HTTP 200. Runtime Errors 0건
-- 남은 확인: 실제 Google Branding에 URL 3개 저장 → Audience `In Production` → 새 Google 계정 추가 E2E
+- 검증: Production에서 자동 테스트, TypeScript, Next.js build 통과. `/privacy`, `/terms`, `/connections`, `/` HTTP 200. Runtime Errors 0건
+- 실제 E2E: Branding URL 저장 → Audience `In Production` 전환 → 미검증 앱 경고를 거쳐 새 Google 계정/두 번째 YouTube 채널 추가 성공
 - 자체 점수: **9.8/10**
 
 ### 5단계 — 최종 E2E / 패키징 / 배포
-- 상태: **진행 대기**
+- 상태: **진행 중**
+- 성공: 새 Google 계정 추가, 기존 채널 유지, 두 채널 누적 연결, 새 채널 활성화, 해당 채널 영상 목록 26개 조회
+- E2E 발견: 연결 관리에서 기존 채널로 전환한 직후 작업공간은 새 채널을 계속 활성 채널로 표시함
+- 보강: 활성화 전에 대상 세션/channelId 검증, status의 무음 fallback 제거, 작업공간 전환 cookie read-after-write 확인 추가
+- 검증: 보강 배포 자동 테스트 **73/73**, TypeScript/build 통과, Production READY, Runtime Errors 0건
+- 다음: 동일 두 채널 상태에서 활성 채널 전환 재검증 → 채널별 영상 분리 → 자막 다운로드/업로드 E2E
+- 현재 자체 점수: **9.6/10**
