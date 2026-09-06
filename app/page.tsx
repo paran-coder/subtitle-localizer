@@ -29,6 +29,13 @@ type YouTubeCaptionTrack = {
   isDraft: boolean;
   lastUpdated?: string;
 };
+type YouTubeImportReceipt = {
+  language: string;
+  cueCount: number;
+  videoTitle: string;
+  fileName: string;
+  trackName: string;
+};
 type YouTubeStatus = "checking" | "server-unavailable" | "unconfigured" | "disconnected" | "connected";
 
 type UploadState = { status: "idle" | "uploading" | "done" | "error"; error?: string };
@@ -70,6 +77,51 @@ function formatVideoDate(value?: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "short", day: "numeric" }).format(date);
+}
+
+function sortCaptionTracks(tracks: YouTubeCaptionTrack[]) {
+  return [...tracks].sort((a, b) => {
+    const aEnglish = /^en(?:-|$)/i.test(a.language) ? 0 : 1;
+    const bEnglish = /^en(?:-|$)/i.test(b.language) ? 0 : 1;
+    if (aEnglish !== bEnglish) return aEnglish - bEnglish;
+    if (a.status === "serving" && b.status !== "serving") return -1;
+    if (a.status !== "serving" && b.status === "serving") return 1;
+    return a.language.localeCompare(b.language);
+  });
+}
+
+function preferredCaptionId(tracks: YouTubeCaptionTrack[]) {
+  const preferred = tracks.find((track) => /^en(?:-|$)/i.test(track.language) && track.status === "serving")
+    ?? tracks.find((track) => track.status === "serving")
+    ?? tracks[0];
+  return preferred?.id ?? "";
+}
+
+async function fetchCaptionTracks(videoId: string): Promise<YouTubeCaptionTrack[]> {
+  const response = await fetch("/api/youtube/captions/list", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ videoId }),
+    cache: "no-store"
+  });
+  const payload = (await response.json()) as { tracks?: YouTubeCaptionTrack[]; error?: string };
+  if (!response.ok) throw new Error(payload.error || "자막 트랙을 불러오지 못했습니다.");
+  return sortCaptionTracks(payload.tracks ?? []);
+}
+
+function appLanguageCodeForYouTube(language: string) {
+  const normalized = language.trim().replace(/_/g, "-").toLowerCase();
+  const exact = LANGUAGES.find((item) => item.code.toLowerCase() === normalized);
+  if (exact) return exact.code;
+  const aliases: Record<string, string> = {
+    pt: "pt-BR",
+    "pt-br": "pt-BR",
+    "zh-hans": "zh-CN",
+    "zh-cn": "zh-CN",
+    "zh-hant": "zh-TW",
+    "zh-tw": "zh-TW"
+  };
+  return aliases[normalized] ?? null;
 }
 
 async function translateLanguage(
@@ -143,6 +195,7 @@ export default function Home() {
   const [captionLoading, setCaptionLoading] = useState(false);
   const [selectedCaptionId, setSelectedCaptionId] = useState("");
   const [importingCaption, setImportingCaption] = useState(false);
+  const [importReceipt, setImportReceipt] = useState<YouTubeImportReceipt | null>(null);
 
   const [youtubeStatus, setYoutubeStatus] = useState<YouTubeStatus>("checking");
   const [youtubeChannel, setYoutubeChannel] = useState<YouTubeChannel | null>(null);
@@ -218,7 +271,6 @@ export default function Home() {
     return () => { cancelled = true; };
   }, []);
 
-
   useEffect(() => {
     if (youtubeStatus !== "connected") return;
     let cancelled = false;
@@ -254,28 +306,10 @@ export default function Home() {
       setCaptionLoading(true);
       setYoutubeMessage("");
       try {
-        const response = await fetch("/api/youtube/captions/list", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ videoId: sourceVideoId }),
-          cache: "no-store"
-        });
-        const payload = (await response.json()) as { tracks?: YouTubeCaptionTrack[]; error?: string };
-        if (!response.ok) throw new Error(payload.error || "자막 트랙을 불러오지 못했습니다.");
+        const tracks = await fetchCaptionTracks(sourceVideoId);
         if (cancelled) return;
-        const tracks = [...(payload.tracks ?? [])].sort((a, b) => {
-          const aEnglish = /^en(?:-|$)/i.test(a.language) ? 0 : 1;
-          const bEnglish = /^en(?:-|$)/i.test(b.language) ? 0 : 1;
-          if (aEnglish !== bEnglish) return aEnglish - bEnglish;
-          if (a.status === "serving" && b.status !== "serving") return -1;
-          if (a.status !== "serving" && b.status === "serving") return 1;
-          return a.language.localeCompare(b.language);
-        });
         setCaptionTracks(tracks);
-        const preferred = tracks.find((track) => /^en(?:-|$)/i.test(track.language) && track.status === "serving")
-          ?? tracks.find((track) => track.status === "serving")
-          ?? tracks[0];
-        setSelectedCaptionId(preferred?.id ?? "");
+        setSelectedCaptionId(preferredCaptionId(tracks));
       } catch (error) {
         if (!cancelled) {
           setCaptionTracks([]);
@@ -310,6 +344,7 @@ export default function Home() {
     if (oversizedCue) throw new Error(`${oversizedCue.id}번 자막이 너무 깁니다. 원본 cue를 더 짧게 나눠 주세요.`);
     setCues(parsed);
     setSourceFileName(filename);
+    setImportReceipt(null);
     clearOutputs();
     return parsed;
   }
@@ -325,6 +360,7 @@ export default function Home() {
     } catch (error) {
       setCues([]);
       setSourceFileName("");
+      setImportReceipt(null);
       clearOutputs();
       setFileError(error instanceof Error ? error.message : "SRT 파일을 읽지 못했습니다.");
     }
@@ -484,10 +520,22 @@ export default function Home() {
       const video = youtubeVideos.find((item) => item.id === sourceVideoId);
       const track = captionTracks.find((item) => item.id === selectedCaptionId);
       const safeTitle = (video?.title || "youtube-video").replace(/[\/:*?"<>|]+/g, "-").slice(0, 80);
-      const parsed = applySourceSrt(payload.srt, `${safeTitle}.${track?.language || "source"}.youtube.srt`);
+      const importedFileName = `${safeTitle}.${track?.language || "source"}.youtube.srt`;
+      const parsed = applySourceSrt(payload.srt, importedFileName);
       setSelectedVideoId(sourceVideoId);
-      setYoutubeMessage(`${track?.language || "원본"} 자막 ${parsed.length.toLocaleString()}개 cue를 가져왔습니다.`);
+      const importedTargetCode = appLanguageCodeForYouTube(track?.language || "");
+      if (importedTargetCode) {
+        setSelectedLanguages((current) => current.filter((item) => item !== importedTargetCode));
+      }
+      setImportReceipt({
+        language: track?.language || "원본",
+        cueCount: parsed.length,
+        videoTitle: video?.title || "YouTube 영상",
+        fileName: importedFileName,
+        trackName: track?.name || "기본 자막"
+      });
     } catch (error) {
+      setImportReceipt(null);
       setFileError(error instanceof Error ? error.message : "YouTube 자막을 가져오지 못했습니다.");
     } finally {
       setImportingCaption(false);
@@ -504,6 +552,7 @@ export default function Home() {
     if (uploadRunning || !selectedVideoId || !uploadLanguages.length) return;
     setUploadRunning(true);
     setYoutubeMessage("");
+    let shouldRefreshSourceCaptions = false;
     for (const code of uploadLanguages) {
       const translated = results[code];
       if (!translated) continue;
@@ -524,6 +573,7 @@ export default function Home() {
         if (!response.ok) throw new Error(payload.error || "YouTube 자막 업로드에 실패했습니다.");
         setUploadState((current) => ({ ...current, [code]: { status: "done" } }));
         setUploadLanguages((current) => current.filter((item) => item !== code));
+        if (selectedVideoId === sourceVideoId) shouldRefreshSourceCaptions = true;
       } catch (error) {
         setUploadState((current) => ({
           ...current,
@@ -531,6 +581,20 @@ export default function Home() {
         }));
       }
     }
+
+    if (shouldRefreshSourceCaptions && sourceVideoId) {
+      setCaptionLoading(true);
+      try {
+        const tracks = await fetchCaptionTracks(sourceVideoId);
+        setCaptionTracks(tracks);
+        setSelectedCaptionId((current) => tracks.some((track) => track.id === current) ? current : preferredCaptionId(tracks));
+      } catch (error) {
+        setYoutubeMessage(`자막 업로드는 완료됐지만 목록을 새로고치지 못했습니다. ${error instanceof Error ? error.message : "잠시 후 다시 확인해 주세요."}`);
+      } finally {
+        setCaptionLoading(false);
+      }
+    }
+
     setUploadRunning(false);
   }
 
@@ -621,7 +685,7 @@ export default function Home() {
                   <div className="youtube-source-grid">
                     <div className="field-block compact">
                       <div className="field-row"><label htmlFor="source-youtube-video">원본 영상</label><span>{youtubeVideos.length}개</span></div>
-                      <select id="source-youtube-video" className="text-input" disabled={youtubeLoading || importingCaption || !youtubeVideos.length} value={sourceVideoId} onChange={(event) => setSourceVideoId(event.target.value)}>
+                      <select id="source-youtube-video" className="text-input" disabled={youtubeLoading || importingCaption || !youtubeVideos.length} value={sourceVideoId} onChange={(event) => { setSourceVideoId(event.target.value); setImportReceipt(null); }}>
                         <option value="">영상을 선택하세요</option>
                         {youtubeVideos.map((video) => <option key={video.id} value={video.id}>{video.title} {video.publishedAt ? `· ${formatVideoDate(video.publishedAt)}` : ""}</option>)}
                       </select>
@@ -648,6 +712,23 @@ export default function Home() {
                 )}
               </div>
             )}
+
+            {sourceMode === "youtube" && importReceipt && (
+              <div className="quality-panel is-pass youtube-import-receipt" role="status" aria-live="polite">
+                <div className="quality-panel-head">
+                  <div>
+                    <span className="structure-status ok">가져오기 완료</span>
+                    <p><strong>{importReceipt.language}</strong> 자막 {importReceipt.cueCount.toLocaleString()}개 cue를 원본으로 불러왔습니다.</p>
+                  </div>
+                </div>
+                <div className="structure-metrics" aria-label="YouTube 자막 가져오기 결과">
+                  <span><strong>영상</strong> {importReceipt.videoTitle}</span>
+                  <span><strong>트랙</strong> {importReceipt.trackName}</span>
+                  <span><strong>원본 파일</strong> {importReceipt.fileName}</span>
+                </div>
+              </div>
+            )}
+
             {fileError && <p className="feedback error" role="alert">{fileError}</p>}
             {stats && stats.warnings > 0 && <p className="feedback neutral">원본에서 읽기 길이 참고 항목 {stats.warnings}개를 감지했습니다. 원본 타임코드는 수정하지 않습니다.</p>}
           </section>
