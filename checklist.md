@@ -98,9 +98,9 @@
 - [x] Production Runtime `error` / `fatal` 0건
 
 ## 최종 배포 마감
-- [ ] 이 체크리스트를 포함한 최종 GitHub `main` SHA 확인
-- [ ] 해당 최종 SHA의 Vercel Production `READY` 확인
-- [ ] 최종 Production에서 OG/Twitter 태그 재확인
-- [ ] 최종 Production Runtime `error` / `fatal` 재확인
-- [ ] 비밀정보 / `.git` 제외 최종 `subtitle-localizer-v1.7.0.zip` 생성
-- [ ] 최종 ZIP 사용자에게만 전달
+- [x] 최종 GitHub `main` SHA 확인
+- [x] 해당 최종 SHA의 Vercel Production `READY` 확인
+- [x] 최종 Production에서 OG/Twitter 태그 재확인
+- [x] 최종 Production Runtime `error` / `fatal` 재확인
+- [x] 비밀정보 / `.git` 제외 최종 `subtitle-localizer-v1.7.0.zip` 생성 및 검사
+- [x] 최종 ZIP 사용자에게만 전달 — GitHub에는 업로드하지 않음
