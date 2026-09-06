@@ -1,9 +1,10 @@
 export default function SitePolicyFooter() {
   return (
-    <footer className="site-policy-footer" aria-label="서비스 정책">
+    <footer className="site-policy-footer" aria-label="서비스 정책과 도움말">
       <div>
         <span>Subtitle Localizer v1.7.0</span>
-        <nav aria-label="정책 링크">
+        <nav aria-label="도움말 및 정책 링크">
+          <a href="/guide">처음 사용 가이드</a>
           <a href="/privacy">개인정보처리방침</a>
           <a href="/terms">서비스 약관</a>
         </nav>
