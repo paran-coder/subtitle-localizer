@@ -2,3 +2,4 @@
 .app-shell .brand small::after{content:"v1.7.0";font-size:11px}
 .app-shell .footer{font-size:0}
 .app-shell .footer::after{content:"Subtitle Localizer v1.7.0 · 사용자 API 비용 분리형 다국어 자막 작업 도구";font-size:12px}
+.v17-connections-hero p{max-width:1000px}
