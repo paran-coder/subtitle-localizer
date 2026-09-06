@@ -1,175 +1,87 @@
 # checklist.md — Subtitle Localizer v1.7.0
 
-## 작업 전
-- [x] v1.7.0 범위 승인
-- [x] 운영자 비관여 원칙 확정
-- [x] 사용자 BYOC 유지
-- [x] 초기 Google Cloud 설정 1회 원칙 확정
-- [x] 다중 Google 계정 / YouTube 채널 지원 원칙 확정
-- [x] `In Production` 전환을 권장 경로로 채택
-- [x] context-notes.md 갱신
-- [x] checklist.md 갱신
-- [x] README.md 갱신
-- [x] User manual.md 갱신
-- [x] v1.6 기존 Cloud config 보존 + YouTube 세션 자동 마이그레이션 규칙 승인
-- [x] 마이그레이션 실패 시 Cloud config는 보존하고 YouTube 재로그인만 요구하도록 승인
-- [x] 실제 추가 Google 계정 E2E에서 Testing 상태의 `403 access_denied` 확인
-- [x] Google Branding의 앱 도메인 공개 URL 보강 필요 확인
+## v1.7.0 핵심 범위
+- [x] 운영자 비관여 BYOC 원칙 유지
+- [x] Google Cloud 최초 1회 설정 원칙
+- [x] 초보자용 Google 연결 마법사
+- [x] 다중 Google 계정 / YouTube 채널 연결
+- [x] 채널별 OAuth 세션 독립 저장
+- [x] 활성 채널 선택 및 작업공간 동기화
+- [x] 빈 채널 UX
+- [x] 공개 `/privacy` / `/terms`
+- [x] Branding / In Production 안내
 
-## 초보자용 Google 연결 마법사
-- [x] 기존 4단계를 8단계 완결형 마법사로 재구성
-- [x] 한 화면에서 한 행동만 주 CTA로 제공
-- [x] 프로젝트 이름 기본값 `Subtitle Localizer` 제공
-- [x] YouTube Data API v3 정확한 이동 링크 제공
-- [x] Google Auth Platform 초기 설정을 실제 버튼 순서대로 안내
-- [x] `In Production` 전환을 권장 단계로 안내
-- [x] Testing 유지 시 제약을 짧게 표시
-- [x] `youtube.force-ssl` scope 복사 기능
-- [x] OAuth Client 유형/이름 고정값 제공
-- [x] `Authorized JavaScript origins`는 비워두도록 강하게 안내
-- [x] `Authorized redirect URIs` 위치를 명확히 구분
-- [x] Client ID / Secret만 필수 입력
-- [x] 첫 OAuth 성공 후 실제 YouTube channel ID/title 확인
-- [x] 실제 OAuth callback에서 승인된 YouTube channel ID/title 식별 API 구현
-- [x] Branding 단계에서 홈페이지 / 개인정보처리방침 / 서비스 약관 URL을 정확히 안내
-- [x] Client 저장만으로 Publishing 완료를 단정하지 않도록 완료 문구 수정
+## 실제 OAuth / 다중 채널 E2E
+- [x] Testing 상태 새 계정 `403 access_denied` 재현
+- [x] Branding 공개 URL 저장
+- [x] Audience `In Production` 전환
+- [x] 미검증 앱 경고 통과 후 새 Google 계정 연결
+- [x] 기존 채널 유지 상태에서 두 번째 채널 추가
+- [x] 두 채널 사이 활성 채널 전환
+- [x] 상단 작업 채널과 업로드 패널 채널 일치
+- [x] 채널별 영상 목록 분리 확인
+- [x] 영상 0개 빈 상태 확인
 
-## 공개 OAuth 정책 페이지
-- [x] `/privacy` 공개 페이지 추가
-- [x] `/terms` 공개 페이지 추가
-- [x] 메인 화면에서 개인정보처리방침 / 서비스 약관 링크 제공
-- [x] 연결 관리 화면에서도 정책 페이지와 Branding 입력 URL 안내 제공
-- [x] 홈페이지 URL `https://subtitle-localizer.vercel.app/` 안내
-- [x] 개인정보처리방침 URL `https://subtitle-localizer.vercel.app/privacy` 안내
-- [x] 서비스 약관 URL `https://subtitle-localizer.vercel.app/terms` 안내
-- [x] 정책 페이지에 BYOK/BYOC, HttpOnly 암호화, OpenAI/Google API 처리, SRT 비영구 저장 원칙 반영
-- [x] 정책 페이지 모바일/focus-visible/reduced-motion CSS 및 회귀 테스트 추가
-- [x] Production에서 `/privacy` HTTP 200 확인
-- [x] Production에서 `/terms` HTTP 200 확인
-- [x] Production 메인/연결 화면에서 정책 링크 노출 확인
+## 실제 자막 파이프라인 E2E
+- [x] 테스트 영상 `subtitle-localizer-e2e-test.mp4` YouTube 업로드
+- [x] 원본 `localization-challenge-en.srt` 30 cue 로드
+- [x] 한국어 번역 완료
+- [x] 타임코드 30/30 일치
+- [x] Cue ID 30/30 일치
+- [x] 누락 0 / 추가 0
+- [x] Subtitle Localizer에서 한국어 자막 YouTube 업로드 성공
+- [x] YouTube에서 `ko · Subtitle Localizer` 트랙 조회 성공
+- [x] YouTube 자막 SRT 다운로드 및 30 cue 가져오기 성공
 
-## Google Cloud 재설정 없는 추가 연결
-- [x] 첫 설정 후 `+ 계정 또는 채널 추가` UI에서 Google Cloud 재설정 요구 없음
-- [x] Cloud config와 YouTube channel connection을 데이터 구조상 분리
-- [x] Cloud config 하나를 여러 채널 연결이 재사용
-- [x] 추가 OAuth에서 기존 Cloud config를 그대로 재사용하는 API 구조 구현
-- [x] 정상적인 계정/채널 추가와 복구 상황을 UI에서 구분
-- [x] v1.6 Cloud config를 그대로 보존하는 자동 마이그레이션 구현
-- [x] 자동 마이그레이션 실패 시 기존 Cloud config 보존 + legacy YouTube 세션만 정리
-- [x] Branding 완료 + `In Production` 전환 후 새 Google 계정 연결 E2E 성공
-- [x] 미검증 Production 앱 경고 → 고급 → 계속 → 실제 권한 동의 흐름 E2E 확인
+## 2026-09-06 E2E UX 버그 보완
+### 업로드 후 자막 목록 자동 갱신
+- [x] 문제 재현: 같은 영상에 자막 업로드 후 `기존 자막 0개`가 그대로 남음
+- [x] 우회 확인: 다른 영상 선택 후 돌아오면 새 트랙 노출
+- [ ] 업로드 성공 시 같은 `sourceVideoId`의 자막 목록 자동 재조회 구현
+- [ ] 자동 재조회 중 loading 상태 정상 표시
+- [ ] 업로드 성공 후 새 트랙이 선택 가능한지 회귀 테스트
 
-## 다중 YouTube 연결
-- [x] 채널별 connectionId 저장
-- [x] 채널별 channelId/title/thumbnail 저장
-- [x] 채널별 access/refresh token 독립 저장
-- [x] 같은 channelId 재연결 시 중복 대신 갱신
-- [x] 기존 채널 A를 유지한 채 B/C 계속 추가하는 registry 구조
-- [x] 실제 기존 채널 A 유지 상태에서 새 채널 B 추가 E2E 성공
-- [x] 특정 채널 연결 해제 시 다른 채널 유지
-- [x] Google Cloud 설정 전체 삭제 시 모든 YouTube 연결 제거
-- [x] 활성 채널 선택 API
-- [x] 작업공간 채널 선택기
-- [x] 활성 채널 변경 시 영상/자막 선택 상태 초기화
-- [x] 영상 조회/자막 다운로드/자막 업로드 API가 같은 활성 채널 세션 사용
-- [x] 채널 전환 API가 선택 대상의 실제 OAuth 세션과 channelId를 검증한 뒤 활성화하도록 보강
-- [x] 활성 세션 오류 시 다른 채널로 조용히 자동 전환하지 않도록 보강
-- [x] 작업공간 채널 전환 후 registry cookie 반영을 재조회해 검증하도록 보강
-
-## 빈 채널 UX
-- [x] OAuth callback에서 YouTube 채널 없음 상태를 별도 오류로 구분
-- [x] YouTube 채널 없음과 업로드 영상 0개를 UI에서 구분
-- [x] 영상 0개일 때 원인 설명
-- [x] `YouTube Studio 열기` CTA
-- [x] `다시 불러오기` CTA
-
-## 보안
-- [x] 운영자 Google OAuth 자격증명 추가 없음
-- [x] Google Client Secret 서버 암호화 유지
-- [x] YouTube access/refresh token 서버 암호화 유지
-- [x] HttpOnly cookie 유지
-- [x] localStorage/sessionStorage 비밀정보 저장 0건
-- [x] OAuth state 검증 유지
-- [x] refresh token 갱신 로직 유지
-- [x] OAuth Client 자체 변경/삭제 시 이전 Client에 종속된 채널 토큰 정리
+### YouTube 자막 가져오기 성공 상태
+- [x] 기능 성공: 한국어 트랙 30 cue SRT 가져오기
+- [x] UX 문제 확인: 성공 메시지가 원본 영역이 아니라 오른쪽 공용 메시지에 나타나 불명확
+- [ ] 원본 자막 영역에 `가져오기 완료` 성공 패널 표시
+- [ ] 성공 패널에 언어 / cue 수 / 영상 제목 또는 파일명 표시
+- [ ] 가져온 원본 언어가 지원 대상 언어와 같으면 번역 대상에서 자동 해제
+- [ ] 가져온 원본의 실제 파일명 표시를 명확화
 
 ## 회귀 검증
-- [x] OpenAI BYOK 동작 유지
-- [x] 기존 SRT 업로드/샘플 동작 유지
-- [x] 번역/검증/다운로드 동작 유지
-- [x] 다중 registry 암호화/선택/삭제 단위 테스트
-- [x] 동일 채널 재연결 중복 방지 단위 테스트
-- [x] 활성 채널 세션 선택 단위 테스트
-- [x] v1.6 legacy 세션 fallback 단위 테스트
-- [x] 다중 채널 API 구조 architecture 테스트
-- [x] 공개 정책 페이지/링크 테스트 추가
-- [x] Publishing 안내 회귀 테스트 추가
-- [x] 채널 전환 세션 검증/무음 fallback 방지/쿠키 반영 확인 회귀 테스트 추가
-- [x] 실제 채널 A 추가 후 B 추가 시 A 유지 E2E
-- [ ] 동일 채널 재연결 E2E
-- [ ] 활성 채널 전환 E2E — 연결 관리에서 전환 직후 작업공간이 다른 채널을 표시하는 불일치 발견, 보강 배포 후 재검증 필요
-- [ ] 채널별 영상 목록 분리 E2E
-- [ ] 채널별 자막 다운로드 E2E
-- [ ] 채널별 자막 업로드 E2E
-- [x] OAuth 오류 `403 access_denied` 원인 확인 E2E
-- [x] 영상 없음 UI E2E
-- [ ] 실제 모바일 기기 가로 overflow E2E
-- [x] focus-visible 회귀 테스트
-- [x] prefers-reduced-motion 회귀 테스트
-- [x] 최신 Production 자동 테스트 **73/73 통과**
-- [x] 최신 Vercel `next build` TypeScript 검사 통과
-- [x] 최신 Vercel Production build 통과
+- [ ] 기존 SRT 파일 업로드 유지
+- [ ] 번역 결과 구조 검증 유지
+- [ ] SRT 개별 다운로드 / ZIP 유지
+- [ ] YouTube 자막 업로드 유지
+- [ ] YouTube 자막 가져오기 유지
+- [ ] 다중 채널 전환 유지
+- [ ] 빈 채널 UX 유지
+- [ ] OpenAI BYOK 유지
+- [ ] 비밀정보 HttpOnly 암호화 유지
+- [ ] localStorage/sessionStorage 비밀정보 0건
+- [ ] 자동 테스트 전체 통과
+- [ ] TypeScript 통과
+- [ ] Next.js production build 통과
 
-## 패키징 / 배포
+## 배포 / 패키징
+- [ ] 최종 변경 GitHub `main` 반영
+- [ ] 최신 GitHub commit SHA 기록
+- [ ] Vercel Production READY 확인
+- [ ] Vercel Runtime Error 없음 확인
 - [ ] 전체 프로젝트 ZIP 생성
 - [ ] ZIP은 GitHub에 커밋하지 않음
-- [ ] 최종 v1.7.0 변경 전체를 GitHub main에 반영
-- [x] 2단계 API 변경 GitHub main 반영
-- [x] 3단계 UI 변경 GitHub main 반영
-- [x] 4단계 공개 정책/Publishing 보완 GitHub main 반영
-- [x] 채널 전환 일관성 보강 커밋 `b2dcb5aa1fed922b1e5997648ebdabf1b143108c` main 반영
-- [x] 해당 코드 Production deployment `dpl_BANKyWACxpzwsaGymjNAjz2YYArG` READY 확인
-- [x] 해당 코드 배포 후 Runtime Errors 없음 확인
-- [x] 기존 Google 연결 E2E
-- [x] 첫 채널 연결 유지 E2E
-- [x] 추가 계정/채널 연결 E2E
-- [ ] 채널 전환 E2E 재검증
-- [ ] 영상 가져오기 → 번역 → YouTube 자막 업로드 E2E
 
-## 단계별 자체 점검 기록
-### 1단계 — 문서 / 아키텍처
-- 상태: **완료**
-- 확인: 초보자 우선, 운영자 비관여, BYOC 유지, Cloud 설정 1회, `In Production` 권장, 다중 채널 누적 연결, 활성 채널 일관성, 빈 채널 UX, 보안/비용 원칙을 4개 문서에 일치시킴
-- 개선: `Testing`을 강제 제거하지 않고 `In Production`을 권장 경로로 정리해 실제 사용자 선택권을 유지함
-- 자체 점수: **9.8/10**
+## 단계별 자체 점검
+### 문서 보완
+- 상태: 완료
+- 내용: 실제 E2E에서 확인된 자막 목록 갱신 누락과 가져오기 성공 상태 불명확 문제를 4개 문서에 반영
+- 자체 점수: 10/10
 
-### 2단계 — 연결 데이터 모델 / OAuth API
-- 상태: **완료**
-- 완료: Cloud config와 채널 세션 분리, encrypted registry, 채널별 세션 cookie, 활성 채널 API, 추가/선택/개별 해제, 동일 채널 dedupe, OAuth callback 채널 식별, v1.6 자동 마이그레이션, 실패 시 Cloud config 보존, 영상·자막 API 활성 세션 공통 사용
-- 자체 리뷰 수정: invalid session 정리 cookie가 실제 응답에 반영되도록 status 정리 로직 수정, registry type 안정화, cookie prefix 상수화, 테스트 import 정리
-- 검증: 자동 테스트/TypeScript/build/Production READY/Runtime Error 확인 완료
-- 남은 확인: 동일 Google 계정의 여러 Brand Account 채널 선택 실제 E2E, 매우 많은 채널 연결 시 cookie 규모 최적화 여부
-- 자체 점수: **9.6/10**
+### 구현
+- 상태: 진행 예정
+- 완료 기준: 업로드 직후 자동 자막 목록 갱신 + 명확한 가져오기 성공 패널 + 동일 언어 자동 해제
 
-### 3단계 — Google 설정 마법사 / 작업공간 UI
-- 상태: **구현 완료, E2E 보완 완료**
-- 완료: 8단계 마법사, 다중 채널 관리, 작업공간 채널 바, 썸네일, 빈 영상 UX
-- E2E 발견: Client 저장 여부만 보고 `Google Cloud 설정은 끝났습니다`라고 표시했지만 실제 Google OAuth 앱은 Testing 상태였고 새 계정은 `403 access_denied`로 차단됨
-- 수정: Client 저장과 Google Publishing 완료를 분리해 표시하고 Branding/Publishing 확인 경로를 UI에 추가
-- 자체 점수: **9.7/10**
-
-### 4단계 — 공개 정책 / Publishing 보완
-- 상태: **완료**
-- 완료: 공개 `/privacy`, `/terms`, 전역 정책 링크, Branding 입력 URL 복사, Audience/Branding 바로가기, 문서 동기화, 회귀 테스트 추가
-- 검증: Production에서 자동 테스트, TypeScript, Next.js build 통과. `/privacy`, `/terms`, `/connections`, `/` HTTP 200. Runtime Errors 0건
-- 실제 E2E: Branding URL 저장 → Audience `In Production` 전환 → 미검증 앱 경고를 거쳐 새 Google 계정/두 번째 YouTube 채널 추가 성공
-- 자체 점수: **9.8/10**
-
-### 5단계 — 최종 E2E / 패키징 / 배포
-- 상태: **진행 중**
-- 성공: 새 Google 계정 추가, 기존 채널 유지, 두 채널 누적 연결, 새 채널 활성화, 해당 채널 영상 목록 26개 조회
-- E2E 발견: 연결 관리에서 기존 채널로 전환한 직후 작업공간은 새 채널을 계속 활성 채널로 표시함
-- 보강: 활성화 전에 대상 세션/channelId 검증, status의 무음 fallback 제거, 작업공간 전환 cookie read-after-write 확인 추가
-- 검증: 보강 배포 자동 테스트 **73/73**, TypeScript/build 통과, Production READY, Runtime Errors 0건
-- 다음: 동일 두 채널 상태에서 활성 채널 전환 재검증 → 채널별 영상 분리 → 자막 다운로드/업로드 E2E
-- 현재 자체 점수: **9.6/10**
+### 최종 E2E / 배포
+- 상태: 구현 후 진행
+- 완료 기준: 테스트/빌드/Production READY/Runtime Error/ZIP까지 확인
