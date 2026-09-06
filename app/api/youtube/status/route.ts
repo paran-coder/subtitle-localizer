@@ -7,7 +7,6 @@ import {
   emptyConnectionRegistry,
   oauthRedirectUri,
   refreshYouTubeSession,
-  removeConnectionRegistry,
   sealConnectionRegistry,
   sealSession,
   unsealClientConfig,
@@ -50,45 +49,56 @@ export async function GET(request: NextRequest) {
   const registryCookie = request.cookies.get(YOUTUBE_CONNECTIONS_COOKIE)?.value;
   if (registryCookie) {
     try {
-      let registry = unsealConnectionRegistry(registryCookie, server.secret);
-      let changed = false;
-      const cookiesToClear: string[] = [];
-      while (registry.connections.length) {
-        const active = activeConnectionMeta(registry);
-        if (!active) break;
-        const cookieName = youtubeConnectionCookieName(active.connectionId);
-        const sessionCookie = request.cookies.get(cookieName)?.value;
-        if (!sessionCookie) {
-          registry = removeConnectionRegistry(registry, active.connectionId);
-          changed = true;
-          continue;
-        }
-        try {
-          const original = unsealSession(sessionCookie, server.secret);
-          const session = await refreshYouTubeSession(original, client);
-          const response = json({
-            ...base,
-            configured: true,
-            connected: true,
-            remember: client.remember,
-            activeConnectionId: active.connectionId,
-            connections: registry.connections
-          });
-          if (changed) response.cookies.set(YOUTUBE_CONNECTIONS_COOKIE, sealConnectionRegistry(registry, server.secret), youtubeRememberCookieOptions(client.remember));
-          for (const staleCookie of cookiesToClear) response.cookies.set(staleCookie, "", { ...youtubeCookieOptions, maxAge: 0 });
-          if (session.accessToken !== original.accessToken) response.cookies.set(cookieName, sealSession(session, server.secret), youtubeRememberCookieOptions(client.remember));
-          return response;
-        } catch {
-          cookiesToClear.push(cookieName);
-          registry = removeConnectionRegistry(registry, active.connectionId);
-          changed = true;
-        }
+      const registry = unsealConnectionRegistry(registryCookie, server.secret);
+      const active = activeConnectionMeta(registry);
+      if (!active) {
+        const response = json({ ...base, configured: true, connected: false, remember: client.remember, connections: [] });
+        response.cookies.set(YOUTUBE_CONNECTIONS_COOKIE, "", { ...youtubeCookieOptions, maxAge: 0 });
+        return response;
       }
-      const response = json({ ...base, configured: true, connected: false, remember: client.remember, connections: registry.connections });
-      if (registry.connections.length) response.cookies.set(YOUTUBE_CONNECTIONS_COOKIE, sealConnectionRegistry(registry, server.secret), youtubeRememberCookieOptions(client.remember));
-      else response.cookies.set(YOUTUBE_CONNECTIONS_COOKIE, "", { ...youtubeCookieOptions, maxAge: 0 });
-      for (const staleCookie of cookiesToClear) response.cookies.set(staleCookie, "", { ...youtubeCookieOptions, maxAge: 0 });
-      return response;
+
+      const cookieName = youtubeConnectionCookieName(active.connectionId);
+      const sessionCookie = request.cookies.get(cookieName)?.value;
+      if (!sessionCookie) {
+        return json({
+          ...base,
+          configured: true,
+          connected: true,
+          remember: client.remember,
+          activeConnectionId: active.connectionId,
+          connections: registry.connections,
+          activeConnectionError: "현재 작업 채널의 인증 세션이 없습니다. 연결 관리에서 같은 채널을 다시 연결해 주세요."
+        });
+      }
+
+      try {
+        const original = unsealSession(sessionCookie, server.secret);
+        const session = await refreshYouTubeSession(original, client);
+        const response = json({
+          ...base,
+          configured: true,
+          connected: true,
+          remember: client.remember,
+          activeConnectionId: active.connectionId,
+          connections: registry.connections
+        });
+        if (session.accessToken !== original.accessToken) {
+          response.cookies.set(cookieName, sealSession(session, server.secret), youtubeRememberCookieOptions(client.remember));
+        }
+        return response;
+      } catch {
+        const response = json({
+          ...base,
+          configured: true,
+          connected: true,
+          remember: client.remember,
+          activeConnectionId: active.connectionId,
+          connections: registry.connections,
+          activeConnectionError: "현재 작업 채널의 Google 인증이 만료되었습니다. 연결 관리에서 같은 채널을 다시 연결해 주세요."
+        });
+        response.cookies.set(cookieName, "", { ...youtubeCookieOptions, maxAge: 0 });
+        return response;
+      }
     } catch {
       const response = json({ ...base, configured: true, connected: false, remember: client.remember, connections: [] });
       response.cookies.set(YOUTUBE_CONNECTIONS_COOKIE, "", { ...youtubeCookieOptions, maxAge: 0 });

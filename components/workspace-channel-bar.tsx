@@ -23,6 +23,7 @@ export default function WorkspaceChannelBar() {
   const [switching, setSwitching] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [message, setMessage] = useState("");
+  const [activeConnectionError, setActiveConnectionError] = useState("");
 
   const active = useMemo(() => connections.find((item) => item.connectionId === activeConnectionId) ?? connections[0] ?? null, [connections, activeConnectionId]);
 
@@ -30,12 +31,16 @@ export default function WorkspaceChannelBar() {
     if (pathname !== "/") return;
     try {
       const response = await fetch("/api/youtube/status", { cache: "no-store" });
-      const data = await response.json() as { connected?: boolean; activeConnectionId?: string; connections?: Connection[] };
+      const data = await response.json() as { connected?: boolean; activeConnectionId?: string; connections?: Connection[]; activeConnectionError?: string };
       setConnected(Boolean(data.connected));
       setConnections(data.connections ?? []);
       setActiveConnectionId(data.activeConnectionId ?? "");
+      const statusError = data.activeConnectionError ?? "";
+      setActiveConnectionError(statusError);
+      if (statusError) setMessage(statusError);
     } catch {
       setConnected(false);
+      setActiveConnectionError("");
     }
   }, [pathname]);
 
@@ -43,6 +48,11 @@ export default function WorkspaceChannelBar() {
 
   useEffect(() => {
     if (pathname !== "/" || !connected || !activeConnectionId) { setEmptyVideos(false); return; }
+    if (activeConnectionError) {
+      setEmptyVideos(false);
+      setMessage(activeConnectionError);
+      return;
+    }
     let cancelled = false;
     void (async () => {
       setLoadingVideos(true); setMessage("");
@@ -58,7 +68,7 @@ export default function WorkspaceChannelBar() {
       }
     })();
     return () => { cancelled = true; };
-  }, [pathname, connected, activeConnectionId, refreshKey]);
+  }, [pathname, connected, activeConnectionId, activeConnectionError, refreshKey]);
 
   async function switchChannel(connectionId: string) {
     if (!connectionId || connectionId === activeConnectionId || switching) return;
@@ -67,8 +77,15 @@ export default function WorkspaceChannelBar() {
       const response = await fetch("/api/youtube/channels", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ connectionId }), cache: "no-store" });
       const data = await response.json() as { error?: string; activeConnectionId?: string; connections?: Connection[] };
       if (!response.ok) throw new Error(data.error || "채널을 전환하지 못했습니다.");
-      setConnections(data.connections ?? connections);
-      setActiveConnectionId(data.activeConnectionId ?? connectionId);
+
+      const verifyResponse = await fetch("/api/youtube/channels", { cache: "no-store" });
+      const verified = await verifyResponse.json() as { error?: string; activeConnectionId?: string; connections?: Connection[] };
+      if (!verifyResponse.ok) throw new Error(verified.error || "채널 전환 저장 상태를 확인하지 못했습니다.");
+      if (verified.activeConnectionId !== connectionId) throw new Error("채널 전환이 브라우저에 저장되지 않았습니다. 다시 시도해 주세요.");
+
+      setConnections(verified.connections ?? data.connections ?? connections);
+      setActiveConnectionId(verified.activeConnectionId);
+      setActiveConnectionError("");
       window.location.reload();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "채널을 전환하지 못했습니다.");
