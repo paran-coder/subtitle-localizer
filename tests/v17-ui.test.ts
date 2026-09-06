@@ -118,6 +118,8 @@ test("초기 설정 화면은 OpenAI와 YouTube 연결을 실제 값 기준으�
   assert.match(guide, /403 access_denied/);
   assert.match(guide, /In Production/);
   assert.match(guide, /확인되지 않은 앱/);
+  assert.equal(guide.includes("앱의 8단계 마법사와 함께 진행 →"), false);
+  assert.equal(guide.includes("연결 관리 7단계로 이동 →"), false);
 });
 
 test("workspace 채널 바는 썸네일·채널 선택·빈 영상 행동을 제공한다", () => {
