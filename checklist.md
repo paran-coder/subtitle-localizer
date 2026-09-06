@@ -87,3 +87,11 @@
 - 상태: 완료
 - 결과: 실제 Production E2E 재검증, 자동 테스트 77/77, Production READY, 관련 Runtime Error 없음, ZIP 패키징
 - 자체 점수: 10/10
+
+## 2026-09-06 UI 레이아웃 보완
+- [x] 연결 관리 제목/설명 줄바꿈 규칙 보완
+- [x] 현재 작업 채널 바 상하 간격 보완
+- [x] 데스크톱 우측 카드 스크롤 겹침 방지 구조 적용
+- [ ] GitHub `main` 반영
+- [ ] Vercel Production READY 확인
+- [ ] Runtime Error 없음 확인
