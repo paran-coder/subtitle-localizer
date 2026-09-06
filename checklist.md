@@ -46,66 +46,68 @@
 - [x] 버전 `v1.7.0` 유지
 
 ## 첫 사용자 가이드 `/guide`
-### 문서 선행
-- [x] `context-notes.md`에 범위/원칙/진입점 정의
-- [x] `checklist.md`에 구현/검증 항목 정의
-- [ ] `README.md`에 사용자 가이드와 진입점 설명
-- [ ] `User manual.md`를 OpenAI/YouTube 첫 연결 상세 절차로 확장
+### 문서
+- [x] `context-notes.md` 범위/원칙/완료 결과 갱신
+- [x] `checklist.md` 구현/검증 결과 갱신
+- [x] `README.md` 사용자 가이드와 진입점 설명
+- [x] `User manual.md` OpenAI/YouTube 첫 연결 상세 절차 확장
 
 ### OpenAI 가이드
-- [ ] OpenAI API Key의 용도와 사용자 비용 부담 설명
-- [ ] API Key 생성 페이지로 이동하는 명확한 버튼
-- [ ] 새 secret key 생성/즉시 복사/안전 보관 설명
-- [ ] 앱 `연결 관리`의 입력·기억하기·저장 절차 설명
-- [ ] API Key 전체 값이 다시 표시되지 않는 경우의 복구 안내
-- [ ] 실제 secret 예시를 문서/코드에 넣지 않음
+- [x] OpenAI API Key의 용도와 사용자 비용 부담 설명
+- [x] API Key 생성 페이지로 이동하는 버튼
+- [x] 새 secret key 생성/즉시 복사/안전 보관 설명
+- [x] 앱 `연결 관리`의 입력·기억하기·저장 절차 설명
+- [x] API Key 전체 값이 다시 표시되지 않는 경우의 복구 안내
+- [x] ChatGPT 구독과 OpenAI API 결제 분리 안내
+- [x] 실제 secret 예시를 문서/코드에 넣지 않음
 
 ### YouTube 가이드
-- [ ] 전체 구조를 먼저 설명: Project → YouTube API → Auth Platform → Scope → OAuth Client → Channel
-- [ ] 앱의 실제 8단계 마법사와 동일한 순서 사용
-- [ ] 프로젝트명 `Subtitle Localizer` 권장
-- [ ] YouTube Data API v3 사용 설정
-- [ ] Branding 공개 URL 3개 제공
-- [ ] Audience `In Production` 권장과 Testing 차이 설명
-- [ ] `youtube.force-ssl` scope 제공
-- [ ] OAuth Client `Web application` / `Subtitle Localizer Web` 권장
-- [ ] Authorized JavaScript origins는 비워두기
-- [ ] Authorized redirect URI는 callback만 넣기
-- [ ] Client ID/Secret 저장 후 첫 채널 연결
-- [ ] 추가 계정/채널은 Cloud 설정 반복 없이 연결
-- [ ] `403 access_denied`, 확인되지 않은 앱, 채널 없음 등 복구 설명
+- [x] 전체 구조 설명: Project → YouTube API → Auth Platform → Audience → Scope → OAuth Client → Channel
+- [x] 앱의 실제 8단계 마법사와 동일한 순서 사용
+- [x] 프로젝트명 `Subtitle Localizer` 권장
+- [x] YouTube Data API v3 사용 설정
+- [x] Branding 공개 URL 3개 제공
+- [x] Audience `In Production` 권장과 Testing 차이 설명
+- [x] `youtube.force-ssl` scope 제공
+- [x] OAuth Client `Web application` / `Subtitle Localizer Web` 권장
+- [x] Authorized JavaScript origins는 비워두기
+- [x] Authorized redirect URI는 callback만 넣기
+- [x] Client ID/Secret 저장 후 첫 채널 연결
+- [x] 추가 계정/채널은 Cloud 설정 반복 없이 연결
+- [x] `403 access_denied`, `redirect_uri_mismatch`, 확인되지 않은 앱, 영상 0개 등 복구 설명
 
 ### 페이지 UX
-- [ ] `/guide` 라우트 생성
-- [ ] 데스크톱 목차 + 본문, 모바일 단일 열
-- [ ] 각 섹션에서 `연결 관리`의 정확한 위치로 이동하는 CTA
-- [ ] 작업공간 상단 `처음 사용 가이드` 진입점
-- [ ] 연결 관리 상단 `설정 가이드` 진입점
-- [ ] 푸터 `처음 사용 가이드` 진입점
-- [ ] focus-visible / reduced-motion 유지
-- [ ] 기존 `v1.7.0` 시각 언어와 일관성 유지
+- [x] `/guide` 라우트 생성
+- [x] 데스크톱 목차 + 본문, 모바일 단일 열
+- [x] 각 주요 섹션에서 연결 관리/작업 화면으로 이동하는 CTA
+- [x] 작업공간 상단 `처음 사용 가이드` 진입점
+- [x] 연결 관리 상단 `설정 가이드 보기` 진입점
+- [x] 푸터 `처음 사용 가이드` 진입점
+- [x] focus-visible / reduced-motion 유지
+- [x] 기존 `v1.7.0` 시각 언어와 일관성 유지
 
 ### 회귀 검증
-- [ ] `package.json` 1.7.0 유지
-- [ ] 홈페이지 표시 버전도 v1.7.0으로 통일
-- [ ] 기존 OpenAI 연결 API 동작 유지
-- [ ] 기존 Google Cloud 8단계 마법사 유지
-- [ ] 다중 YouTube 채널 추가/전환 코드 변경 없음 또는 회귀 없음
-- [ ] 기존 자막 번역/업로드/가져오기 코드 회귀 없음
-- [ ] 자동 테스트 전체 통과
-- [ ] TypeScript 통과
-- [ ] Next.js Production build 통과
+- [x] `package.json` 1.7.0 유지
+- [x] 실제 사용자 표시 버전 v1.7.0 유지 (`v17-version.css` 포함)
+- [x] 기존 OpenAI 연결 API 동작 코드 변경 없음
+- [x] 기존 Google Cloud 8단계 마법사 유지
+- [x] 다중 YouTube 채널 추가/전환 핵심 로직 변경 없음
+- [x] 기존 자막 번역/업로드/가져오기 핵심 로직 변경 없음
+- [x] 자동 테스트 전체 통과 (78/78)
+- [x] TypeScript 통과
+- [x] Next.js Production build 통과
 
-### 배포 검증
-- [ ] GitHub `main` 최종 반영
-- [ ] Vercel `subtitle-localizer` Production 자동 배포
-- [ ] Production `READY`
-- [ ] `/guide` HTTP 200
-- [ ] `/guide` 핵심 문구/링크 Production 반영
-- [ ] 기존 `/connections` 줄바꿈 유지 확인
-- [ ] 관련 Runtime Error 없음
-- [ ] 최종 GitHub commit SHA 기록
-- [ ] ZIP은 사용자에게만 제공하고 GitHub에는 넣지 않음
+### Production 검증
+- [x] GitHub `main` 실제 반영
+- [x] Vercel `subtitle-localizer` Production 자동 배포
+- [x] 기능 검증 배포 `dpl_6dbX6JQ6sp8ZYuDmXqwp7ucQG2uQ` READY
+- [x] `/guide` HTTP 200
+- [x] `/guide` 핵심 OpenAI/Google 문구와 링크 Production 반영
+- [x] `/connections` 새 설정 가이드 진입점 반영
+- [x] 기존 `/connections` 명시적 줄바꿈 유지
+- [x] 관련 Runtime `error`/`fatal` 없음
+- [x] 실제 secret 출력/커밋 없음
+- [x] ZIP은 GitHub에 넣지 않음
 
 ## 단계별 자체 점검
 ### 기존 v1.7.0 기능/E2E
@@ -116,6 +118,17 @@
 - 상태: 코드 및 Production 반영 완료
 - 자체 점수: 10/10
 
-### 첫 사용자 가이드
-- 상태: 문서 선행 진행 중
-- 다음 단계: README/User manual 정리 후 `/guide` 구현
+### 문서 정리
+- 상태: 완료
+- 결과: 4개 운영 문서가 현재 가이드/Production 상태와 일치
+- 자체 점수: 10/10
+
+### 첫 사용자 가이드 구현
+- 상태: 완료
+- 결과: OpenAI BYOK + Google/YouTube BYOC 상세 가이드, 3개 진입점, 모바일/접근성 반영
+- 자체 점수: 9.5/10
+
+### 최종 검증
+- 상태: 완료
+- 결과: 테스트 78/78, TypeScript/Production build 통과, `/guide`와 `/connections` Production 확인, 관련 Runtime Error 없음
+- 자체 점수: 10/10
