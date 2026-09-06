@@ -55,7 +55,6 @@ export default function PrimarySectionNav() {
             <span className="primary-titlebar-privacy">파일을 서버에 저장하지 않습니다</span>
             <span className={`primary-status-pill ${openAiConfigured ? "is-ready" : ""}`}>OpenAI {openAiConfigured ? "✓" : "○"}</span>
             <span className={`primary-status-pill ${youtubeConnected ? "is-ready" : ""}`}>YouTube {youtubeConnected ? "✓" : "○"}</span>
-            <a className="primary-titlebar-action" href={pathname === "/connections" ? "/" : "/connections"}>{pathname === "/connections" ? "작업하기" : "연결 관리"}</a>
           </div>
         </div>
       </header>
