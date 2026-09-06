@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import WorkspaceChannelBar from "@/components/workspace-channel-bar";
-import FirstUseGuideLink from "@/components/first-use-guide-link";
+import PrimarySectionNav from "@/components/first-use-guide-link";
 import SitePolicyFooter from "@/components/site-policy-footer";
 import "./globals.css";
 import "./v17.css";
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="ko">
-      <body><WorkspaceChannelBar /><FirstUseGuideLink />{children}<SitePolicyFooter /></body>
+      <body><WorkspaceChannelBar /><PrimarySectionNav />{children}<SitePolicyFooter /></body>
     </html>
   );
 }
