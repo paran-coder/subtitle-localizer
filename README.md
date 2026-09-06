@@ -12,30 +12,65 @@
 - 다중 Google 계정 / YouTube 채널 연결 및 전환
 - Google Cloud는 최초 1회 설정 후 정상적인 추가 채널 연결에 재설정 불필요
 
+## 처음 사용하는 사용자
+v1.7.0에는 `/guide` 첫 사용자 가이드를 둡니다. 처음 접속한 사용자가 아래 두 연결을 스스로 완료하는 것이 목표입니다.
+
+1. **내 OpenAI API Key**
+   - 왜 필요한지
+   - 비용은 누구에게 청구되는지
+   - OpenAI에서 secret key를 어디서 만들고 언제 복사해야 하는지
+   - Subtitle Localizer `연결 관리`의 어느 칸에 넣는지
+   - `이 브라우저에 기억하기`와 저장 방식
+   - 키를 잃어버렸거나 폐기해야 할 때의 복구 방법
+
+2. **YouTube 연결**
+   - 왜 Google Cloud 프로젝트가 필요한지
+   - YouTube Data API v3와 OAuth Client가 각각 무슨 역할인지
+   - Project → API → Auth Platform → Audience → Scope → Client → Channel 순서
+   - 실제 Google Console 버튼명과 완료 조건
+   - Testing / In Production 차이와 `403 access_denied`
+   - OAuth callback URI를 정확한 칸에 넣는 방법
+   - 첫 채널 연결 후 추가 계정/채널 연결 방법
+
+작업공간 상단, 연결 관리 상단, 사이트 푸터에서 `/guide`로 진입할 수 있게 합니다.
+
+## OpenAI 연결 원칙
+- OpenAI API Key는 사용자가 직접 발급하고 소유합니다.
+- 번역 사용료는 사용자가 입력한 OpenAI 계정에 직접 청구됩니다.
+- 앱은 입력받은 API Key를 서버에서 암호화하고 HttpOnly cookie로 보관합니다.
+- localStorage/sessionStorage에는 비밀정보를 저장하지 않습니다.
+- 실제 API Key 값은 문서, 저장소, 스크린샷, 로그에 넣지 않습니다.
+- secret key는 생성 직후 전체 값을 안전하게 복사·보관하고, 다시 확인할 수 없으면 기존 값을 추측하거나 노출하려 하지 말고 새 키를 발급하는 흐름을 안내합니다.
+
 ## v1.7.0 Google / YouTube 연결
 v1.7.0은 Google Cloud 설정과 YouTube 채널 연결을 분리합니다.
 
 사용자는 자신의 Google Cloud 프로젝트에 YouTube Data API v3와 Google Auth Platform을 설정하고, 하나의 OAuth Web Client를 Subtitle Localizer에 저장합니다. 이후 앱의 `+ 계정 또는 채널 추가`를 통해 여러 Google 계정/YouTube 채널을 계속 연결할 수 있습니다.
 
-권장 초기 설정에는 다음이 포함됩니다.
-- Google Auth Platform External
+권장 초기 설정:
+- 전용 프로젝트 이름: `Subtitle Localizer`
+- YouTube Data API v3 사용 설정
+- Google Auth Platform 사용자 유형: `External`
 - Branding 공개 URL
   - `https://subtitle-localizer.vercel.app/`
   - `https://subtitle-localizer.vercel.app/privacy`
   - `https://subtitle-localizer.vercel.app/terms`
-- Audience `In Production` 권장
-- scope `https://www.googleapis.com/auth/youtube.force-ssl`
-- OAuth Client type `Web application`
-- Authorized JavaScript origins 비움
-- Authorized redirect URIs에 앱 callback만 등록
+- Audience: 여러 계정을 연결할 계획이면 `In Production` 권장
+- scope: `https://www.googleapis.com/auth/youtube.force-ssl`
+- OAuth Client type: `Web application`
+- 권장 Client 이름: `Subtitle Localizer Web`
+- Authorized JavaScript origins: 비움
+- Authorized redirect URIs: `https://subtitle-localizer.vercel.app/api/youtube/oauth/callback`
 
-미검증 Production 앱은 Google의 확인되지 않은 앱 경고가 나타날 수 있습니다.
+`Client 저장됨`과 Google 앱의 Publishing 상태는 별개입니다. 앱은 Google Console의 실제 Publishing 상태까지 자동 판별하지 않습니다.
+
+미검증 Production 앱은 Google의 `확인되지 않은 앱` 경고가 나타날 수 있습니다.
 
 ## 다중 채널
 각 YouTube 채널은 독립된 OAuth 세션으로 저장됩니다. 작업공간에서 활성 채널을 바꾸면 영상 목록과 자막 가져오기/업로드 대상도 해당 채널로 바뀝니다.
 
-실제 E2E에서 다음을 확인했습니다.
-- 기존 채널을 유지한 채 두 번째 Google 계정/채널 추가
+실제 E2E에서 확인:
+- 기존 채널 유지 상태에서 두 번째 Google 계정/채널 추가
 - 채널 전환
 - 영상 27개 채널과 영상 0개 채널의 목록 분리
 - 빈 채널 안내
@@ -54,20 +89,17 @@ v1.7.0은 Google Cloud 설정과 YouTube 채널 연결을 분리합니다.
 - 앱에서 한국어 YouTube 자막 업로드 성공
 - YouTube API에서 `ko · Subtitle Localizer` 트랙 조회 성공
 - 해당 자막을 다시 SRT로 다운로드해 30 cue 가져오기 성공
+- 업로드 직후 동일 영상 자막 목록 자동 갱신
+- 가져온 원본 언어와 동일한 번역 대상 자동 해제
 
-## v1.7.0 실제 E2E 보완 완료
-실제 E2E에서 발견한 다음 UX 문제까지 수정하고 Production에서 재검증했습니다.
+## v1.7.0 UI 마감 상태
+실사용 화면에서 확인된 세 가지 UI 문제는 현재 GitHub `main`과 Production에 반영됐습니다.
 
-1. **업로드 직후 동일 영상의 기존 자막 목록 자동 갱신**
-   - 기존에는 `sourceVideoId`가 바뀔 때만 자막 목록을 조회해, 같은 영상에 새 자막을 올린 뒤 `0개`가 남을 수 있었습니다.
-   - 업로드 성공 후 현재 원본 영상과 같은 영상이면 자막 목록을 즉시 재조회합니다.
+1. 연결 관리 제목과 설명은 CSS 자동 줄바꿈이 아니라 JSX `<br />`로 문장 경계를 고정합니다.
+2. 작업공간 상단 현재 YouTube 작업 채널 바에 위·아래 여백을 확보합니다.
+3. 데스크톱 오른쪽 열 전체를 sticky + 내부 스크롤 구조로 만들어 `YouTube에 올리기`와 `현재 작업` 카드가 겹치지 않게 합니다.
 
-2. **YouTube 자막 가져오기 성공 상태 명확화**
-   - 가져오기 성공 메시지를 `원본 자막` 영역 안에 표시합니다.
-   - 언어, cue 수, 영상 제목/생성 파일명을 보여 사용자가 원본이 실제로 바뀌었는지 즉시 확인할 수 있습니다.
-   - 가져온 원본 언어가 번역 대상 언어와 같으면 해당 언어를 자동 해제합니다.
-
-Production 재검증에서 `ko · Subtitle Localizer` 트랙의 즉시 노출, `가져오기 완료 · 30 cue` 표시, 한국어 번역 대상 자동 해제를 확인했습니다.
+버전은 계속 `v1.7.0`을 유지합니다.
 
 ## 보안 / 비용
 - OpenAI API Key, Google Client Secret, YouTube access/refresh token은 서버에서 암호화합니다.
@@ -89,14 +121,13 @@ OPENAI_TRANSLATION_MODEL=gpt-5.6-luna
 사용자 OpenAI Key나 Google OAuth Client Secret은 환경 변수로 운영자가 보유하지 않습니다.
 
 ## 개발 / 검증
-최종 v1.7.0은 다음을 모두 통과해야 완료로 봅니다.
+최종 v1.7.0 변경은 다음을 모두 통과해야 완료로 봅니다.
 - 자동 테스트 전체 통과
 - TypeScript 통과
 - `next build` 통과
 - GitHub `main` 반영
 - Vercel Production READY
 - 관련 Runtime Error 없음
-- 전체 프로젝트 ZIP 사용자 제공(저장소에는 포함하지 않음)
-
-## v1.7.0 UI 레이아웃 보완
-실사용 화면 기준으로 연결 관리의 한글 줄바꿈, 작업 채널 바의 상하 여백, 데스크톱 우측 업로드/요약 카드의 스크롤 겹침을 보완합니다. 기능/버전은 v1.7.0을 유지합니다.
+- `/guide` Production 반영 확인
+- 기존 `/connections` 명시적 줄바꿈 유지 확인
+- 전체 프로젝트 ZIP은 사용자에게만 제공하고 저장소에는 포함하지 않음
