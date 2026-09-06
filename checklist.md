@@ -45,11 +45,11 @@
 - [x] 실제 Production `/connections`에서 `<br/>` 반영 확인
 - [x] 버전 `v1.7.0` 유지
 
-## 첫 사용자 가이드 `/guide`
+## 상세 초기 설정 `/guide`
 ### 문서
 - [x] `context-notes.md` 범위/원칙/완료 결과 갱신
 - [x] `checklist.md` 구현/검증 결과 갱신
-- [x] `README.md` 사용자 가이드와 진입점 설명
+- [x] `README.md` 사용자 설정 안내 설명
 - [x] `User manual.md` OpenAI/YouTube 첫 연결 상세 절차 확장
 
 ### OpenAI 가이드
@@ -76,17 +76,7 @@
 - [x] 추가 계정/채널은 Cloud 설정 반복 없이 연결
 - [x] `403 access_denied`, `redirect_uri_mismatch`, 확인되지 않은 앱, 영상 0개 등 복구 설명
 
-### 페이지 UX
-- [x] `/guide` 라우트 생성
-- [x] 데스크톱 목차 + 본문, 모바일 단일 열
-- [x] 각 주요 섹션에서 연결 관리/작업 화면으로 이동하는 CTA
-- [x] 작업공간 상단 `처음 사용 가이드` 진입점
-- [x] 연결 관리 상단 `설정 가이드 보기` 진입점
-- [x] 푸터 `처음 사용 가이드` 진입점
-- [x] focus-visible / reduced-motion 유지
-- [x] 기존 `v1.7.0` 시각 언어와 일관성 유지
-
-### 회귀 검증
+### 기존 회귀 검증
 - [x] `package.json` 1.7.0 유지
 - [x] 실제 사용자 표시 버전 v1.7.0 유지 (`v17-version.css` 포함)
 - [x] 기존 OpenAI 연결 API 동작 코드 변경 없음
@@ -97,17 +87,36 @@
 - [x] TypeScript 통과
 - [x] Next.js Production build 통과
 
-### Production 검증
-- [x] GitHub `main` 실제 반영
-- [x] Vercel `subtitle-localizer` Production 자동 배포
-- [x] 기능 검증 배포 `dpl_6dbX6JQ6sp8ZYuDmXqwp7ucQG2uQ` READY
-- [x] `/guide` HTTP 200
-- [x] `/guide` 핵심 OpenAI/Google 문구와 링크 Production 반영
-- [x] `/connections` 새 설정 가이드 진입점 반영
-- [x] 기존 `/connections` 명시적 줄바꿈 유지
-- [x] 관련 Runtime `error`/`fatal` 없음
-- [x] 실제 secret 출력/커밋 없음
-- [x] ZIP은 GitHub에 넣지 않음
+## 2026-09-06 상단 내비게이션 재정리
+### 정보 구조
+- [x] 명칭 확정: `초기 설정 / 연결 관리 / 작업하기`
+- [x] 기본 페이지 확정: `/` = `작업하기`
+- [x] `/guide` 역할 확정: `초기 설정`
+- [x] `/connections` 역할 확정: `연결 관리`
+
+### 구현
+- [ ] `/`와 `/connections`의 큰 안내 배너 제거
+- [ ] 주요 화면 공통 상단 탭 추가
+- [ ] `초기 설정` → `/guide`
+- [ ] `연결 관리` → `/connections`
+- [ ] `작업하기` → `/`
+- [ ] 현재 경로 탭 강조
+- [ ] 사이트 푸터의 `처음 사용 가이드`를 `초기 설정`으로 변경
+- [ ] 모바일에서도 탭이 명확하게 유지되도록 반응형 처리
+- [ ] 기존 현재 YouTube 작업 채널 바 유지
+- [ ] 연결/번역/다중 채널 핵심 로직 변경 없음
+
+### 검증
+- [ ] 자동 테스트 전체 통과
+- [ ] TypeScript 통과
+- [ ] Next.js Production build 통과
+- [ ] `/` HTTP 200 및 `작업하기` 활성 탭 확인
+- [ ] `/guide` HTTP 200 및 `초기 설정` 활성 탭 확인
+- [ ] `/connections` HTTP 200 및 `연결 관리` 활성 탭 확인
+- [ ] 기존 `/connections` 명시적 줄바꿈 유지
+- [ ] Vercel Production READY
+- [ ] 관련 Runtime `error`/`fatal` 없음
+- [ ] 버전 `v1.7.0` 유지
 
 ## 단계별 자체 점검
 ### 기존 v1.7.0 기능/E2E
@@ -118,17 +127,10 @@
 - 상태: 코드 및 Production 반영 완료
 - 자체 점수: 10/10
 
-### 문서 정리
+### 상세 초기 설정 페이지
 - 상태: 완료
-- 결과: 4개 운영 문서가 현재 가이드/Production 상태와 일치
-- 자체 점수: 10/10
-
-### 첫 사용자 가이드 구현
-- 상태: 완료
-- 결과: OpenAI BYOK + Google/YouTube BYOC 상세 가이드, 3개 진입점, 모바일/접근성 반영
 - 자체 점수: 9.5/10
 
-### 최종 검증
-- 상태: 완료
-- 결과: 테스트 78/78, TypeScript/Production build 통과, `/guide`와 `/connections` Production 확인, 관련 Runtime Error 없음
-- 자체 점수: 10/10
+### 상단 내비게이션 재정리
+- 상태: 문서 선행 완료, 구현 전
+- 다음 단계: 공통 탭 구현 → 회귀 테스트 → Production 검증
