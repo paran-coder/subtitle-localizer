@@ -1,0 +1,69 @@
+/* v1.7.0 production UI polish — line wrapping, vertical rhythm, sticky overlap */
+
+.v17-connections-hero {
+  padding-bottom: 32px;
+}
+
+.v17-connections-hero h1 {
+  max-width: 780px;
+  margin-bottom: 16px;
+  line-height: 1.08;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  text-wrap: balance;
+}
+
+.v17-connections-hero p {
+  max-width: 740px;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  text-wrap: pretty;
+}
+
+.v17-workspace-channel-bar {
+  margin-top: 18px;
+  margin-bottom: 20px;
+}
+
+.workspace-intro h1,
+.workspace-intro > p {
+  word-break: keep-all;
+}
+
+.workspace-intro h1 {
+  text-wrap: balance;
+}
+
+.workspace-intro > p {
+  text-wrap: pretty;
+}
+
+@media (min-width: 1021px) {
+  .side-column {
+    position: sticky;
+    top: 80px;
+    align-self: start;
+    max-height: calc(100svh - 96px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-right: 4px;
+    scrollbar-gutter: stable;
+  }
+
+  .side-column > .sticky-card {
+    position: static;
+    top: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .v17-connections-hero h1 {
+    max-width: none;
+    text-wrap: initial;
+  }
+
+  .v17-workspace-channel-bar {
+    margin-top: 12px;
+    margin-bottom: 16px;
+  }
+}
