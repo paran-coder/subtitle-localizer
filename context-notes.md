@@ -53,7 +53,7 @@ Subtitle Localizer는 사용자가 자신의 OpenAI API Key(BYOK)와 자신의 G
 - OG 이미지에 `width: 1200`, `height: 630`, alt를 명시합니다.
 - 홈 소스의 과거 `v1.6.4` 잔존 표시는 실제 `v1.7.0`으로 정리하고 CSS 텍스트 교체 우회를 제거합니다.
 - 구버전 중복 문서 `User%20manual.md`는 삭제하고 `User manual.md`만 유지합니다.
-- OG 제작 중 생성된 `lib/og-image/*` 임시 데이터는 최종 자산 반영 후 모두 삭제합니다.
+- OG 제작 중 생성된 `compact-*`, `final-*` 실험 파일은 삭제했고, `lib/og-image/part-00.ts`~`part-05.ts`는 Production OG JPEG를 제공하는 최종 런타임 자산 데이터로 유지합니다.
 - 제품 버전은 `v1.7.0`에서 올리지 않습니다.
 
 ## 최종 완료 기준
