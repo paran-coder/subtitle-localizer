@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="ko">
-      <body><WorkspaceChannelBar /><PrimarySectionNav />{children}<SitePolicyFooter /></body>
+      <body><PrimarySectionNav /><WorkspaceChannelBar />{children}<SitePolicyFooter /></body>
     </html>
   );
 }
