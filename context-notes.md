@@ -21,9 +21,11 @@ v1.7.0의 핵심 목표는 다음과 같습니다.
 - 제품 버전: `v1.7.0` 유지
 - GitHub: `paran-coder/subtitle-localizer`의 `main`만 사용
 - Vercel: `subtitle-localizer` 프로젝트만 사용
-- 2026-09-06 가이드 작업 시작 전 main: `989daa9726304dfae40c0073aa7206653c33a1c7`
-- 해당 Production 배포: `dpl_6oavErhsXkPLYiS7yC52N3zM82oU` · `READY`
-- 자동 테스트: 77/77 통과
+- Production URL: `https://subtitle-localizer.vercel.app`
+- 가이드 기능 검증 커밋: `636ff89f33dc62bcd10e8dd87fce008962a78368`
+- 가이드 기능 검증 배포: `dpl_6dbX6JQ6sp8ZYuDmXqwp7ucQG2uQ` · `READY`
+- 자동 테스트: 78/78 통과
+- TypeScript / Next.js Production build: 통과
 - 관련 Runtime Error: 확인 범위 0건
 
 ## Google Cloud 초기 설정
@@ -83,39 +85,45 @@ Cloud config 하나를 여러 채널 연결이 재사용합니다. 채널별 `co
 - 연결 관리 설명: `Google Cloud는 사용자가 직접 소유합니다.` / `앱은 초보자가 판단할 일을 줄이고 꼭 필요한 클릭과 입력만 순서대로 안내합니다.`를 JSX `<br />`로 명시 분리
 - 현재 YouTube 작업 채널 바의 상·하 여백 보완
 - 데스크톱 우측 열을 sticky + 내부 스크롤 구조로 바꿔 `YouTube에 올리기`와 `현재 작업` 카드 겹침 방지
+- Production `/connections` HTML에서 명시적 줄바꿈 유지 확인
 
-최신 확인 기준 GitHub `main`과 Production `/connections` HTML 모두 명시적 줄바꿈을 포함합니다.
+## 2026-09-06 첫 사용자 가이드 완료
+신규 버전으로 올리지 않고 v1.7.0 안에서 `/guide` 페이지를 구현했습니다.
 
-## 2026-09-06 첫 사용자 가이드 작업
-신규 기능 버전은 올리지 않고 v1.7.0 안에서 `/guide` 페이지를 추가합니다.
+### 가이드 내용
+- 시작 전 준비물과 전체 연결 구조
+- OpenAI API Key의 용도, 비용 주체, 생성/복사/연결/교체 흐름
+- ChatGPT 구독과 OpenAI API 사용료가 별도라는 안내
+- 사용자 API Key의 암호화 + HttpOnly cookie 저장 원칙
+- Google Cloud Project → YouTube API → Auth Platform → Audience → Scope → OAuth Client → Channel의 전체 흐름
+- 앱의 실제 Google 8단계 마법사와 동일한 고정값
+- Branding 공개 URL 3개
+- `youtube.force-ssl` scope
+- `Authorized JavaScript origins`와 `Authorized redirect URIs`의 차이
+- `403 access_denied`, `redirect_uri_mismatch`, `확인되지 않은 앱`, 영상 0개 등 문제 해결
+- 연결 후 SRT 번역, YouTube 자막 가져오기/업로드, 추가 채널 전환 흐름
+- 보안 및 비용 소유 구조 요약
 
-### 목표
-사용자가 처음 접속했을 때 별도 기술 지식 없이 아래 두 연결을 완료하게 합니다.
-1. `내 OpenAI API Key`
-2. `YouTube 연결`
+### 사용자 진입점
+- 작업공간 상단: `처음 사용 가이드`
+- 연결 관리 상단: `설정 가이드 보기`
+- 사이트 푸터: `처음 사용 가이드`
 
-### 가이드 페이지 구조
-- 시작 전 2분 체크: 필요한 계정과 준비물
-- OpenAI API Key가 왜 필요한지 / 비용 주체 / 저장 방식
-- OpenAI API Key 생성 → 복사 → `연결 관리` 저장 → 연결 완료 확인
-- 전체 secret key는 생성 시점에만 확인 가능하므로 분실 시 새 키를 만드는 안내
-- YouTube 연결의 전체 구조: Google Cloud 프로젝트 → API → Auth Platform → scope → OAuth Client → 채널 연결
-- 앱의 실제 8단계 Google 마법사와 동일한 이름/순서/고정값
-- `Authorized JavaScript origins`와 `Authorized redirect URIs`를 혼동하지 않도록 DO/DON'T 설명
-- `Testing`과 `In Production`, `403 access_denied`의 관계
-- `확인되지 않은 앱` 경고가 나타나는 경우 설명
-- 연결 후 작업 채널 전환 방법
-- 흔한 오류와 복구 기준
-- 보안/비용 요약
+### UI / 접근성
+- 데스크톱: 좌측 sticky 목차 + 본문 카드
+- 모바일: 단일 열 재배치
+- focus-visible 유지
+- prefers-reduced-motion 유지
+- 기존 v1.7.0 디자인 언어 유지
 
-### 진입점
-- 작업공간 상단에 `처음 사용 가이드`
-- 연결 관리 상단에 `설정 가이드`
-- 사이트 푸터에 `처음 사용 가이드`
+### Production 검증
+- `/guide`: HTTP 200, 핵심 OpenAI/Google 안내와 링크 반영 확인
+- `/connections`: HTTP 200, 새 설정 가이드 진입점과 기존 명시적 줄바꿈 유지 확인
+- 테스트 78/78 통과
+- TypeScript 통과
+- Next.js Production build 통과
+- Vercel Production `READY`
+- 확인 범위 Runtime `error`/`fatal` 0건
 
-### 구현 원칙
-- stale하기 쉬운 Google Console 스크린샷보다 실제 버튼명과 완료 조건을 우선합니다.
-- 외부 링크는 OpenAI API Key 생성 페이지와 앱에서 이미 사용하는 Google Cloud Console 작업 페이지만 제공합니다.
-- API Key/Client Secret 예시는 실제 secret 형태를 재현하지 않고 placeholder만 사용합니다.
-- 모바일에서는 1열, 데스크톱에서는 목차 + 본문 구조로 읽기 쉽게 구성합니다.
-- `prefers-reduced-motion`, focus-visible 등 기존 접근성 원칙을 유지합니다.
+## 버전 표시 메모
+`app/page.tsx`에는 과거 `v1.6.4` 문자열이 레거시 마크업으로 남아 있지만, `app/v17-version.css`가 홈 브랜드와 내부 푸터의 사용자 표시를 `v1.7.0`으로 명시 교체합니다. 실제 제품 버전과 package.json은 `1.7.0`이며 이번 작업에서도 버전을 올리지 않았습니다.
