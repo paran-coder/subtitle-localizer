@@ -56,7 +56,8 @@ v1.7.0의 주요 화면은 사용자 목적 기준으로 세 영역으로 나눕
    - Testing / In Production 차이와 `403 access_denied`
    - OAuth callback URI를 정확한 칸에 넣는 방법
    - 첫 채널 연결 후 추가 계정/채널 연결 방법
-   - 기본 YouTube Data API quota 사용에는 카드 등록을 필수 단계로 두지 않으며 추가 quota는 별도 확장/심사 절차임을 안내
+   - 현재 기본 YouTube Data API quota는 하루 10,000 units이며 일일 quota는 태평양 시간(PT) 자정에 초기화됨
+   - 기본 quota 소진 시 카드를 등록해 즉시 구매하는 방식이 아니라 다음 초기화를 기다리거나 YouTube quota 확장·심사를 요청함
 
 ## OpenAI 연결 원칙
 - OpenAI API Key는 사용자가 직접 발급하고 소유합니다.
@@ -90,7 +91,7 @@ v1.7.0은 Google Cloud 설정과 YouTube 채널 연결을 분리합니다.
 
 `https://www.googleapis.com/auth/youtube.force-ssl`은 웹페이지로 이동하는 링크가 아니라 OAuth scope 식별자입니다. `https://subtitle-localizer.vercel.app/api/youtube/oauth/callback`도 사용자가 방문하는 페이지 링크가 아니라 Google OAuth Client의 Authorized redirect URIs에 등록하는 callback 값입니다.
 
-YouTube Data API는 프로젝트 quota를 사용합니다. 기본 quota 사용 흐름에 카드 등록을 필수 단계로 넣지 않으며, 기본 quota보다 더 많은 사용량이 필요하면 YouTube의 quota 확장 및 심사 절차를 따릅니다.
+YouTube Data API는 프로젝트 quota를 사용합니다. 현재 기본 quota는 하루 10,000 units이고 일일 quota는 태평양 시간(PT) 자정에 초기화됩니다. 앱에서 사용하는 자막 API 비용은 `captions.list` 50 units, `captions.download` 200 units, `captions.insert` 400 units입니다. 기본 quota를 모두 사용하면 카드 결제로 즉시 quota를 구매하는 구조가 아니라 다음 일일 초기화를 기다리거나 YouTube API Services의 quota 확장·심사를 요청합니다.
 
 `Client 저장됨`과 Google 앱의 Publishing 상태는 별개입니다. 앱은 Google Console의 실제 Publishing 상태까지 자동 판별하지 않습니다.
 
@@ -123,16 +124,17 @@ YouTube Data API는 프로젝트 quota를 사용합니다. 기본 quota 사용 �
 - 가져온 원본 언어와 동일한 번역 대상 자동 해제
 
 ## v1.7.0 UI 마감 상태
-실사용 화면에서 확인된 기존 UI 문제는 현재 GitHub `main`과 Production에 반영됐습니다.
+실사용 화면에서 확인된 기존 UI 문제는 현재 GitHub `main`과 Production에 반영됐거나 이번 보완 범위로 관리합니다.
 
 1. 연결 관리 제목과 설명은 CSS 자동 줄바꿈이 아니라 JSX `<br />`로 문장 경계를 고정합니다.
 2. 작업공간 상단 현재 YouTube 작업 채널 바에 위·아래 여백을 확보합니다.
-3. 데스크톱 오른쪽 열 전체를 sticky + 내부 스크롤 구조로 만들어 `YouTube에 올리기`와 `현재 작업` 카드가 겹치지 않게 합니다.
+3. 데스크톱 오른쪽 `YouTube에 올리기`와 `현재 작업` 카드는 일반 문서 흐름으로 쌓아 서로 겹치지 않게 하며, 우측 열 자체의 내부 세로 스크롤은 만들지 않고 브라우저 페이지 스크롤 하나만 사용합니다.
 4. 주요 화면 이동은 `초기 설정 / 연결 관리 / 작업하기` 공통 탭으로 구분합니다.
 5. 세 주요 화면 모두 공통 `Subtitle Localizer` 타이틀바를 탭 위에 표시하며, 작업하기에서만 탭 아래에 현재 YouTube 작업 채널을 표시합니다.
 6. 제품 버전은 공통 타이틀바에서만 반복 없이 표시합니다.
 7. 초기 설정의 callback URI와 YouTube scope는 이동 링크가 아니라 복사용 설정값으로 표시합니다.
-8. 작업 화면의 `자막 트랙 이름`은 새 작업/업로드 대상 변경 시 이전 입력이 남지 않도록 초기화합니다.
+8. 작업 화면의 `자막 트랙 이름`은 현재 불러온 SRT 파일명의 마지막 `.srt`를 뺀 값을 기본값으로 자동 입력합니다. 새 SRT를 불러오거나 업로드 대상 영상을 바꾸면 현재 SRT 파일명 기준 기본값으로 다시 맞추며, 사용자가 직접 수정한 값은 업로드에 사용합니다.
+9. 작업 화면 quota 안내는 기본 10,000 units/일, 자막 API별 차감량, PT 자정 초기화, 소진 시 quota 확장·심사 절차를 함께 설명합니다.
 
 버전은 계속 `v1.7.0`을 유지합니다.
 
@@ -142,7 +144,7 @@ YouTube Data API는 프로젝트 quota를 사용합니다. 기본 quota 사용 �
 - SRT 파일은 서버 영구 저장소에 저장하지 않습니다.
 - OpenAI 사용료는 사용자 OpenAI 계정에 청구되며 ChatGPT 구독과 별도입니다.
 - OpenAI 유료 API 사용을 위해 사용자가 자신의 API Billing 결제 수단/크레딧을 관리합니다.
-- YouTube Data API quota는 사용자 Google Cloud 프로젝트를 사용하며 기본 quota 사용 자체를 카드 결제 단계로 안내하지 않습니다.
+- YouTube Data API quota는 사용자 Google Cloud 프로젝트를 사용합니다. 현재 기본 quota는 10,000 units/일이며 quota 소진은 카드 결제로 해결하는 구조가 아니라 일일 초기화 또는 승인된 quota 확장으로 처리합니다.
 - 호스팅/function 비용만 배포자 Vercel 계정에 귀속됩니다.
 
 ## 배포 환경 변수
@@ -166,5 +168,7 @@ OPENAI_TRANSLATION_MODEL=gpt-5.6-luna
 - 관련 Runtime Error 없음
 - `/`, `/guide`, `/connections`의 공통 타이틀바·탭·활성 상태 확인
 - `/`에서 `타이틀바 → 탭 → 현재 작업 채널` 순서 확인
+- 작업 화면에서 브라우저 세로 스크롤 하나만 사용하고 우측 카드가 겹치지 않는지 확인
+- 작업 화면에서 SRT 파일명 기반 자막 트랙 이름 기본값과 quota 안내 확인
 - 기존 `/connections` 명시적 줄바꿈 유지 확인
 - 전체 프로젝트 ZIP은 사용자에게만 제공하고 저장소에는 포함하지 않음
