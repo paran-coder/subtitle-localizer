@@ -41,8 +41,10 @@
 - [x] 연결 관리 제목을 JSX 명시적 줄바꿈으로 고정
 - [x] 연결 관리 설명 두 문장을 JSX 명시적 줄바꿈으로 고정
 - [x] 현재 작업 채널 바 상·하 간격 보완
-- [x] 데스크톱 우측 카드 스크롤 겹침 방지
+- [x] 데스크톱 우측 카드 겹침 방지
+- [x] 우측 열 내부 세로 스크롤 제거 및 페이지 세로 스크롤 하나로 통일
 - [x] 실제 Production `/connections`에서 `<br/>` 반영 확인
+- [x] 실제 Production CSS에서 `.side-column` `position: static`, `max-height: none`, `overflow: visible` 확인
 - [x] 버전 `v1.7.0` 유지
 
 ## 상세 초기 설정 `/guide`
@@ -185,9 +187,6 @@
 - [x] callback URI를 이동 링크가 아닌 복사용 설정값으로 명확히 표시
 - [x] `youtube.force-ssl` scope를 이동 링크가 아닌 복사용 설정값으로 명확히 표시
 - [x] URL/scope 값의 링크 밑줄·클릭 affordance 제거
-- [x] 작업하기 `자막 트랙 이름` 초기값 비우기
-- [x] 업로드 대상 영상 변경 시 `자막 트랙 이름` 다시 비우기
-- [x] 비어 있는 트랙 이름의 기본 처리 규칙을 사용자에게 숨기지 않기
 - [x] 초기 설정 hero의 `FIRST-TIME SETUP` 버전 중복 삭제
 - [x] 연결 관리 `CONNECTIONS` 라벨을 오렌지 계열로 변경
 - [x] OpenAI API Billing/결제 수단 등록 단계 추가
@@ -205,11 +204,37 @@
 - [x] Production `/guide`에서 OpenAI API Billing/결제 수단 안내 확인
 - [x] Production `/guide`에서 Google 카드 등록이 기본 8단계 필수가 아님을 안내하는 문구 확인
 - [x] Production CSS에서 `CONNECTIONS` 라벨 오렌지 강조 확인
-- [x] 작업 화면에서 트랙 이름 초기값/대상 영상 변경 초기화를 회귀 테스트로 고정
 - [x] 기능 검증 GitHub SHA `caf68f303b1352cb65055255512ba92148a1a80b`
 - [x] 기능 검증 Production deployment `dpl_5FtUqLwNFHu5F5qypKwDTFkKGeUn` READY
 - [x] Runtime `error`/`fatal` 없음
 - [x] 버전 `v1.7.0` 유지
+
+## 2026-09-06 작업 화면 단일 스크롤·quota·트랙 이름 보완
+### 구현
+- [x] 데스크톱 `.side-column` 내부 `overflow-y:auto` 제거
+- [x] 우측 열 `max-height` 제거 및 `overflow: visible` 적용
+- [x] 우측 `YouTube에 올리기` / `현재 작업` 카드 sticky 해제 후 일반 문서 흐름 유지
+- [x] 현재 SRT 파일명에서 마지막 `.srt`를 제거한 값을 `자막 트랙 이름` 기본값으로 자동 입력
+- [x] 새 SRT 로드 시 트랙 이름을 새 파일명 기준으로 갱신
+- [x] 업로드 대상 영상 변경 시 이전 수동 입력값을 유지하지 않고 현재 SRT 파일명 기준으로 재설정
+- [x] 수동 수정한 트랙 이름은 실제 업로드에 사용
+- [x] 기본 YouTube Data API quota `10,000 units/일` 안내
+- [x] `captions.list` 50 / `captions.download` 200 / `captions.insert` 400 units 안내
+- [x] PT 자정 일일 초기화 안내
+- [x] quota 소진 시 카드 구매가 아니라 다음 초기화 또는 quota 확장·심사임을 안내
+- [x] 버전 `v1.7.0` 유지
+
+### 검증
+- [x] 신규 회귀 테스트에 SRT 파일명 기본값·quota 문구·내부 스크롤 제거 고정
+- [x] 자동 테스트 전체 통과 (80/80)
+- [x] TypeScript 통과
+- [x] Next.js Production build 통과
+- [x] 기능 구현 GitHub SHA `18ff48c5914a0885618716a90fd87fd4f5fbb308`
+- [x] 기능 구현 Production deployment `dpl_65XkKFWKyFxqz5eekN8Qf6obZmTv` READY
+- [x] Production `/` HTTP 200
+- [x] Production CSS에서 `.side-column` `position: static`, `max-height: none`, `overflow: visible` 확인
+- [x] Runtime `error`/`fatal` 없음
+- [x] README / context-notes / User manual / checklist 동기화
 
 ## 단계별 자체 점검
 ### 기존 v1.7.0 기능/E2E
@@ -246,5 +271,10 @@
 
 ### 초기 설정 값·결제 안내 보완
 - 상태: 완료
-- 결과: callback/scope를 복사용 설정값으로 정리, 트랙 이름 초기화, hero 버전 중복 제거, CONNECTIONS 오렌지 강조, OpenAI Billing 안내 추가, Google/YouTube 기본 quota 카드 필수 오해 방지, Production 검증 완료
+- 결과: callback/scope를 복사용 설정값으로 정리, hero 버전 중복 제거, CONNECTIONS 오렌지 강조, OpenAI Billing 안내 추가, Google/YouTube 기본 quota 카드 필수 오해 방지, Production 검증 완료
+- 자체 점수: 10/10
+
+### 작업 화면 단일 스크롤·quota·트랙 이름 보완
+- 상태: 완료
+- 결과: 우측 내부 세로 스크롤 제거, 일일 quota 의미/소진 처리 명확화, SRT 파일명 기반 트랙 이름 자동 입력, Production 검증 완료
 - 자체 점수: 10/10
