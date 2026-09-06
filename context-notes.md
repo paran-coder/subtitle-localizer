@@ -17,6 +17,20 @@ v1.7.0은 다음 두 문제를 함께 해결한다.
 - 여러 Google 계정과 여러 YouTube 채널을 독립 연결로 보유할 수 있어야 한다.
 - 작업공간에서는 항상 하나의 활성 채널을 명확히 선택하고, 영상 조회/자막 다운로드/자막 업로드가 모두 그 활성 채널을 사용한다.
 
+## 실제 E2E에서 추가로 확인된 요구사항
+2026-09-06 실제 다중 계정 추가 E2E에서 기존 OAuth 앱이 `Testing` 상태라 새 Google 계정 연결이 `403 access_denied`로 차단되는 것을 확인했다.
+
+또한 Google Auth Platform의 `대상` 화면에서 OAuth 구성이 완료되지 않았다는 경고가 표시되었고, `앱 게시`가 비활성화되어 있었다. `브랜딩` 화면에는 앱 이름/지원 이메일/승인된 도메인/개발자 연락처가 이미 저장되어 있었지만 앱 도메인의 공개 링크가 비어 있었다.
+
+따라서 v1.7.0 초기 설정은 다음 공개 URL을 앱 자체에서 제공하고 Google Branding에 그대로 등록하도록 안내해야 한다.
+- 애플리케이션 홈페이지: `https://subtitle-localizer.vercel.app/`
+- 개인정보처리방침: `https://subtitle-localizer.vercel.app/privacy`
+- 서비스 약관: `https://subtitle-localizer.vercel.app/terms`
+
+`/privacy`와 `/terms`는 로그인 없이 공개 접근 가능해야 하며 메인 화면에서도 사용자가 찾을 수 있어야 한다.
+
+중요: 앱은 사용자 OAuth Client가 저장되었다는 사실은 알 수 있지만 Google Auth Platform의 실제 Publishing 상태를 직접 검증하지 않는다. 따라서 Client 저장만으로 `Google Cloud 설정은 끝났습니다`라고 단정하지 않는다. 연결 관리 UI에서는 `Cloud Client 저장됨`과 `추가 계정 연결을 위한 Publishing 준비`를 구분해 설명한다.
+
 ## 초기 설정 마법사
 기존 4단계를 실제 Google Cloud 흐름 기준의 8단계 마법사로 재구성한다.
 
@@ -29,13 +43,15 @@ v1.7.0은 다음 두 문제를 함께 해결한다.
    - 정확한 Google Cloud 이동 링크를 제공한다.
    - 사용자는 `사용 설정`만 누르면 되도록 안내한다.
 
-3. **Google Auth Platform 기본 설정**
+3. **Google Auth Platform 기본 설정 + Branding 완성**
    - 앱 이름 기본값: `Subtitle Localizer`
    - 사용자 유형: External
    - 지원 이메일 / 개발자 연락처처럼 사용자에게 꼭 필요한 값만 입력하게 한다.
+   - 홈페이지 / 개인정보처리방침 / 서비스 약관 URL을 앱에서 복사해 Branding의 앱 도메인에 입력하도록 안내한다.
 
 4. **Publishing 상태 정리**
-   - 정상적인 추가 계정 연결 때마다 Test user를 다시 추가하지 않도록 `In Production` 전환을 권장 경로로 안내한다.
+   - Branding 저장을 완료한 뒤 Audience에서 `In Production` 전환을 권장 경로로 안내한다.
+   - 정상적인 추가 계정 연결 때마다 Test user를 다시 추가하지 않도록 한다.
    - 개인용/소규모 미검증 앱은 Google의 미검증 경고와 사용자 제한이 남을 수 있음을 짧게 알린다.
    - Google 검증 자체는 별도 운영 절차이며 일반 초기 설정의 필수 자동 완료 조건으로 취급하지 않는다.
 
@@ -56,16 +72,22 @@ v1.7.0은 다음 두 문제를 함께 해결한다.
 
 8. **첫 YouTube 채널 연결 및 검증**
    - Google OAuth 승인 후 실제 channel ID/title을 조회한다.
-   - 실제 채널 API 호출이 성공해야 초기 설정 완료로 본다.
+   - 실제 채널 API 호출이 성공해야 첫 채널 연결 완료로 본다.
 
 ## 초기 설정 완료 기준
-`Cloud 설정됨`만으로 완료 처리하지 않는다. 다음을 모두 만족해야 한다.
+`Client 저장됨`과 `추가 계정 연결 준비 완료`를 구분한다.
+
+앱이 직접 확인 가능한 항목:
 - Client ID / Secret 저장 성공
 - OAuth 승인 성공
 - 실제 YouTube 채널 식별 성공
 - 활성 채널 세션 저장 성공
 - 해당 채널의 기본 API 호출 성공
-- 이후 `계정 또는 채널 추가` 시 Google Cloud 재설정이 필요 없는 구조 준비 완료
+
+사용자가 Google Console에서 완료해야 하는 항목:
+- Branding 필수 정보 저장
+- 홈페이지 / 개인정보처리방침 / 서비스 약관 URL 등록
+- 여러 Google 계정을 Test user 재등록 없이 연결하려는 경우 Audience에서 `In Production` 전환
 
 정상적인 추가 연결 외에 다음과 같은 복구 상황에서는 재설정이 필요할 수 있다.
 - 사용자가 브라우저 저장 데이터를 직접 삭제
@@ -121,6 +143,19 @@ Google Cloud 설정과 YouTube 연결을 분리한다.
 - 예: `이 채널에는 업로드된 영상이 없습니다.` + `YouTube Studio 열기` + `다시 불러오기`
 - 연결 계정에 YouTube 채널 자체가 없으면 영상 없음과 구분해 안내한다.
 
+## 공개 정책 페이지
+### 개인정보처리방침
+다음 앱 동작을 사용자에게 공개한다.
+- 사용자가 직접 입력한 OpenAI API Key와 Google OAuth Client Secret은 서버에서 암호화한 HttpOnly cookie에 보관한다.
+- YouTube access/refresh token도 서버에서 암호화한 HttpOnly cookie에 보관한다.
+- 번역 시 자막 텍스트는 사용자가 연결한 OpenAI API를 통해 처리된다.
+- YouTube 연결/가져오기/업로드 시 필요한 데이터는 Google/YouTube API를 통해 처리된다.
+- 업로드한 SRT 파일을 앱의 영구 파일 저장소에 보관하도록 설계하지 않는다.
+- 사용자는 연결 관리에서 저장된 자격증명을 삭제할 수 있다.
+
+### 서비스 약관
+서비스의 BYOK/BYOC 구조, 사용자가 자신의 API 비용/quota를 부담한다는 점, 사용자가 업로드·번역·게시할 콘텐츠에 필요한 권한을 보유해야 한다는 점, 외부 API 제공자의 정책/가용성에 따라 일부 기능이 제한될 수 있다는 점을 명시한다.
+
 ## 보안
 - OpenAI API Key, Google Client Secret, YouTube access/refresh token은 서버에서 암호화한다.
 - 비밀정보는 HttpOnly cookie에만 저장한다.
@@ -144,9 +179,11 @@ Google Cloud 설정과 YouTube 연결을 분리한다.
 5. 영상·자막 API가 활성 채널 연결을 사용하도록 변경
 6. 초보자용 8단계 Google 연결 마법사 구현
 7. 작업공간 채널 선택기 + 빈 채널 UX 구현
-8. 회귀/보안/다중 연결 테스트
-9. 전체 ZIP 생성(배포 저장소에는 포함하지 않음)
-10. GitHub main 반영 → Vercel Production READY 및 Runtime Error 확인 → 실제 E2E
+8. 공개 `/privacy` / `/terms` 페이지와 홈페이지 정책 링크 추가
+9. Publishing 안내를 실제 E2E 결과에 맞게 보정
+10. 회귀/보안/다중 연결 테스트
+11. 전체 ZIP 생성(배포 저장소에는 포함하지 않음)
+12. GitHub main 반영 → Vercel Production READY 및 Runtime Error 확인 → 실제 E2E
 
 ## 테스트 핵심 케이스
 - 기존 OpenAI BYOK 동작 유지
@@ -161,6 +198,9 @@ Google Cloud 설정과 YouTube 연결을 분리한다.
 - 채널 없음 / 영상 0개 상태 구분
 - OAuth 오류 복구
 - refresh token 갱신
+- `/privacy`와 `/terms` 공개 접근
+- 메인/연결 화면에서 정책 페이지 접근 가능
+- Client 저장만으로 Google Publishing 완료를 단정하지 않음
 - localStorage/sessionStorage 비밀정보 0건
 - 모바일/키보드/focus-visible/reduced-motion 회귀 없음
 
