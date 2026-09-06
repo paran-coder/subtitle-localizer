@@ -108,9 +108,14 @@ YouTube 연결은 한 번에 한 버튼으로 끝나는 구조가 아닙니다. 
 이 설정은 **최초 1회**를 목표로 합니다. 정상적인 추가 Google 계정/YouTube 채널 연결 때문에 Google Cloud를 처음부터 반복하지 않습니다.
 
 ### 카드 등록이 필요한가요?
-Subtitle Localizer가 사용하는 YouTube Data API는 Google Cloud 프로젝트의 API quota를 사용합니다. 기본 YouTube Data API quota를 사용하는 초기 연결 절차에는 카드 등록을 필수 단계로 넣지 않습니다.
+Subtitle Localizer가 사용하는 YouTube Data API는 Google Cloud 프로젝트의 API quota를 사용합니다. 현재 공식 기본 quota는 `10,000 units/일`이며 일일 quota는 태평양 시간(PT) 자정에 초기화됩니다. 이 값은 초기 가입 때 한 번만 지급되는 크레딧이 아니라 매일 다시 제공되는 일일 quota입니다. 실제 프로젝트별 최종 값은 Google Cloud의 Quotas 화면을 기준으로 확인합니다.
 
-기본 quota보다 더 많은 사용량이 필요한 경우에는 단순 카드 결제로 자동 확장되는 구조가 아니라 YouTube의 별도 quota 확장/심사 절차를 확인합니다.
+앱에서 주로 쓰는 자막 API 비용은 다음과 같습니다.
+- 자막 목록 조회 `captions.list`: 50 units
+- 원본 자막 다운로드 `captions.download`: 200 units
+- 자막 업로드 `captions.insert`: 400 units/언어
+
+기본 quota를 모두 사용하면 해당 일자의 추가 API 호출이 quota 제한에 걸릴 수 있습니다. 이때 카드를 등록해서 quota를 즉시 구매하는 방식이 아니라 다음 PT 자정 초기화를 기다리거나, 지속적으로 더 많은 quota가 필요하면 YouTube API Services의 quota 확장·심사를 요청합니다.
 
 따라서 OpenAI와 Google/YouTube를 같은 방식으로 `카드 등록 필수`라고 안내하면 안 됩니다.
 
@@ -271,13 +276,15 @@ OpenAI 연결이 없는 상태에서 번역을 시작하면 앱은 연결 관리
 ## 8. 번역 자막을 YouTube에 올리기
 1. 번역 완료 후 오른쪽 `YouTube에 올리기`를 확인합니다.
 2. 업로드할 영상을 선택합니다.
-3. `자막 트랙 이름`은 새 화면/새 업로드 대상을 시작할 때 빈 값으로 표시됩니다.
-4. 원하는 트랙 이름이 있으면 직접 입력합니다. 비워 두면 앱의 기본 트랙 이름 정책을 사용합니다.
-5. 업로드할 언어를 선택합니다.
-6. `자막 YouTube에 올리기`를 누릅니다.
-7. 각 언어에 `업로드 완료`가 표시되면 성공입니다.
+3. `자막 트랙 이름`에는 현재 불러온 SRT 파일명의 마지막 `.srt`를 뺀 이름이 자동으로 입력됩니다. 예: `localization-challenge-en.srt` → `localization-challenge-en`.
+4. 필요하면 자동 입력된 트랙 이름을 직접 수정합니다. 사용자가 수정한 값은 실제 YouTube 업로드에 사용됩니다.
+5. 새 SRT를 불러오면 새 파일명 기준으로 트랙 이름도 갱신됩니다.
+6. 업로드할 영상을 다른 영상으로 변경하면 이전에 수동 입력한 이름을 유지하지 않고 현재 SRT 파일명 기준 기본값으로 다시 맞춥니다.
+7. 업로드할 언어를 선택합니다.
+8. `자막 YouTube에 올리기`를 누릅니다.
+9. 각 언어에 `업로드 완료`가 표시되면 성공입니다.
 
-업로드할 영상을 다른 영상으로 변경하면 이전에 입력한 트랙 이름을 그대로 재사용하지 않고 다시 비웁니다.
+오른쪽 quota 안내는 현재 프로젝트의 일일 quota가 어떻게 차감되는지 설명합니다. 기본 `10,000 units/일`은 PT 자정에 다시 초기화되고, 자막 목록 조회 50 / 다운로드 200 / 업로드 400 units가 각각 차감됩니다. 모두 사용한 경우 카드 결제로 바로 늘리는 것이 아니라 다음 초기화 또는 승인된 quota 확장 절차를 사용합니다.
 
 ---
 
@@ -304,7 +311,8 @@ OpenAI 연결이 없는 상태에서 번역을 시작하면 앱은 연결 관리
 v1.7.0의 주요 UI 기준:
 - 연결 관리 제목과 설명의 문장 경계를 JSX 명시적 줄바꿈으로 고정
 - 작업공간 상단 현재 YouTube 작업 채널 바의 위·아래 간격 확보
-- 데스크톱 오른쪽 YouTube 업로드 영역과 현재 작업 요약이 스크롤 중 겹치지 않도록 우측 열 전체를 sticky + 내부 스크롤 구조로 구성
+- 데스크톱 오른쪽 YouTube 업로드 영역과 현재 작업 요약은 일반 문서 흐름으로 쌓고, 우측 열 자체의 내부 세로 스크롤은 만들지 않음
+- 작업 화면의 세로 이동은 브라우저 페이지 스크롤 하나만 사용하며 오른쪽 두 카드가 겹치지 않음
 - 주요 화면 이동을 `초기 설정 / 연결 관리 / 작업하기` 공통 상단 탭으로 구분
 - 제품 버전은 공통 타이틀바 한 곳에서만 표시
 - 초기 설정의 callback URI와 YouTube scope는 클릭 링크가 아니라 설정값으로 표시
@@ -317,7 +325,9 @@ v1.7.0의 주요 UI 기준:
 - ChatGPT 구독과 OpenAI API Billing은 별도입니다.
 - OpenAI 유료 API 사용을 위한 결제 수단/크레딧은 사용자가 OpenAI Platform에서 직접 관리합니다.
 - Google OAuth Client와 YouTube quota도 사용자가 직접 소유합니다.
-- 기본 YouTube Data API quota 사용 절차에 카드 등록을 필수 단계로 안내하지 않습니다.
+- 현재 기본 YouTube Data API quota는 `10,000 units/일`이며 PT 자정에 초기화됩니다.
+- `captions.list` 50 units, `captions.download` 200 units, `captions.insert` 400 units가 차감됩니다.
+- 기본 quota 소진은 카드 결제로 즉시 구매하는 구조가 아니며 다음 초기화를 기다리거나 quota 확장·심사를 요청합니다.
 - 비밀정보는 암호화한 HttpOnly cookie에 저장합니다.
 - localStorage/sessionStorage에는 비밀정보를 저장하지 않습니다.
 - SRT 파일은 서버 영구 저장소에 보관하지 않습니다.
