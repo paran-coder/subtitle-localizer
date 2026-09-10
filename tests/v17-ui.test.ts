@@ -196,3 +196,15 @@ test("작업 화면은 영어·러시아어를 추천 언어에 포함하고 원
   assert.match(languages, /code: "ru"/);
   assert.match(languages, /Русский/);
 });
+
+test("사용자는 현재 번역 언어 조합을 브라우저 기본값으로 저장하고 제품 기본값으로 되돌릴 수 있다", () => {
+  const page = read("app/page.tsx");
+  assert.match(page, /DEFAULT_LANGUAGE_CODES = \["ko", "ja", "es"\]/);
+  assert.match(page, /DEFAULT_LANGUAGE_STORAGE_KEY = "subtitle-localizer:default-languages:v1"/);
+  assert.match(page, /useState<string\[\]>\(DEFAULT_LANGUAGE_CODES\)/);
+  assert.match(page, /localStorage\.getItem\(DEFAULT_LANGUAGE_STORAGE_KEY\)/);
+  assert.match(page, /localStorage\.setItem\(DEFAULT_LANGUAGE_STORAGE_KEY, JSON\.stringify\(selectedLanguages\)\)/);
+  assert.match(page, /localStorage\.removeItem\(DEFAULT_LANGUAGE_STORAGE_KEY\)/);
+  assert.match(page, /현재 선택을 기본값으로 저장/);
+  assert.match(page, /기본값 초기화/);
+});

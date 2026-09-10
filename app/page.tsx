@@ -42,6 +42,8 @@ type UploadState = { status: "idle" | "uploading" | "done" | "error"; error?: st
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_CUE_COUNT = 20_000;
+const DEFAULT_LANGUAGE_CODES = ["ko", "ja", "es"];
+const DEFAULT_LANGUAGE_STORAGE_KEY = "subtitle-localizer:default-languages:v1";
 const POPULAR_LANGUAGE_CODES = ["en", "ko", "ja", "es", "fr", "de", "ru", "pt-BR", "zh-CN", "id"];
 
 const STYLE_OPTIONS: Array<{ value: TranslationStyle; title: string; description: string }> = [
@@ -185,7 +187,8 @@ export default function Home() {
   const [cues, setCues] = useState<SubtitleCue[]>([]);
   const [fileError, setFileError] = useState("");
   const [dragging, setDragging] = useState(false);
-  const [selectedLanguages, setSelectedLanguages] = useState<string[]>(["ko", "ja", "es"]);
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>(DEFAULT_LANGUAGE_CODES);
+  const [languagePreferenceMessage, setLanguagePreferenceMessage] = useState("");
   const [style, setStyle] = useState<TranslationStyle>("natural");
   const [glossary, setGlossary] = useState("");
   const [openAiConfigured, setOpenAiConfigured] = useState(false);
@@ -240,6 +243,20 @@ export default function Home() {
 
   const previewTargetById = useMemo(() => new Map(previewCues.map((cue) => [cue.id, cue])), [previewCues]);
   const comparisonRows = useMemo(() => cues.map((source) => ({ source, target: previewTargetById.get(source.id) })), [cues, previewTargetById]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(DEFAULT_LANGUAGE_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) return;
+      const supported = new Set(LANGUAGES.map((language) => language.code));
+      const savedCodes = Array.from(new Set(parsed.filter((code): code is string => typeof code === "string" && supported.has(code))));
+      if (savedCodes.length) setSelectedLanguages(savedCodes);
+    } catch {
+      // Ignore unavailable or malformed browser preference storage and keep product defaults.
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -403,7 +420,29 @@ export default function Home() {
   function applyLanguageSelection(codes: string[]) {
     if (running) return;
     if (Object.keys(results).length || Object.keys(progress).length) clearOutputs();
+    setLanguagePreferenceMessage("");
     setSelectedLanguages(codes);
+  }
+
+  function saveDefaultLanguages() {
+    if (running || !selectedLanguages.length) return;
+    try {
+      window.localStorage.setItem(DEFAULT_LANGUAGE_STORAGE_KEY, JSON.stringify(selectedLanguages));
+      setLanguagePreferenceMessage(`현재 선택 ${selectedLanguages.length}개를 내 기본 번역 언어로 저장했습니다.`);
+    } catch {
+      setLanguagePreferenceMessage("브라우저에 기본 번역 언어를 저장하지 못했습니다.");
+    }
+  }
+
+  function resetDefaultLanguages() {
+    if (running) return;
+    try {
+      window.localStorage.removeItem(DEFAULT_LANGUAGE_STORAGE_KEY);
+    } catch {
+      // Selection still resets even if browser storage is unavailable.
+    }
+    applyLanguageSelection(DEFAULT_LANGUAGE_CODES);
+    setLanguagePreferenceMessage("기본 번역 언어를 한국어 · 일본어 · 스페인어로 초기화했습니다.");
   }
 
   function toggleLanguage(code: string) {
@@ -756,6 +795,11 @@ export default function Home() {
                 <button type="button" disabled={!cues.length || running} onClick={() => applyLanguageSelection(LANGUAGES.map((item) => item.code))}>전체</button>
                 <button type="button" disabled={!cues.length || running} onClick={() => applyLanguageSelection([])}>초기화</button>
               </div>
+              <div className="inline-actions">
+                <button type="button" disabled={running || !selectedLanguages.length} onClick={saveDefaultLanguages}>현재 선택을 기본값으로 저장</button>
+                <button type="button" disabled={running} onClick={resetDefaultLanguages}>기본값 초기화</button>
+              </div>
+              {languagePreferenceMessage && <p className="feedback neutral" role="status">{languagePreferenceMessage}</p>}
               <div className="language-grid">
                 {LANGUAGES.map((language) => {
                   const selected = selectedLanguages.includes(language.code);
