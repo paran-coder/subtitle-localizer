@@ -6,11 +6,13 @@ export type LanguageOption = {
 };
 
 export const LANGUAGES: LanguageOption[] = [
+  { code: "en", label: "English", nativeLabel: "English", fileSuffix: "en" },
   { code: "ko", label: "Korean", nativeLabel: "한국어", fileSuffix: "ko" },
   { code: "ja", label: "Japanese", nativeLabel: "日本語", fileSuffix: "ja" },
   { code: "es", label: "Spanish", nativeLabel: "Español", fileSuffix: "es" },
   { code: "fr", label: "French", nativeLabel: "Français", fileSuffix: "fr" },
   { code: "de", label: "German", nativeLabel: "Deutsch", fileSuffix: "de" },
+  { code: "ru", label: "Russian", nativeLabel: "Русский", fileSuffix: "ru" },
   { code: "pt-BR", label: "Portuguese (Brazil)", nativeLabel: "Português (Brasil)", fileSuffix: "pt-BR" },
   { code: "zh-CN", label: "Chinese (Simplified)", nativeLabel: "简体中文", fileSuffix: "zh-CN" },
   { code: "zh-TW", label: "Chinese (Traditional)", nativeLabel: "繁體中文", fileSuffix: "zh-TW" },

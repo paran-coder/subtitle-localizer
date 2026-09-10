@@ -184,3 +184,15 @@ test("v1.7 UI·초기 설정·공개 정책 페이지는 모바일 재배치와 
   assert.match(navCss, /prefers-reduced-motion/);
   assert.match(navCss, /\.primary-section-nav/);
 });
+
+test("작업 화면은 영어·러시아어를 추천 언어에 포함하고 원본 YouTube 자막을 영어 우선으로 고정하지 않는다", () => {
+  const page = read("app/page.tsx");
+  const languages = read("lib/languages.ts");
+  assert.match(page, /POPULAR_LANGUAGE_CODES = \["en", "ko", "ja", "es", "fr", "de", "ru"/);
+  assert.match(page, /추천 10개/);
+  assert.equal(page.includes("aEnglish"), false);
+  assert.equal(page.includes("bEnglish"), false);
+  assert.match(languages, /code: "en"/);
+  assert.match(languages, /code: "ru"/);
+  assert.match(languages, /Русский/);
+});

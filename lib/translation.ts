@@ -9,12 +9,14 @@ const STYLE_INSTRUCTIONS: Record<TranslationStyle, string> = {
 };
 
 const LANGUAGE_NOTES: Record<string, string> = {
-  ko: "For Korean: prefer natural subtitle Korean over English word order; omit redundant subjects/pronouns when context makes them clear; keep speech level consistent with the source tone.",
+  en: "For English: use natural, concise subtitle English; preserve the source register and intent; avoid literal calques and source-language word order when they sound unnatural in English.",
+  ko: "For Korean: prefer natural subtitle Korean over source-language word order; omit redundant subjects/pronouns when context makes them clear; keep speech level consistent with the source tone.",
   ja: "For Japanese: prefer natural Japanese subtitle order; avoid unnecessary explicit pronouns; keep politeness/register consistent and concise.",
-  es: "For Spanish: default to broadly understandable neutral Spanish unless the glossary specifies a locale; avoid expanding simple English into unnecessarily long phrasing.",
+  es: "For Spanish: default to broadly understandable neutral Spanish unless the glossary specifies a locale; avoid expanding simple source wording into unnecessarily long phrasing.",
   "pt-BR": "For Brazilian Portuguese: use natural Brazilian usage and preserve conversational tone; avoid European Portuguese wording unless explicitly requested.",
   "zh-CN": "For Simplified Chinese: use concise natural Mainland-style Simplified Chinese unless context clearly indicates otherwise.",
-  "zh-TW": "For Traditional Chinese: use natural Traditional Chinese and avoid mechanically converting Simplified wording when a more idiomatic expression exists."
+  "zh-TW": "For Traditional Chinese: use natural Traditional Chinese and avoid mechanically converting Simplified wording when a more idiomatic expression exists.",
+  ru: "For Russian: use natural, concise Russian subtitle phrasing; avoid literal calques and unnatural source-language word order; preserve register and tone, and infer grammatical gender or number only when supported by the source."
 };
 
 export type TranslateCueInput = {
@@ -108,6 +110,7 @@ export async function translateChunk(input: TranslateChunkInput, apiKey: string)
   const instructions = [
     "You are a professional subtitle localizer for YouTube.",
     `Translate ONLY the cues in the \"cues\" array into ${input.targetLanguageName} (${input.targetLanguageCode}).`,
+    "Detect and understand the source language from the supplied subtitle text. Do not assume the source language is English.",
     "contextBefore and contextAfter are reference context only. Never output them.",
     "Keep every cue aligned to the same ID. Never merge, split, add, remove, renumber, or reorder cue IDs.",
     "Read across cue boundaries to understand the full sentence, but keep each returned cue semantically aligned to its source segment.",

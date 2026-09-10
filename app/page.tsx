@@ -42,7 +42,7 @@ type UploadState = { status: "idle" | "uploading" | "done" | "error"; error?: st
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_CUE_COUNT = 20_000;
-const POPULAR_LANGUAGE_CODES = ["ko", "ja", "es", "fr", "de", "pt-BR", "zh-CN", "id"];
+const POPULAR_LANGUAGE_CODES = ["en", "ko", "ja", "es", "fr", "de", "ru", "pt-BR", "zh-CN", "id"];
 
 const STYLE_OPTIONS: Array<{ value: TranslationStyle; title: string; description: string }> = [
   { value: "natural", title: "자연스럽게", description: "현지 시청자가 번역투 없이 읽는 표현" },
@@ -87,19 +87,14 @@ function formatVideoDate(value?: string) {
 
 function sortCaptionTracks(tracks: YouTubeCaptionTrack[]) {
   return [...tracks].sort((a, b) => {
-    const aEnglish = /^en(?:-|$)/i.test(a.language) ? 0 : 1;
-    const bEnglish = /^en(?:-|$)/i.test(b.language) ? 0 : 1;
-    if (aEnglish !== bEnglish) return aEnglish - bEnglish;
     if (a.status === "serving" && b.status !== "serving") return -1;
     if (a.status !== "serving" && b.status === "serving") return 1;
-    return a.language.localeCompare(b.language);
+    return 0;
   });
 }
 
 function preferredCaptionId(tracks: YouTubeCaptionTrack[]) {
-  const preferred = tracks.find((track) => /^en(?:-|$)/i.test(track.language) && track.status === "serving")
-    ?? tracks.find((track) => track.status === "serving")
-    ?? tracks[0];
+  const preferred = tracks.find((track) => track.status === "serving") ?? tracks[0];
   return preferred?.id ?? "";
 }
 
@@ -125,7 +120,10 @@ function appLanguageCodeForYouTube(language: string) {
     "zh-hans": "zh-CN",
     "zh-cn": "zh-CN",
     "zh-hant": "zh-TW",
-    "zh-tw": "zh-TW"
+    "zh-tw": "zh-TW",
+    "en-us": "en",
+    "en-gb": "en",
+    "ru-ru": "ru"
   };
   return aliases[normalized] ?? null;
 }
@@ -754,7 +752,7 @@ export default function Home() {
             <div className="field-block">
               <div className="field-row"><label>번역 언어</label><span>{selectedLanguages.length}개 선택</span></div>
               <div className="inline-actions">
-                <button type="button" disabled={!cues.length || running} onClick={() => applyLanguageSelection(POPULAR_LANGUAGE_CODES)}>추천 8개</button>
+                <button type="button" disabled={!cues.length || running} onClick={() => applyLanguageSelection(POPULAR_LANGUAGE_CODES)}>추천 10개</button>
                 <button type="button" disabled={!cues.length || running} onClick={() => applyLanguageSelection(LANGUAGES.map((item) => item.code))}>전체</button>
                 <button type="button" disabled={!cues.length || running} onClick={() => applyLanguageSelection([])}>초기화</button>
               </div>
