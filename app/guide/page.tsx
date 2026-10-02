@@ -23,7 +23,7 @@ function ValueBox({ label, value }: { label: string; value: string }) {
 export default function InitialSetupPage() {
   return <main className="guide-shell">
     <header className="guide-topbar">
-      <a className="guide-brand" href="/"><span>S</span><strong>Subtitle Localizer <small>v1.7.0</small></strong></a>
+      <a className="guide-brand" href="/"><span>S</span><strong>Subtitle Localizer <small>v1.8.0</small></strong></a>
       <div className="guide-top-actions"><a href="/connections">연결 관리</a><a href="/">작업으로 돌아가기</a></div>
     </header>
 

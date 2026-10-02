@@ -170,6 +170,17 @@ a { color: inherit; text-decoration: none; }
 }
 .language-option:hover { background: var(--surface); }
 .language-option.selected { border-color: #ffd3b7; background: var(--brand-tint); }
+.language-option.is-source {
+  border-color: #d9dbe0;
+  background: var(--surface);
+  color: #777d87;
+  cursor: not-allowed;
+}
+.language-option.is-source .selection-dot {
+  border-color: #c8cbd2;
+  background: #eef0f3;
+  color: #777d87;
+}
 .selection-dot {
   flex: 0 0 auto; width: 20px; height: 20px; border-radius: var(--radius-pill); border: 1px solid #d7d9de; display: grid; place-items: center; font-size: 11px; color: transparent;
 }
@@ -256,6 +267,17 @@ textarea:focus, .text-input:focus { border-color: var(--primary); box-shadow: 0 
 .channel-row span { margin-top: 4px; color: var(--muted); font-size: 11px; }
 .channel-row button { border: 0; background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; }
 .small-empty { margin: 0; padding: 12px; border-radius: var(--radius-md); background: var(--surface); color: var(--muted); font-size: 12px; }
+.source-upload-toggle {
+  min-height: 58px; padding: 10px 12px; display: flex; align-items: center; gap: 12px;
+  border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface); cursor: pointer;
+}
+.source-upload-toggle input { accent-color: var(--primary); }
+.source-upload-toggle span { min-width: 0; }
+.source-upload-toggle strong, .source-upload-toggle small { display: block; }
+.source-upload-toggle strong { font-size: 12px; }
+.source-upload-toggle small { margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.source-upload-toggle:has(input:disabled) { cursor: not-allowed; opacity: .7; }
+
 .upload-language-list { display: grid; border: 1px solid var(--hairline); border-radius: var(--radius-md); overflow: hidden; }
 .upload-language-row { min-height: 52px; padding: 8px 12px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--hairline); cursor: pointer; }
 .upload-language-row:last-child { border-bottom: 0; }

@@ -1,7 +1,7 @@
-# context-notes.md — Subtitle Localizer v1.7.0
+# context-notes.md — Subtitle Localizer v1.8.0
 
 ## Source of truth
-- 제품 버전: `v1.7.0`
+- 제품 버전: `v1.8.0`
 - GitHub: `paran-coder/subtitle-localizer` · `main`
 - Vercel 프로젝트: `subtitle-localizer`
 - Production: `https://subtitle-localizer.vercel.app`
@@ -43,6 +43,16 @@ Subtitle Localizer는 사용자가 자신의 OpenAI API Key(BYOK)와 자신의 G
 - 저장 이력이 없거나 `기본값 초기화`를 누르면 기존 기본 선택 `ko`, `ja`, `es`로 돌아갑니다. 이름을 붙이는 다중 프리셋은 이번 범위에 포함하지 않습니다.
 - 기존 SRT 구조 유지, YouTube 업로드, OAuth/BYOC 흐름은 변경하지 않습니다.
 
+## 2026-10-02 원본 자막 동시 업로드
+- SRT 직접 업로드는 `원본 자막 언어`를 사용자가 직접 선택합니다.
+- YouTube 자막 가져오기는 트랙의 language 값을 앱 지원 코드로 정규화해 원본 언어를 자동 지정합니다.
+- 원본 언어와 같은 번역 대상은 자동 선택 해제하고 UI에서 `원본 언어 · 번역 불필요`로 비활성화합니다.
+- 번역 실행 전 원본 언어 선택을 필수로 하여 같은 언어를 다시 번역하는 흐름을 차단합니다.
+- `원본 자막도 업로드에 포함`은 기본 ON이며 원본 cue를 번역 API 없이 그대로 YouTube 업로드에 사용합니다.
+- 번역 완료 후 업로드 목록에는 원본과 번역본을 함께 표시합니다.
+- 같은 YouTube 영상에서 가져온 원본 트랙은 이미 존재하므로 중복 업로드 대상에서 자동 제외합니다.
+- 저장된 번역 언어 기본값 자체를 원본 언어 선택 때문에 자동 변경하지 않으며, 현재 작업 선택에서만 원본 언어를 제외합니다.
+
 ## 초기 설정과 비용
 ### OpenAI
 - ChatGPT 구독과 OpenAI API Billing은 별도입니다.
@@ -60,10 +70,10 @@ Subtitle Localizer는 사용자가 자신의 OpenAI API Key(BYOK)와 자신의 G
 - 실제 공개 OG 자산을 Production에서 직접 읽을 수 있어야 합니다.
 - 공통 metadata에 `metadataBase`, Open Graph, Twitter `summary_large_image`를 설정합니다.
 - OG 이미지에 `width: 1200`, `height: 630`, alt를 명시합니다.
-- 홈 소스의 과거 `v1.6.4` 잔존 표시는 실제 `v1.7.0`으로 정리하고 CSS 텍스트 교체 우회를 제거합니다.
+- 홈 소스의 과거 `v1.6.4` 잔존 표시는 실제 `v1.8.0`으로 정리하고 CSS 텍스트 교체 우회를 제거합니다.
 - 구버전 중복 문서 `User%20manual.md`는 삭제하고 `User manual.md`만 유지합니다.
 - OG 제작 중 생성된 `compact-*`, `final-*` 실험 파일은 삭제했고, `lib/og-image/part-00.ts`~`part-05.ts`는 Production OG JPEG를 제공하는 최종 런타임 자산 데이터로 유지합니다.
-- 제품 버전은 `v1.7.0`에서 올리지 않습니다.
+- 제품 버전은 `v1.8.0`에서 올리지 않습니다.
 
 ## 최종 완료 기준
 - GitHub `main`에 최종 코드·문서·OG 자산 반영
@@ -76,4 +86,4 @@ Subtitle Localizer는 사용자가 자신의 OpenAI API Key(BYOK)와 자신의 G
 - OG 이미지 Production URL HTTP 200 및 1200×630 확인
 - Runtime `error`/`fatal` 없음
 - 비밀정보 미포함 확인
-- 최종 `subtitle-localizer-v1.7.0.zip`을 사용자에게만 전달
+- 최종 `subtitle-localizer-v1.8.0.zip`을 사용자에게만 전달

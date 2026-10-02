@@ -31,6 +31,7 @@ type YouTubeCaptionTrack = {
 };
 type YouTubeImportReceipt = {
   language: string;
+  languageCode: string;
   cueCount: number;
   videoTitle: string;
   fileName: string;
@@ -197,6 +198,8 @@ export default function Home() {
   const [activePreview, setActivePreview] = useState<string>("source");
   const [running, setRunning] = useState(false);
   const [sourceMode, setSourceMode] = useState<"file" | "youtube">("file");
+  const [sourceLanguageCode, setSourceLanguageCode] = useState("");
+  const [includeSourceInUpload, setIncludeSourceInUpload] = useState(true);
   const [sourceVideoId, setSourceVideoId] = useState("");
   const [captionTracks, setCaptionTracks] = useState<YouTubeCaptionTrack[]>([]);
   const [captionLoading, setCaptionLoading] = useState(false);
@@ -228,6 +231,28 @@ export default function Home() {
   }, [cues, chunks]);
 
   const completedCodes = useMemo(() => Object.keys(results), [results]);
+  const sourceLanguage = sourceLanguageCode ? getLanguage(sourceLanguageCode) : undefined;
+  const sourceAlreadyOnSelectedVideo = Boolean(
+    importReceipt
+    && importReceipt.languageCode
+    && importReceipt.languageCode === sourceLanguageCode
+    && sourceVideoId
+    && selectedVideoId
+    && sourceVideoId === selectedVideoId
+  );
+  const uploadableCodes = useMemo(() => {
+    const codes = [...completedCodes];
+    if (
+      includeSourceInUpload
+      && cues.length
+      && sourceLanguageCode
+      && !sourceAlreadyOnSelectedVideo
+      && !codes.includes(sourceLanguageCode)
+    ) {
+      codes.unshift(sourceLanguageCode);
+    }
+    return codes;
+  }, [completedCodes, cues.length, includeSourceInUpload, sourceAlreadyOnSelectedVideo, sourceLanguageCode]);
   const expectedRequests = (stats?.chunks ?? 0) * selectedLanguages.length;
   const activeLanguage = activePreview === "source" ? null : getLanguage(activePreview);
   const previewCues = activePreview === "source" ? cues : results[activePreview] ?? [];
@@ -346,8 +371,8 @@ export default function Home() {
   }, [youtubeStatus, sourceVideoId]);
 
   useEffect(() => {
-    if (!running) setUploadLanguages(completedCodes);
-  }, [completedCodes, running]);
+    if (!running) setUploadLanguages(uploadableCodes);
+  }, [running, uploadableCodes]);
 
   useEffect(() => {
     setTrackName(sourceFileName ? defaultTrackName(sourceFileName) : "");
@@ -362,7 +387,7 @@ export default function Home() {
     partialTranslationsRef.current = {};
   }
 
-  function applySourceSrt(content: string, filename: string) {
+  function applySourceSrt(content: string, filename: string, nextSourceLanguageCode = "") {
     const parsed = parseSrt(content);
     if (parsed.length > MAX_CUE_COUNT) throw new Error(`자막은 최대 ${MAX_CUE_COUNT.toLocaleString()}개 cue까지 처리할 수 있습니다.`);
     const oversizedCue = parsed.find((cue) => cue.text.length > MAX_TRANSLATABLE_CUE_CHARS);
@@ -370,6 +395,11 @@ export default function Home() {
     setCues(parsed);
     setSourceFileName(filename);
     setTrackName(defaultTrackName(filename));
+    setSourceLanguageCode(nextSourceLanguageCode);
+    setIncludeSourceInUpload(true);
+    if (nextSourceLanguageCode) {
+      setSelectedLanguages((current) => current.filter((item) => item !== nextSourceLanguageCode));
+    }
     setImportReceipt(null);
     clearOutputs();
     return parsed;
@@ -387,6 +417,8 @@ export default function Home() {
       setCues([]);
       setSourceFileName("");
       setTrackName("");
+      setSourceLanguageCode("");
+      setIncludeSourceInUpload(true);
       setImportReceipt(null);
       clearOutputs();
       setFileError(error instanceof Error ? error.message : "SRT 파일을 읽지 못했습니다.");
@@ -399,7 +431,7 @@ export default function Home() {
     try {
       const response = await fetch("/samples/localization-challenge-en.srt", { cache: "no-store" });
       if (!response.ok) throw new Error("샘플 SRT를 불러오지 못했습니다.");
-      applySourceSrt(await response.text(), "localization-challenge-en.srt");
+      applySourceSrt(await response.text(), "localization-challenge-en.srt", "en");
       setSourceMode("file");
     } catch (error) {
       setFileError(error instanceof Error ? error.message : "샘플 SRT를 불러오지 못했습니다.");
@@ -419,9 +451,22 @@ export default function Home() {
 
   function applyLanguageSelection(codes: string[]) {
     if (running) return;
+    const supported = new Set(LANGUAGES.map((language) => language.code));
+    const nextCodes = Array.from(new Set(codes.filter((code) => supported.has(code) && code !== sourceLanguageCode)));
     if (Object.keys(results).length || Object.keys(progress).length) clearOutputs();
     setLanguagePreferenceMessage("");
-    setSelectedLanguages(codes);
+    setSelectedLanguages(nextCodes);
+  }
+
+  function changeSourceLanguage(nextCode: string) {
+    if (running) return;
+    if (nextCode && !getLanguage(nextCode)) return;
+    if (Object.keys(results).length || Object.keys(progress).length) clearOutputs();
+    setSourceLanguageCode(nextCode);
+    setLanguagePreferenceMessage("");
+    if (nextCode) {
+      setSelectedLanguages((current) => current.filter((item) => item !== nextCode));
+    }
   }
 
   function saveDefaultLanguages() {
@@ -446,6 +491,7 @@ export default function Home() {
   }
 
   function toggleLanguage(code: string) {
+    if (code === sourceLanguageCode) return;
     applyLanguageSelection(selectedLanguages.includes(code)
       ? selectedLanguages.filter((item) => item !== code)
       : [...selectedLanguages, code]);
@@ -507,7 +553,7 @@ export default function Home() {
   }
 
   async function startTranslation() {
-    if (!cues.length || !selectedLanguages.length || running) return;
+    if (!cues.length || !sourceLanguageCode || !selectedLanguages.length || running) return;
     if (!openAiConfigured) {
       window.location.href = "/connections?setup=openai&return=/";
       return;
@@ -570,14 +616,12 @@ export default function Home() {
       const track = captionTracks.find((item) => item.id === selectedCaptionId);
       const safeTitle = (video?.title || "youtube-video").replace(/[\/:*?"<>|]+/g, "-").slice(0, 80);
       const importedFileName = `${safeTitle}.${track?.language || "source"}.youtube.srt`;
-      const parsed = applySourceSrt(payload.srt, importedFileName);
+      const importedSourceCode = appLanguageCodeForYouTube(track?.language || "") ?? "";
+      const parsed = applySourceSrt(payload.srt, importedFileName, importedSourceCode);
       setSelectedVideoId(sourceVideoId);
-      const importedTargetCode = appLanguageCodeForYouTube(track?.language || "");
-      if (importedTargetCode) {
-        setSelectedLanguages((current) => current.filter((item) => item !== importedTargetCode));
-      }
       setImportReceipt({
         language: track?.language || "원본",
+        languageCode: importedSourceCode,
         cueCount: parsed.length,
         videoTitle: video?.title || "YouTube 영상",
         fileName: importedFileName,
@@ -603,8 +647,10 @@ export default function Home() {
     setYoutubeMessage("");
     let shouldRefreshSourceCaptions = false;
     for (const code of uploadLanguages) {
-      const translated = results[code];
-      if (!translated) continue;
+      const subtitleCues = code === sourceLanguageCode
+        ? (includeSourceInUpload && !sourceAlreadyOnSelectedVideo ? cues : undefined)
+        : results[code];
+      if (!subtitleCues) continue;
       setUploadState((current) => ({ ...current, [code]: { status: "uploading" } }));
       try {
         const response = await fetch("/api/youtube/captions", {
@@ -614,7 +660,7 @@ export default function Home() {
             videoId: selectedVideoId,
             languageCode: code,
             trackName: trackName.trim() || defaultTrackName(sourceFileName) || "Subtitle Localizer",
-            srt: serializeSrt(translated)
+            srt: serializeSrt(subtitleCues)
           }),
           signal: AbortSignal.timeout(65_000)
         });
@@ -653,7 +699,7 @@ export default function Home() {
         <div className="topbar-inner">
           <a className="brand" href="#top" aria-label="Subtitle Localizer 홈">
             <span className="brand-symbol" aria-hidden="true">S</span>
-            <span><strong>Subtitle Localizer</strong><small>v1.7.0</small></span>
+            <span><strong>Subtitle Localizer</strong><small>v1.8.0</small></span>
           </a>
           <div className="topbar-actions connection-status-strip">
             <span className="privacy-label">파일을 서버에 저장하지 않습니다</span>
@@ -762,6 +808,32 @@ export default function Home() {
               </div>
             )}
 
+            {cues.length > 0 && (
+              <div className="field-block source-language-block">
+                <div className="field-row">
+                  <label htmlFor="source-language">원본 자막 언어</label>
+                  <span>{importReceipt ? "YouTube 트랙에서 자동 지정" : "SRT 파일은 직접 선택"}</span>
+                </div>
+                <select
+                  id="source-language"
+                  className="text-input"
+                  value={sourceLanguageCode}
+                  disabled={running}
+                  onChange={(event) => changeSourceLanguage(event.target.value)}
+                >
+                  <option value="">원본 언어를 선택하세요</option>
+                  {LANGUAGES.map((language) => (
+                    <option key={language.code} value={language.code}>{language.nativeLabel} · {language.label}</option>
+                  ))}
+                </select>
+                <small className="field-help">
+                  {importReceipt
+                    ? "YouTube에서 가져온 자막은 트랙 언어를 자동으로 지정합니다. 필요하면 여기서 수정할 수 있습니다."
+                    : "SRT에는 언어 정보가 없으므로 원본 언어를 선택해야 합니다. 같은 언어는 번역 대상에서 자동 제외됩니다."}
+                </small>
+              </div>
+            )}
+
             {sourceMode === "youtube" && importReceipt && (
               <div className="quality-panel is-pass youtube-import-receipt" role="status" aria-live="polite">
                 <div className="quality-panel-head">
@@ -789,7 +861,7 @@ export default function Home() {
             </div>
 
             <div className="field-block">
-              <div className="field-row"><label>번역 언어</label><span>{selectedLanguages.length}개 선택</span></div>
+              <div className="field-row"><label>번역 언어</label><span>{sourceLanguage ? `${selectedLanguages.length}개 선택 · 원본 ${sourceLanguage.nativeLabel} 제외` : `${selectedLanguages.length}개 선택`}</span></div>
               <div className="inline-actions">
                 <button type="button" disabled={!cues.length || running} onClick={() => applyLanguageSelection(POPULAR_LANGUAGE_CODES)}>추천 10개</button>
                 <button type="button" disabled={!cues.length || running} onClick={() => applyLanguageSelection(LANGUAGES.map((item) => item.code))}>전체</button>
@@ -802,18 +874,22 @@ export default function Home() {
               {languagePreferenceMessage && <p className="feedback neutral" role="status">{languagePreferenceMessage}</p>}
               <div className="language-grid">
                 {LANGUAGES.map((language) => {
-                  const selected = selectedLanguages.includes(language.code);
+                  const isSourceLanguage = sourceLanguageCode === language.code;
+                  const selected = !isSourceLanguage && selectedLanguages.includes(language.code);
                   return (
                     <button
-                      className={`language-option ${selected ? "selected" : ""}`}
+                      className={`language-option ${selected ? "selected" : ""} ${isSourceLanguage ? "is-source" : ""}`}
                       key={language.code}
                       type="button"
                       aria-pressed={selected}
-                      disabled={!cues.length || running}
+                      disabled={!cues.length || running || isSourceLanguage}
                       onClick={() => toggleLanguage(language.code)}
                     >
-                      <span className="selection-dot" aria-hidden="true">{selected ? "✓" : ""}</span>
-                      <span><strong>{language.nativeLabel}</strong><small>{language.label}</small></span>
+                      <span className="selection-dot" aria-hidden="true">{selected ? "✓" : isSourceLanguage ? "–" : ""}</span>
+                      <span>
+                        <strong>{language.nativeLabel}</strong>
+                        <small>{isSourceLanguage ? "원본 언어 · 번역 불필요" : language.label}</small>
+                      </span>
                     </button>
                   );
                 })}
@@ -861,8 +937,8 @@ export default function Home() {
                 <span>실패 시 완료 청크부터 이어서 재시도</span>
                 <span>{openAiConfigured ? "내 OpenAI 키 사용" : "OpenAI 키 연결 필요"}</span>
               </div>
-              <button className="primary-button" type="button" disabled={!cues.length || !selectedLanguages.length || running} onClick={() => void startTranslation()}>
-                {running ? "번역하고 있습니다…" : "번역 시작"}
+              <button className="primary-button" type="button" disabled={!cues.length || !sourceLanguageCode || !selectedLanguages.length || running} onClick={() => void startTranslation()}>
+                {running ? "번역하고 있습니다…" : !sourceLanguageCode && cues.length ? "원본 언어 선택 필요" : "번역 시작"}
               </button>
             </div>
           </section>
@@ -1011,17 +1087,51 @@ export default function Home() {
                 </div>
 
                 <div className="field-block compact">
+                  <div className="field-row"><label>원본 자막</label><span>{sourceLanguage?.nativeLabel ?? "언어 미선택"}</span></div>
+                  <label className="source-upload-toggle">
+                    <input
+                      type="checkbox"
+                      checked={includeSourceInUpload}
+                      disabled={uploadRunning || !cues.length || !sourceLanguageCode}
+                      onChange={(event) => setIncludeSourceInUpload(event.target.checked)}
+                    />
+                    <span>
+                      <strong>원본 자막도 업로드에 포함</strong>
+                      <small>
+                        {sourceAlreadyOnSelectedVideo
+                          ? "이 YouTube 영상에서 가져온 원본 트랙은 이미 존재하므로 중복 업로드하지 않습니다."
+                          : "기본 ON · 원본은 번역 API를 거치지 않고 그대로 업로드합니다."}
+                      </small>
+                    </span>
+                  </label>
+                </div>
+
+                <div className="field-block compact">
                   <div className="field-row"><label>업로드 언어</label><span>{uploadLanguages.length}개</span></div>
-                  {!completedCodes.length ? <p className="small-empty">먼저 번역을 완료해 주세요.</p> : (
+                  {!uploadableCodes.length ? <p className="small-empty">원본 언어를 선택하거나 번역을 완료해 주세요.</p> : (
                     <div className="upload-language-list">
-                      {completedCodes.map((code) => {
+                      {uploadableCodes.map((code) => {
                         const language = getLanguage(code);
                         const checked = uploadLanguages.includes(code);
                         const state = uploadState[code];
+                        const isSourceUpload = code === sourceLanguageCode;
                         return (
                           <label key={code} className="upload-language-row">
                             <input type="checkbox" checked={checked} disabled={uploadRunning} onChange={() => toggleUploadLanguage(code)} />
-                            <span><strong>{language?.nativeLabel}</strong><small>{state?.status === "done" ? "업로드 완료" : state?.status === "uploading" ? "업로드 중" : state?.status === "error" ? state.error : `${language?.fileSuffix}.srt`}</small></span>
+                            <span>
+                              <strong>{language?.nativeLabel}{isSourceUpload ? " · 원본" : ""}</strong>
+                              <small>
+                                {state?.status === "done"
+                                  ? "업로드 완료"
+                                  : state?.status === "uploading"
+                                    ? "업로드 중"
+                                    : state?.status === "error"
+                                      ? state.error
+                                      : isSourceUpload
+                                        ? `원본 그대로 · ${language?.fileSuffix}.srt`
+                                        : `${language?.fileSuffix}.srt`}
+                              </small>
+                            </span>
                           </label>
                         );
                       })}
@@ -1045,6 +1155,7 @@ export default function Home() {
             <h3>현재 작업</h3>
             <dl>
               <div><dt>원본</dt><dd>{sourceFileName || "아직 없음"}</dd></div>
+              <div><dt>원본 언어</dt><dd>{sourceLanguage?.nativeLabel || "미선택"}</dd></div>
               <div><dt>대상 언어</dt><dd>{selectedLanguages.length}개</dd></div>
               <div><dt>완료</dt><dd>{completedCodes.length}개</dd></div>
               <div><dt>타임코드</dt><dd>변경하지 않음</dd></div>
@@ -1053,7 +1164,7 @@ export default function Home() {
         </aside>
       </div>
 
-      <footer className="footer">Subtitle Localizer v1.7.0 · 사용자 API 비용 분리형 다국어 자막 작업 도구</footer>
+      <footer className="footer">Subtitle Localizer v1.8.0 · 사용자 API 비용 분리형 다국어 자막 작업 도구</footer>
     </main>
   );
 }

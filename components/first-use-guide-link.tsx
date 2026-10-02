@@ -49,7 +49,7 @@ export default function PrimarySectionNav() {
         <div className="primary-titlebar-inner">
           <a className="primary-titlebar-brand" href="/" aria-label="Subtitle Localizer 작업하기">
             <span className="primary-titlebar-symbol" aria-hidden="true">S</span>
-            <span><strong>Subtitle Localizer</strong><small>v1.7.0</small></span>
+            <span><strong>Subtitle Localizer</strong><small>v1.8.0</small></span>
           </a>
           <div className="primary-titlebar-actions">
             <span className="primary-titlebar-privacy">파일을 서버에 저장하지 않습니다</span>

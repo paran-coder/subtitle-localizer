@@ -1,7 +1,7 @@
-# checklist.md — Subtitle Localizer v1.7.0
+# checklist.md — Subtitle Localizer v1.8.0
 
 ## 제품 범위
-- [x] 버전 `v1.7.0` 유지
+- [x] 버전 `v1.8.0` 유지
 - [x] GitHub `paran-coder/subtitle-localizer` `main`만 사용
 - [x] Vercel `subtitle-localizer` Production 사용
 - [x] 기본 페이지 `/` = `작업하기`
@@ -41,6 +41,15 @@
 - [x] 현재 번역 언어 조합을 사용자 기본값으로 저장
 - [x] 저장 전/초기화 후 기본 선택 `ko` / `ja` / `es` 유지
 - [x] 기본 번역 언어 저장값은 비밀정보가 아닌 언어 코드만 localStorage 사용
+- [x] SRT 원본 자막 언어 직접 선택
+- [x] YouTube 가져오기 원본 언어 자동 지정
+- [x] 원본 언어와 같은 번역 대상 자동 해제 / 선택 비활성화
+- [x] `원본 언어 · 번역 불필요` 상태 표시
+- [x] 원본 언어 선택 전 번역 실행 차단
+- [x] `원본 자막도 업로드에 포함` 기본 ON
+- [x] 원본 cue를 번역 없이 그대로 YouTube 업로드
+- [x] 원본 + 번역본 동시 업로드 목록 구성
+- [x] 같은 YouTube 영상에서 가져온 원본 트랙 중복 업로드 방지
 - [x] cue ID / 타임코드 구조 검증
 - [x] SRT 개별 다운로드
 - [x] 완료 언어 ZIP 다운로드
@@ -93,7 +102,7 @@
 - [x] ZIP은 GitHub에 커밋하지 않음
 
 ## 자동 검증
-- [x] 자동 테스트 **87/87** 통과
+- [x] 자동 테스트 **90/90** 통과
 - [x] TypeScript 통과
 - [x] Next.js Production build 통과
 - [x] `/` HTTP 200
@@ -108,5 +117,5 @@
 - [x] 해당 최종 SHA의 Vercel Production `READY` 확인
 - [x] 최종 Production에서 OG/Twitter 태그 재확인
 - [x] 최종 Production Runtime `error` / `fatal` 재확인
-- [x] 비밀정보 / `.git` 제외 최종 `subtitle-localizer-v1.7.0.zip` 생성 및 검사
+- [x] 비밀정보 / `.git` 제외 최종 `subtitle-localizer-v1.8.0.zip` 생성 및 검사
 - [x] 최종 ZIP 사용자에게만 전달 — GitHub에는 업로드하지 않음

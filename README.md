@@ -1,4 +1,4 @@
-# Subtitle Localizer v1.7.0
+# Subtitle Localizer v1.8.0
 
 사용자가 자신의 OpenAI API Key(BYOK)와 Google Cloud OAuth Client(BYOC)를 연결해 SRT를 여러 언어로 현지화하고, 여러 YouTube 계정/채널의 자막을 가져오거나 다시 업로드하는 웹앱입니다.
 
@@ -14,6 +14,10 @@
 - 다국어 동시 번역, 번역 스타일, 용어집
 - 영어(`en`)·러시아어(`ru`)를 포함한 대상 언어 지원과 한국어 등 원문 언어 비종속 번역
 - 현재 선택한 번역 언어 조합을 브라우저 기본값으로 저장 / 기존 `한국어·일본어·스페인어`로 초기화
+- 원본 자막 언어 지정: SRT는 직접 선택, YouTube 가져오기는 트랙 언어 자동 지정
+- 원본 언어와 동일한 번역 대상은 자동 제외하고 `원본 언어 · 번역 불필요`로 비활성화
+- 원본 자막 업로드 기본 포함(ON): 번역 API를 거치지 않고 번역본과 함께 YouTube에 업로드
+- 같은 YouTube 영상에서 가져온 원본 트랙은 중복 업로드 대상에서 자동 제외
 - SRT 개별 다운로드 / ZIP 다운로드
 - YouTube 자막 업로드 및 업로드 직후 목록 갱신
 - 여러 Google 계정 / YouTube 채널 연결·전환·해제
@@ -65,7 +69,7 @@ scope와 callback은 방문용 하이퍼링크가 아니라 Google Cloud에 복�
 - 운영자 Vercel에는 세션 암호화를 위한 `APP_SESSION_SECRET`이 필요합니다.
 
 ## 소셜 공유 / OG
-v1.7.0은 사용자가 확정한 공유 이미지를 1200×630으로 제공합니다.
+v1.8.0은 사용자가 확정한 공유 이미지를 1200×630으로 제공합니다.
 
 - OG image: `https://subtitle-localizer.vercel.app/og/subtitle-localizer`
 - Open Graph: title / description / site name / locale / image / 1200×630 / alt / type
@@ -91,7 +95,7 @@ npm run build
 ```
 
 ## 완료 기준
-v1.7.0은 다음 조건이 모두 만족될 때 완료로 봅니다.
+v1.8.0은 다음 조건이 모두 만족될 때 완료로 봅니다.
 
 - GitHub `main` 반영
 - 자동 테스트 전체 통과
@@ -104,4 +108,4 @@ v1.7.0은 다음 조건이 모두 만족될 때 완료로 봅니다.
 - Runtime `error` / `fatal` 없음
 - 최종 ZIP에 secret 및 `.git` 미포함
 
-제품 버전은 `v1.7.0`을 유지합니다.
+제품 버전은 `v1.8.0`을 유지합니다.

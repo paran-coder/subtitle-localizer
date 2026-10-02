@@ -69,7 +69,7 @@ test("주요 화면은 초기 설정·연결 관리·작업하기 탭으로 구�
   assert.match(nav, /href: "\/connections"/);
   assert.match(nav, /href: "\/"/);
   assert.match(nav, /aria-current/);
-  assert.match(nav, /v1\.7\.0/);
+  assert.match(nav, /v1\.8\.0/);
   assert.equal(nav.includes('className="primary-titlebar-action"'), false);
   assert.equal(nav.includes("처음 사용하시나요?"), false);
   assert.equal(nav.includes("설정이 낯설다면"), false);
@@ -125,7 +125,7 @@ test("초기 설정 화면은 OpenAI와 YouTube 연결을 실제 값 기준으�
   assert.match(guide, /Google 카드 등록은 이 8단계의 필수 항목이 아닙니다/);
   assert.match(guide, /guide-static-code/);
   assert.match(guide, /FIRST-TIME SETUP/);
-  assert.equal(guide.includes("FIRST-TIME SETUP · v1.7.0"), false);
+  assert.equal(guide.includes("FIRST-TIME SETUP · v1.8.0"), false);
   assert.equal(guide.includes("앱의 8단계 마법사와 함께 진행 →"), false);
   assert.equal(guide.includes("연결 관리 7단계로 이동 →"), false);
 });

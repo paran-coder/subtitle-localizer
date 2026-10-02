@@ -230,7 +230,7 @@ export default function ConnectionsV17() {
   const currentStatic = STATIC_STEPS[wizardStep];
 
   return <main className="v17-connections-shell">
-    <header className="v17-topbar"><a href="/" className="v17-brand"><span>S</span><strong>Subtitle Localizer <small>v1.7.0</small></strong></a><a className="v17-quiet-link" href={returnPath}>작업으로 돌아가기</a></header>
+    <header className="v17-topbar"><a href="/" className="v17-brand"><span>S</span><strong>Subtitle Localizer <small>v1.8.0</small></strong></a><a className="v17-quiet-link" href={returnPath}>작업으로 돌아가기</a></header>
 
     <section className="v17-connections-hero"><span>CONNECTIONS</span><h1>처음 한 번만 설정하고,<br />이후에는 채널만 추가하세요.</h1><p>Google Cloud는 사용자가 직접 소유합니다.<br />앱은 초보자가 판단할 일을 줄이고 꼭 필요한 클릭과 입력만 순서대로 안내합니다.</p></section>
 
